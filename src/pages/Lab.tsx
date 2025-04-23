@@ -131,7 +131,7 @@ const Lab = () => {
                   <CardContent className="flex-grow">
                     <div className="p-4 bg-gradient-to-br from-slate-50 to-blue-50 rounded-md mb-4 h-36 flex items-center justify-center overflow-hidden">
                       <img 
-                        src={`/experiment-${experiment.id}.jpg`} 
+                        src={experiment.imageUrl} 
                         alt={experiment.title}
                         className="max-h-full transition-transform duration-500 transform group-hover:scale-110"
                         onError={(e) => {

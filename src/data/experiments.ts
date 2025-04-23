@@ -23,8 +23,7 @@ export const experimentsList: Experiment[] = [
   {
     id: "hall-coefficient",
     title: "Determination of Hall Coefficient",
-    imageUrl: 'h
-ttps://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://i.ytimg.com/vi/erzPR1N3zCY/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgXCg5MA8=&rs=AOn4CLCgPhSroBcMViZ4m0i9SucqZ0WaCQ',
     shortDescription: "Investigate the Hall effect and determine the carrier type",
     highlights: [
       "Adjustable magnetic field",
@@ -91,7 +90,7 @@ The sign of RH indicates the type of charge carriers: negative for electrons and
     id: "band-gap",
     title: "Band Gap Determination",
     shortDescription: "Determine the band gap of semiconductor materials using a post office box",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ87p2coFGOM8aSCQBDpJGWRi0DLp9FKHZctg&s',
     highlights: [
       "Temperature control",
       "Resistance measurement",
@@ -160,7 +159,7 @@ By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this s
     id: "four-probe",
     title: "Four-Probe Method",
     shortDescription: "Measure resistivity of semiconductor materials using the four-probe method",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLGjL-VxaTKHPI0gNVtkCK2wXWIZNjVP5QMA&s',
     highlights: [
       "Adjustable probe spacing",
       "Material selection",
@@ -237,7 +236,7 @@ For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, 
     id: "ldr-characteristics",
     title: "V-I Characteristics of LDR",
     shortDescription: "Study the voltage-current characteristics of a light-dependent resistor",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://i.ytimg.com/vi/vb5COWiuMmA/hqdefault.jpg',
     highlights: [
       "Adjustable light intensity",
       "Real-time V-I curve plotting",
@@ -399,7 +398,7 @@ Where:
     id: "pn-junction",
     title: "PN Junction Diode Characteristics",
     shortDescription: "Study the characteristics of PN junction diodes under forward and reverse bias",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://i.ytimg.com/vi/0yyFiJw5emw/maxresdefault.jpg',
     highlights: [
       "Depletion region visualization",
       "Temperature effects",
@@ -481,7 +480,7 @@ Key parameters of a diode include:
     id: "photocell",
     title: "Photocell Characteristics",
     shortDescription: "Study illumination and V-I characteristics of a photocell",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://i.ytimg.com/vi/sFyUeP939gQ/maxresdefault.jpg',
     highlights: [
       "Adjustable light wavelength",
       "Variable light intensity",
@@ -570,7 +569,7 @@ Where:
     id: "carrier-mobility",
     title: "Electron and Hole Mobility",
     shortDescription: "Study electron and hole mobility vs doping concentration",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Hall_Effect_Measurement_Setup_for_Holes.png',
     highlights: [
       "Doping concentration variation",
       "Temperature dependence",
