@@ -83,8 +83,9 @@ const About = () => {
                 Atharv Tamboli <br />
                 Ayush Kumar Sharma <br />
                 Aman Kumar Chouhan <br />
-                Ayush Kesarwani
-                Daksh Gupta
+                Ayush Kesarwani<br />
+                Daksh Gupta<br />
+                Kushagr Joshi
               </p>
             </CardContent>
           </Card>
