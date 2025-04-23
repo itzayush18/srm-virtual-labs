@@ -4,6 +4,7 @@ export interface Experiment {
   title: string;
   shortDescription: string;
   highlights: string[];
+  imageUrl: string;
   sections: {
     theory: string;
     procedure: string[];
@@ -18,11 +19,12 @@ export interface Experiment {
     }[];
   };
 }
-
 export const experimentsList: Experiment[] = [
   {
     id: "hall-coefficient",
     title: "Determination of Hall Coefficient",
+    imageUrl: 'h
+ttps://images.unsplash.com/photo-1639322537228-f710d846310a',
     shortDescription: "Investigate the Hall effect and determine the carrier type",
     highlights: [
       "Adjustable magnetic field",
@@ -89,6 +91,7 @@ The sign of RH indicates the type of charge carriers: negative for electrons and
     id: "band-gap",
     title: "Band Gap Determination",
     shortDescription: "Determine the band gap of semiconductor materials using a post office box",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Temperature control",
       "Resistance measurement",
@@ -157,6 +160,7 @@ By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this s
     id: "four-probe",
     title: "Four-Probe Method",
     shortDescription: "Measure resistivity of semiconductor materials using the four-probe method",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Adjustable probe spacing",
       "Material selection",
@@ -233,6 +237,7 @@ For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, 
     id: "ldr-characteristics",
     title: "V-I Characteristics of LDR",
     shortDescription: "Study the voltage-current characteristics of a light-dependent resistor",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Adjustable light intensity",
       "Real-time V-I curve plotting",
@@ -301,6 +306,7 @@ However, as the illumination changes, the resistance changes, resulting in a fam
     id: "solar-cell",
     title: "Solar Cell Characteristics",
     shortDescription: "Study V-I characteristics and efficiency of a solar cell",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Adjustable light intensity",
       "Load resistance variation",
@@ -393,6 +399,7 @@ Where:
     id: "pn-junction",
     title: "PN Junction Diode Characteristics",
     shortDescription: "Study the characteristics of PN junction diodes under forward and reverse bias",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Depletion region visualization",
       "Temperature effects",
@@ -474,6 +481,7 @@ Key parameters of a diode include:
     id: "photocell",
     title: "Photocell Characteristics",
     shortDescription: "Study illumination and V-I characteristics of a photocell",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Adjustable light wavelength",
       "Variable light intensity",
@@ -562,6 +570,7 @@ Where:
     id: "carrier-mobility",
     title: "Electron and Hole Mobility",
     shortDescription: "Study electron and hole mobility vs doping concentration",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Doping concentration variation",
       "Temperature dependence",
@@ -646,6 +655,7 @@ As doping concentration increases, impurity scattering becomes more significant,
     id: "fermi-function",
     title: "Fermi Function Determination",
     shortDescription: "Visualize and study the Fermi-Dirac distribution function at different temperatures",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Temperature variation",
       "Interactive visualization",
@@ -728,6 +738,7 @@ The temperature dependence of the Fermi function is significant:
     id: "optical-fiber",
     title: "Optical Fiber Attenuation",
     shortDescription: "Study attenuation and propagation in optical fiber cables",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Light propagation visualization",
       "Attenuation calculation",
@@ -809,6 +820,7 @@ Where:
     id: "diode-iv",
     title: "Diode I-V Characteristics",
     shortDescription: "Study I-V characteristics of diodes using computational tools",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Parameter inputs",
       "Automatic plotting",
@@ -886,6 +898,7 @@ I = Is × [exp(q(V-IRs)/nkT) - 1] + (V-IRs)/Rp`,
     id: "xray-diffraction",
     title: "Lattice Cell Parameters",
     shortDescription: "Calculate lattice cell parameters using X-ray diffraction",
+    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
       "Crystal structure visualization",
       "Diffraction pattern simulation",
