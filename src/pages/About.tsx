@@ -14,15 +14,8 @@ const About = () => {
             <CardContent className="pt-6">
               <h2 className="section-title">Our Mission</h2>
               <p className="mb-4">
-                The Semiconductor Physics Virtual Laboratory aims to provide students and researchers 
-                with a comprehensive online platform for conducting semiconductor physics experiments 
-                in a virtual environment. Our mission is to make semiconductor physics education more 
-                accessible, interactive, and engaging.
-              </p>
-              <p>
-                Through our interactive simulations, users can explore the fundamental principles of 
-                semiconductor physics, conduct experiments, collect data, and analyze results, all 
-                without the need for physical laboratory equipment.
+                The Semiconductor Physics Virtual Laboratory aims to provide a comprehensive online platform for students and researchers to conduct semiconductor physics experiments in a virtual environment. Our mission is to make semiconductor physics education more accessible, interactive, and engaging.
+	Through our interactive simulations, users can explore the fundamental principles of semiconductor physics, conduct experiments, collect data, and analyze results, all without the need for physical laboratory equipment.
               </p>
             </CardContent>
           </Card>
@@ -73,38 +66,18 @@ const About = () => {
 
           <Card className="mb-8">
             <CardContent className="pt-6">
-              <h2 className="section-title">Development Team</h2>
+              <h2 className="section-title">Development Team:</h2>
               <p className="mb-4">
-              Our virtual laboratory platform, developed by a dedicated team of students of CSE Core from SRMIST, KTR, is designed to enable remote access to laboratory facilities, ensuring enhanced reachability and accessibility for all.
+              Our virtual laboratory platform was developed by a dedicated team of CSE-Core students as part of an open education initiative, integrating student-led coding and design efforts to create an engaging and accessible learning environment. The virtual lab was conceptualized and guided by Dr Rajaboopathi Mani, Research Assistant Professor from SRMIST, Kattankulathur 603203. 
               </p>
               <p>
                 Meet the team:
                 <br />
-                Atharv Tamboli <br />
-                Ayush Kumar Sharma <br />
-                Aman Kumar Chouhan <br />
-                Ayush Kesarwani<br />
-                Daksh Gupta<br />
-                Kushagr Joshi
+                Atharv Tamboli, Ayush Kumar Sharma, Aman Kumar Chouhan, Ayush Kesarwani, Daksh Gupta, Kushagr Joshi, Dr. Rajaboopathi Mani*
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="section-title">Contact Information</h2>
-              <p className="mb-4">
-                For questions, feedback, or support regarding the Semiconductor Physics Virtual Laboratory, 
-                please contact us at:
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">Email:</span> support@semiconductovlab.edu
-              </p>
-              <p>
-                <span className="font-semibold">Address:</span> SRMIST, Chennai
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </Layout>
