@@ -21,28 +21,13 @@ const Index = () => {
         "Interactive experiments on semiconductor materials and devices",
       experimentsCount: 12,
       imagePath: "/researchlab2.jpg",
-    },
-    {
-      id: "upcoming-1",
-      title: "Digital Electronics Lab",
-      description:
-        "Coming Soon - Experiments on digital circuits and logic design",
-      experimentsCount: 0,
-      imagePath: "digital.jpg",
-    },
-    {
-      id: "upcoming-2",
-      title: "Optoelectronics Lab",
-      description: "Coming Soon - Experiments on optical devices and phenomena",
-      experimentsCount: 0,
-      imagePath: "optoelectronics.jpg",
-    },
+    }
   ];
 
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-lab-blue text-white py-16">
+      <section className="bg-lab-blue text-white py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">
@@ -52,17 +37,6 @@ const Index = () => {
               Experience interactive semiconductor physics experiments in a
               virtual environment
             </p>
-            <div className="animate-slide-in">
-              <Button
-                asChild
-                size="lg"
-                className="bg-lab-amber text-lab-blue hover:bg-lab-amber/90"
-              >
-                <Link to="/lab">
-                  Explore Experiments <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
           </div>
         </div>
       </section>
@@ -73,7 +47,7 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-center mb-12 text-lab-blue">
             Lab Categories
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex flex-wrap justify-center">
             {labCategories.map((category) => (
               <Card
                 key={category.id}
@@ -133,15 +107,44 @@ const Index = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6 text-lab-blue">
-              About Our Virtual Lab
-            </h2>
-            <p className="text-lg mb-8 text-gray-700">
-              Our virtual laboratory provides interactive simulations that
-              accurately demonstrate semiconductor physics principles, allowing
-              students to collect and analyze data as they would in a physical
-              lab environment.
-            </p>
+            {/* New Intended Audience Card */}
+            <Card className="mb-12">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 flex items-center justify-center rounded-full bg-lab-blue/10 text-lab-blue">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-8 h-8"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857M12 7a4 4 0 110-8 4 4 0 010 8zM17 11a4 4 0 110-8 4 4 0 010 8zM7 11a4 4 0 110-8 4 4 0 010 8z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <h2 className="text-xl font-semibold mb-2 text-lab-blue">
+                  Intended Audience
+                </h2>
+                <p className="mb-4 text-gray-600">
+                  Our virtual laboratory is designed for:
+                </p>
+                <ul className="list-disc pl-5 text-gray-600 text-left space-y-2">
+                  <li>Undergraduate and graduate students in physics, electrical engineering, and materials science</li>
+                  <li>Educators looking for supplementary teaching resources</li>
+                  <li>Researchers who want to validate concepts before physical experimentation</li>
+                  <li>Self-learners interested in semiconductor physics</li>
+                  <li>Educational institutions with limited access to physical laboratory equipment</li>
+                </ul>
+              </CardContent>
+            </Card>
+            {/* Existing icons section below remains unchanged */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div className="p-6">
                 <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-blue/10 text-lab-blue">
