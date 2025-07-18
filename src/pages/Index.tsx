@@ -106,35 +106,20 @@ const Index = () => {
       {/* About Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            {/* New Intended Audience Card */}
-            <Card className="mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            {/* ✅ Intended Audience Card - Left Side */}
+            <Card className="text-center">
               <CardContent className="p-6">
                 <div className="flex items-center justify-center mb-4">
                   <div className="w-16 h-16 flex items-center justify-center rounded-full bg-lab-blue/10 text-lab-blue">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-8 h-8"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857M12 7a4 4 0 110-8 4 4 0 010 8zM17 11a4 4 0 110-8 4 4 0 010 8zM7 11a4 4 0 110-8 4 4 0 010 8z"
-                      />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2a3 3 0 015.356-1.857M12 7a4 4 0 110-8 4 4 0 010 8zM17 11a4 4 0 110-8 4 4 0 010 8zM7 11a4 4 0 110-8 4 4 0 010 8z" />
                     </svg>
                   </div>
                 </div>
-
-                <h2 className="text-xl font-semibold mb-2 text-lab-blue">
-                  Intended Audience
-                </h2>
-                <p className="mb-4 text-gray-600">
-                  Our virtual laboratory is designed for:
-                </p>
+                <h2 className="text-xl font-semibold mb-2 text-lab-blue">Intended Audience</h2>
+                <p className="mb-4 text-gray-600">Our virtual laboratory is designed for:</p>
                 <ul className="list-disc pl-5 text-gray-600 text-left space-y-2">
                   <li>Undergraduate and graduate students in physics, electrical engineering, and materials science</li>
                   <li>Educators looking for supplementary teaching resources</li>
@@ -144,79 +129,68 @@ const Index = () => {
                 </ul>
               </CardContent>
             </Card>
-            {/* Existing icons section below remains unchanged */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div className="p-6">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-blue/10 text-lab-blue">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-8 h-8"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"
-                    />
-                  </svg>
+
+            {/* ✅ Key Features - Right Side */}
+            <div>
+              <h2 className="text-3xl font-bold mb-6 text-lab-blue text-center">Key Features</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                {/* Feature 1 */}
+                <div className="p-6 text-center border rounded-lg">
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-teal/10 text-lab-teal">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-lab-teal">Interactive Simulations</h3>
+                  <p className="text-gray-600">Real-time, responsive simulations that accurately model semiconductor physics phenomena.</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-lab-blue">
-                  Educational
-                </h3>
-                <p className="text-gray-600">
-                  Comprehensive theory and practical knowledge for students
-                </p>
-              </div>
-              <div className="p-6">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-teal/10 text-lab-teal">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-8 h-8"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-1.587c-1.718-.293-2.3-2.379-1.067-3.611L5 14.5"
-                    />
-                  </svg>
+
+                {/* Feature 2 */}
+                <div className="p-6 text-center border rounded-lg">
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-blue/10 text-lab-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422A12.042 12.042 0 0112 21.5a12.042 12.042 0 01-6.16-10.922L12 14z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-lab-blue">Educational Content</h3>
+                  <p className="text-gray-600">Comprehensive theory, procedures, and references for each experiment.</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-lab-teal">
-                  Interactive
-                </h3>
-                <p className="text-gray-600">
-                  Hands-on simulations that respond to user input in real-time
-                </p>
-              </div>
-              <div className="p-6">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-amber/10 text-lab-amber">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-8 h-8"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-                    />
-                  </svg>
+
+                {/* Feature 3 */}
+                <div className="p-6 text-center border rounded-lg">
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-amber/10 text-lab-amber">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-lab-amber">Self-Assessment</h3>
+                  <p className="text-gray-600">Built-in quizzes to test understanding of key concepts.</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-lab-amber">
-                  Data Analytics
-                </h3>
-                <p className="text-gray-600">
-                  Collect, visualize, and export experimental data for analysis
-                </p>
+
+                {/* Feature 4 */}
+                <div className="p-6 text-center border rounded-lg">
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-purple/10 text-lab-purple">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v2a2 2 0 104 0v-2m0 0a2 2 0 002-2v-5a2 2 0 00-2-2m-4 9a2 2 0 01-2-2v-5a2 2 0 012-2m0 0V7a2 2 0 114 0v1" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-lab-purple">Data Collection & Analysis</h3>
+                  <p className="text-gray-600">Tools for gathering and visualizing experimental data.</p>
+                </div>
+
+                {/* Feature 5 */}
+                <div className="p-6 text-center border rounded-lg">
+                  <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-lab-green/10 text-lab-green">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h.01M15 12h.01M9 16h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h3l2 2h6a2 2 0 012 2v12a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-lab-green">Accessibility</h3>
+                  <p className="text-gray-600">Available anywhere with an internet connection, on any device.</p>
+                </div>
+
               </div>
             </div>
           </div>
