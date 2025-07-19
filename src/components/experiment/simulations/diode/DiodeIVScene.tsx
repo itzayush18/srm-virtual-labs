@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Text } from '@react-three/drei';
-import three from 'three';
+import * as THREE from 'three';
 
 // 3D Diode Component
 const DiodeModel = ({
@@ -17,10 +17,10 @@ const DiodeModel = ({
   idealityFactor: number;
   position: [number, number, number];
 }) => {
-  const diodeRef = useRef<three.Group>(null);
+  const diodeRef = useRef<THREE.Group>(null);
 
   // For animation timing
-  const clockRef = useRef<three.Clock>(new three.Clock());
+  const clockRef = useRef<THREE.Clock>(new THREE.Clock());
 
   // Calculate diode current using the Shockley equation
   const calculateCurrent = (voltage: number) => {
@@ -54,7 +54,7 @@ const DiodeModel = ({
   const junctionTemperature = temperature + (isForwardBiased ? current * voltage * 100 : 0);
 
   // Color based on junction temperature
-  const junctionColor = new three.Color();
+  const junctionColor = new THREE.Color();
   junctionColor.setHSL(
     isForwardBiased ? 0.05 : 0.6, // Red if forward biased, blue otherwise
     0.8,
@@ -179,17 +179,17 @@ const IVCurve = ({
     const current = calculateCurrent(v);
     // Scale the current for visualization
     const logCurrent = (Math.sign(current) * Math.log10(1 + Math.abs(current) * 1e9)) / 9;
-    points.push(new three.Vector3(v * 2, logCurrent * 2, 0));
+    points.push(new THREE.Vector3(v * 2, logCurrent * 2, 0));
   }
 
   // Create the selected point
   const selectedCurrent = calculateCurrent(selectedVoltage);
   const logSelectedCurrent =
     (Math.sign(selectedCurrent) * Math.log10(1 + Math.abs(selectedCurrent) * 1e9)) / 9;
-  const selectedPoint = new three.Vector3(selectedVoltage * 2, logSelectedCurrent * 2, 0);
+  const selectedPoint = new THREE.Vector3(selectedVoltage * 2, logSelectedCurrent * 2, 0);
 
   // Create curve geometry
-  const curveGeometry = new three.BufferGeometry().setFromPoints(points);
+  const curveGeometry = new THREE.BufferGeometry().setFromPoints(points);
 
   return (
     <group position={position}>
@@ -204,9 +204,9 @@ const IVCurve = ({
         <line key={`vertical-${i}`}>
           <bufferGeometry
             attach="geometry"
-            {...new three.BufferGeometry().setFromPoints([
-              new three.Vector3(-2 + i * 0.5, -2, 0.01),
-              new three.Vector3(-2 + i * 0.5, 2, 0.01),
+            {...new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(-2 + i * 0.5, -2, 0.01),
+              new THREE.Vector3(-2 + i * 0.5, 2, 0.01),
             ])}
           />
           <lineBasicMaterial color="#4b5563" opacity={0.3} transparent />
@@ -217,9 +217,9 @@ const IVCurve = ({
         <line key={`horizontal-${i}`}>
           <bufferGeometry
             attach="geometry"
-            {...new three.BufferGeometry().setFromPoints([
-              new three.Vector3(-2, -2 + i * 0.5, 0.01),
-              new three.Vector3(2, -2 + i * 0.5, 0.01),
+            {...new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(-2, -2 + i * 0.5, 0.01),
+              new THREE.Vector3(2, -2 + i * 0.5, 0.01),
             ])}
           />
           <lineBasicMaterial color="#4b5563" opacity={0.3} transparent />
@@ -230,9 +230,9 @@ const IVCurve = ({
       <line>
         <bufferGeometry
           attach="geometry"
-          {...new three.BufferGeometry().setFromPoints([
-            new three.Vector3(0, -2, 0.01),
-            new three.Vector3(0, 2, 0.01),
+          {...new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, -2, 0.01),
+            new THREE.Vector3(0, 2, 0.01),
           ])}
         />
         <lineBasicMaterial color="#fff" />
@@ -241,9 +241,9 @@ const IVCurve = ({
       <line>
         <bufferGeometry
           attach="geometry"
-          {...new three.BufferGeometry().setFromPoints([
-            new three.Vector3(-2, 0, 0.01),
-            new three.Vector3(2, 0, 0.01),
+          {...new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-2, 0, 0.01),
+            new THREE.Vector3(2, 0, 0.01),
           ])}
         />
         <lineBasicMaterial color="#fff" />
