@@ -311,7 +311,7 @@ However, as the illumination changes, the resistance changes, resulting in a fam
     id: 'solar-cell',
     title: 'Solar Cell Characteristics',
     shortDescription: 'Study V-I characteristics and efficiency of a solar cell',
-    imageUrl: '../../public/Solar-Cell.png',
+    imageUrl: '../../public/Solar-Cell.jpg',
     highlights: [
       'Adjustable light intensity',
       'Load resistance variation',
@@ -407,7 +407,7 @@ Where:
     title: 'PN Junction Diode Characteristics',
     shortDescription:
       'Study the characteristics of PN junction diodes under forward and reverse bias',
-    imageUrl: 'https://i.ytimg.com/vi/0yyFiJw5emw/maxresdefault.jpg',
+    imageUrl: '../../public/PN-junction-diode.png',
     highlights: [
       'Depletion region visualization',
       'Temperature effects',
@@ -668,7 +668,7 @@ As doping concentration increases, impurity scattering becomes more significant,
     title: 'Fermi Function Determination',
     shortDescription:
       'Visualize and study the Fermi-Dirac distribution function at different temperatures',
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: '../../public/Fermi-function.png',
     highlights: [
       'Temperature variation',
       'Interactive visualization',
@@ -834,7 +834,7 @@ Where:
     id: 'diode-iv',
     title: 'Diode I-V Characteristics',
     shortDescription: 'Study I-V characteristics of diodes using computational tools',
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: '../../public/Diode-Charcteristic.png',
     highlights: [
       'Parameter inputs',
       'Automatic plotting',
@@ -918,7 +918,7 @@ I = Is × [exp(q(V-IRs)/nkT) - 1] + (V-IRs)/Rp`,
     id: 'xray-diffraction',
     title: 'Lattice Cell Parameters',
     shortDescription: 'Calculate lattice cell parameters using X-ray diffraction',
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: 'Lattice-cell-parameter.png',
     highlights: [
       'Crystal structure visualization',
       'Diffraction pattern simulation',
