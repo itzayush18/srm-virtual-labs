@@ -31,26 +31,61 @@ export const experimentsList: Experiment[] = [
       'Carrier type determination',
     ],
     sections: {
-      theory: `The Hall effect is a phenomenon in which a voltage difference (the Hall voltage) is produced across an electrical conductor, transverse to an electric current in the conductor and to an applied magnetic field perpendicular to the current. The Hall coefficient can be used to determine the type and density of charge carriers in a material.
+      theory: `
+  <div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-      When a current-carrying conductor is placed in a perpendicular magnetic field, the charge carriers experience a Lorentz force that pushes them to one side of the conductor. This creates a voltage difference across the conductor perpendicular to both the current direction and the magnetic field.
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/hall_effect.png" alt="Hall effect Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: Hall effect experimental setup
+  </p>
+</div>
 
-      The Hall coefficient (RH) is given by:
+    <p>
+      When a current-carrying conductor is placed in a transverse magnetic field, a potential difference is developed across the conductor in a direction perpendicular to both the current and the magnetic field. This phenomenon is called the <strong>Hall effect</strong>. It determines both the type and concentration of charge carriers in the given semiconductor sample.
+    </p>
 
-      RH = EH / (J × B)
+    <div style="background-color:#f3f4f6;padding:12px 16px;margin:1.5em 0;border-radius:8px;text-align:center;font-style:italic;border-left:4px solid #3b82f6">
+      Hall coefficient (R<sub>H</sub>) = (V<sub>H</sub> × t) / (I × H) × 10<sup>8</sup> cm<sup>3</sup>C<sup>−1</sup>
+    </div>
 
-      Where:
-        - EH is the Hall electric field
-        - J is the current density
-        - B is the magnetic field
+    <p>
+      where V<sub>H</sub> = Hall voltage (volt), t = thickness of the sample (cm), I = current (ampere), H = magnetic field (gauss).
+    </p>
 
-      The sign of RH indicates the type of charge carriers: negative for electrons and positive for holes.`,
+    <p>
+      Carrier density refers to the number of free charge carriers (electrons in n-type or holes in p-type semiconductors) per unit volume of the material. It can be calculated once the Hall coefficient (R<sub>H</sub>) is known using the relation:
+    </p>
+
+    <div style="text-align:center;margin:1.2em 0;font-style:italic">
+      Carrier density (n) = 1 / (R<sub>H</sub> × q) carriers/cm<sup>3</sup>
+    </div>
+
+    <p>
+      where R<sub>H</sub> = Hall coefficient (cm<sup>3</sup> C<sup>−1</sup>), q = charge of the electron or hole (1.6 × 10<sup>−19</sup> C).
+    </p>
+
+    <p>
+      Carrier mobility is a measure of how quickly a charge carrier (electron or hole) can move through a semiconductor when subjected to an electric field. It reflects the ease with which carriers can drift and directly affects the material’s conductivity and response time in electronic devices.
+    </p>
+
+    <div style="text-align:center;margin:1.2em 0;font-style:italic">
+      Carrier mobility (μ) = R<sub>H</sub>σ cm<sup>2</sup>V<sup>−1</sup>s<sup>−1</sup>
+    </div>
+
+    <p>
+      where σ = conductivity (C V<sup>−1</sup>s<sup>−1</sup>cm<sup>−1</sup>).
+    </p>
+  </div>
+`,
+
       procedure: [
         'Select the semiconductor material from the available options',
         'Set the desired current through the sample using the slider',
         'Apply a magnetic field perpendicular to the current using the field strength slider',
         'Observe the Hall voltage reading on the digital display',
-        'Calculate the Hall coefficient using the formula: RH = VH×t / (I×B), where t is the sample thickness',
+        'Calculate the Hall coefficient using the formula: R_H = V_H × t / (I × B), where t is the sample thickness',
         'Determine the carrier type based on the sign of the Hall coefficient',
       ],
       selfEvaluation: [
@@ -102,28 +137,81 @@ export const experimentsList: Experiment[] = [
       'Band gap calculation',
     ],
     sections: {
-      theory: `The band gap of a semiconductor is the energy difference between the top of the valence band and the bottom of the conduction band. It represents the minimum energy required to excite an electron from the valence band to the conduction band, where it can participate in conduction.
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-The resistivity of a semiconductor is temperature dependent and follows an exponential relationship:
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-ρ = ρ₀ × exp(Eg/2kT)
+  .highlight {
+    font-weight: bold;
+  }
+</style>
 
-Where:
-- ρ is the resistivity
-- ρ₀ is a material constant
-- Eg is the band gap energy
-- k is Boltzmann's constant (8.617 × 10⁻⁵ eV/K)
-- T is the absolute temperature in Kelvin
+<div>
+  <p class="text-block">
+    The <span class="highlight">Wheatstone bridge principle</span> is used in the Post Office Box experiment as it allows the accurate determination of an unknown resistance by balancing voltages, not by directly measuring current or voltage drops. Wheatstone’s condition for a balanced network is:
+  </p>
 
-Taking the natural logarithm:
+  <p class="formula">P / Q = R / S</p>
 
-ln(ρ) = ln(ρ₀) + Eg/2kT
+  <p class="text-block">
+    Among the four resistances, if three are known and one is unknown, the unknown resistance can be calculated. This is essential for detecting small variations in resistance in semiconductors with temperature, which are used to determine the <span class="highlight">band gap energy</span>.
+  </p>
 
-Since resistance is proportional to resistivity for a given sample, we can write:
+  <p class="text-block">
+    The band gap of a semiconductor is the energy difference between the top of the valence band and the bottom of the conduction band. It represents the minimum energy required to excite an electron from the valence band to the conduction band, enabling electrical conduction.
+  </p>
 
-ln(R) = ln(R₀) + Eg/2kT
+  <p class="text-block">
+    In intrinsic semiconductors, the resistivity is highly temperature-dependent and follows an exponential relationship:
+  </p>
 
-By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this slope, we can calculate the band gap energy Eg.`,
+  <p class="formula">
+    ρ = ρ<sub>0</sub> × exp( E<sub>g</sub> / 2k<sub>B</sub>T )
+  </p>
+
+  <p class="text-block">
+    where:<br>
+    ρ – resistivity<br>
+    ρ<sub>0</sub> – material-dependent constant<br>
+    E<sub>g</sub> – band gap energy (in eV)<br>
+    k<sub>B</sub> – Boltzmann constant (8.617 × 10<sup>−5</sup> eV/K)<br>
+    T – absolute temperature in Kelvin
+  </p>
+
+  <p class="text-block">Taking the natural logarithm on both sides:</p>
+
+  <p class="formula">ln(ρ) = ln(ρ<sub>0</sub>) + ( E<sub>g</sub> / 2kT )</p>
+
+  <p class="text-block">Since resistance R is proportional to resistivity ρ for a given sample, we can write:</p>
+
+  <p class="formula">ln(R) = ln(R<sub>0</sub>) + ( E<sub>g</sub> / 2kT )</p>
+
+  <p class="text-block">
+    Thus, a plot of ln(R) versus 1/T yields a straight line, whose slope is equal to:
+  </p>
+
+  <p class="formula">
+    slope = E<sub>g</sub> / 2k &nbsp;&nbsp;&nbsp;&nbsp;⇒&nbsp;&nbsp;&nbsp;&nbsp; E<sub>g</sub> = 2k × slope
+  </p>
+
+  <p class="text-block">
+    By experimentally determining the resistance R of the semiconductor at various temperatures and plotting ln(R) vs 1/T, the <span class="highlight">band gap energy</span> E<sub>g</sub> can be calculated from the slope of the graph.
+  </p>
+</div>
+`,
       procedure: [
         'Set up the post office box configuration',
         'Adjust the temperature controller to set the semiconductor sample to different temperatures',
