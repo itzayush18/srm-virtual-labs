@@ -24,7 +24,7 @@ const Footer = () => {
                 Tamil Nadu, India.
               </div>
               <img
-                src="../../../public/logo.png"
+                src="/logo.png"
                 alt="SRM Logo"
                 className="w-40 h-20 object-contain"
               />
