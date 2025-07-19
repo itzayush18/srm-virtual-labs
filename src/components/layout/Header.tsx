@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
@@ -16,7 +15,7 @@ const Header = () => {
         <Link to="/" className="flex items-center gap-2">
           <span className="text-lab-blue font-bold text-xl">Semiconductor Physics VLab</span>
         </Link>
-        
+
         {isMobile ? (
           <Sheet>
             <SheetTrigger asChild>
@@ -26,20 +25,17 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent>
               <nav className="flex flex-col space-y-4 mt-8">
-                <Link 
-                  to="/" 
-                  className="px-4 py-2 rounded-md hover:bg-gray-100 transition-colors"
-                >
+                <Link to="/" className="px-4 py-2 rounded-md hover:bg-gray-100 transition-colors">
                   Home
                 </Link>
-                <Link 
-                  to="/lab" 
+                <Link
+                  to="/lab"
                   className="px-4 py-2 rounded-md hover:bg-gray-100 transition-colors"
                 >
                   All Experiments
                 </Link>
-                <Link 
-                  to="/about" 
+                <Link
+                  to="/about"
                   className="px-4 py-2 rounded-md hover:bg-gray-100 transition-colors"
                 >
                   About VLab
@@ -49,27 +45,18 @@ const Header = () => {
           </Sheet>
         ) : (
           <nav className="flex items-center space-x-6">
-            <Link 
-              to="/" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary"
-              )}
-            >
+            <Link to="/" className={cn('text-sm font-medium transition-colors hover:text-primary')}>
               Home
             </Link>
-            <Link 
-              to="/lab" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary"
-              )}
+            <Link
+              to="/lab"
+              className={cn('text-sm font-medium transition-colors hover:text-primary')}
             >
               All Experiments
             </Link>
-            <Link 
-              to="/about" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary"
-              )}
+            <Link
+              to="/about"
+              className={cn('text-sm font-medium transition-colors hover:text-primary')}
             >
               About VLab
             </Link>
