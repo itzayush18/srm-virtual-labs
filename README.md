@@ -1,4 +1,3 @@
-
 # Semiconductor Virtual Labs
 
 Welcome to the **Semiconductor Virtual Labs** – an interactive platform designed to simulate and explore key semiconductor experiments in a visually rich and intuitive way. This project aims to make complex physics concepts accessible through dynamic visualizations, interactive UI, and real-time feedback.
@@ -6,12 +5,14 @@ Welcome to the **Semiconductor Virtual Labs** – an interactive platform design
 ## 🔬 Lab Overview
 
 Our virtual lab currently focuses on semiconductor experiments with special emphasis on:
+
 - **Hall Effect Experiment**: Visualize the relationship between magnetic field strength and the Hall voltage.
 - **IV Characteristics of a Diode**: Observe the dynamic change in current with respect to applied voltage.
 - **Zener Diode Behavior**: Analyze the breakdown behavior under reverse bias.
 - **Transistor Characteristics**: Interactive plotting of output and transfer characteristics.
 
 Each experiment features:
+
 - 📊 **Dynamic Graphs** rendered with `Recharts`
 - 🎛️ **Interactive Controls** for user-defined input
 - 📋 **Real-time Feedback** and explanation of observations
@@ -19,6 +20,7 @@ Each experiment features:
 ## 🚀 Tech Stack
 
 ### Frontend
+
 - **[React](https://reactjs.org/)**: Component-based UI
 - **[Vite](https://vitejs.dev/)**: Lightning-fast development and build tool
 - **[TypeScript](https://www.typescriptlang.org/)**: Type-safe JavaScript
@@ -32,11 +34,13 @@ Each experiment features:
 - **[React Query](https://tanstack.com/query/latest)**: Server state management and async fetching
 
 ### Additional Libraries
+
 - **Three.js + React Three Drei**: For future integration of 3D lab environments
 - **Lucide React**: Icon library
 - **Embla Carousel, Resizable Panels**: Enhanced UX components
 
 ### Dev Tooling
+
 - **ESLint**: Linting and code quality
 - **Prettier**: Code formatting
 - **TypeScript ESLint**: Static type checking
@@ -60,7 +64,9 @@ src/
 ---
 
 ## 🛠️ Setup
+
 x
+
 ```bash
 # Clone the repository
 git clone https://github.com/itzayush69/srm-virtual-labs.git
