@@ -33,18 +33,18 @@ export const experimentsList: Experiment[] = [
     sections: {
       theory: `The Hall effect is a phenomenon in which a voltage difference (the Hall voltage) is produced across an electrical conductor, transverse to an electric current in the conductor and to an applied magnetic field perpendicular to the current. The Hall coefficient can be used to determine the type and density of charge carriers in a material.
 
-When a current-carrying conductor is placed in a perpendicular magnetic field, the charge carriers experience a Lorentz force that pushes them to one side of the conductor. This creates a voltage difference across the conductor perpendicular to both the current direction and the magnetic field.
+      When a current-carrying conductor is placed in a perpendicular magnetic field, the charge carriers experience a Lorentz force that pushes them to one side of the conductor. This creates a voltage difference across the conductor perpendicular to both the current direction and the magnetic field.
 
-The Hall coefficient (RH) is given by:
+      The Hall coefficient (RH) is given by:
 
-RH = EH / (J × B)
+      RH = EH / (J × B)
 
-Where:
-- EH is the Hall electric field
-- J is the current density
-- B is the magnetic field
+      Where:
+        - EH is the Hall electric field
+        - J is the current density
+        - B is the magnetic field
 
-The sign of RH indicates the type of charge carriers: negative for electrons and positive for holes.`,
+      The sign of RH indicates the type of charge carriers: negative for electrons and positive for holes.`,
       procedure: [
         'Select the semiconductor material from the available options',
         'Set the desired current through the sample using the slider',
