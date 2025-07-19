@@ -129,7 +129,7 @@ export const experimentsList: Experiment[] = [
     id: 'band-gap',
     title: 'Band Gap Determination',
     shortDescription: 'Determine the band gap of semiconductor materials using a post office box',
-    imageUrl: '/Post-Office-Box.png',
+    imageUrl: '/Post-office-box.png',
     highlights: [
       'Temperature control',
       'Resistance measurement',
@@ -668,7 +668,7 @@ Where:
     id: 'carrier-mobility',
     title: 'Electron and Hole Mobility',
     shortDescription: 'Study electron and hole mobility vs doping concentration',
-    imageUrl: '/Electron-and-Hole-Mobility.png',
+    imageUrl: '/Electron-and-hole-mobility.png',
     highlights: [
       'Doping concentration variation',
       'Temperature dependence',
