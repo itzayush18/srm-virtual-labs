@@ -236,7 +236,7 @@ For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, 
     id: "ldr-characteristics",
     title: "V-I Characteristics of LDR",
     shortDescription: "Study the voltage-current characteristics of a light-dependent resistor",
-    imageUrl: 'https://i.ytimg.com/vi/vb5COWiuMmA/hqdefault.jpg',
+    imageUrl: '../../public/LDR.png',
     highlights: [
       "Adjustable light intensity",
       "Real-time V-I curve plotting",
