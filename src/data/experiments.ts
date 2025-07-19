@@ -1,4 +1,3 @@
-
 export interface Experiment {
   id: string;
   title: string;
@@ -21,15 +20,15 @@ export interface Experiment {
 }
 export const experimentsList: Experiment[] = [
   {
-    id: "hall-coefficient",
-    title: "Determination of Hall Coefficient",
+    id: 'hall-coefficient',
+    title: 'Determination of Hall Coefficient',
     imageUrl: '../../public/Hall-effect.png',
-    shortDescription: "Investigate the Hall effect and determine the carrier type",
+    shortDescription: 'Investigate the Hall effect and determine the carrier type',
     highlights: [
-      "Adjustable magnetic field",
-      "Variable current settings",
-      "Material selection",
-      "Carrier type determination"
+      'Adjustable magnetic field',
+      'Variable current settings',
+      'Material selection',
+      'Carrier type determination',
     ],
     sections: {
       theory: `The Hall effect is a phenomenon in which a voltage difference (the Hall voltage) is produced across an electrical conductor, transverse to an electric current in the conductor and to an applied magnetic field perpendicular to the current. The Hall coefficient can be used to determine the type and density of charge carriers in a material.
@@ -47,55 +46,60 @@ Where:
 
 The sign of RH indicates the type of charge carriers: negative for electrons and positive for holes.`,
       procedure: [
-        "Select the semiconductor material from the available options",
-        "Set the desired current through the sample using the slider",
-        "Apply a magnetic field perpendicular to the current using the field strength slider",
-        "Observe the Hall voltage reading on the digital display",
-        "Calculate the Hall coefficient using the formula: RH = VH×t / (I×B), where t is the sample thickness",
-        "Determine the carrier type based on the sign of the Hall coefficient"
+        'Select the semiconductor material from the available options',
+        'Set the desired current through the sample using the slider',
+        'Apply a magnetic field perpendicular to the current using the field strength slider',
+        'Observe the Hall voltage reading on the digital display',
+        'Calculate the Hall coefficient using the formula: RH = VH×t / (I×B), where t is the sample thickness',
+        'Determine the carrier type based on the sign of the Hall coefficient',
       ],
       selfEvaluation: [
         {
-          question: "What is the sign of the Hall coefficient for n-type semiconductors?",
-          options: ["Positive", "Negative", "Zero", "Depends on temperature"],
-          correctAnswer: 1
+          question: 'What is the sign of the Hall coefficient for n-type semiconductors?',
+          options: ['Positive', 'Negative', 'Zero', 'Depends on temperature'],
+          correctAnswer: 1,
         },
         {
-          question: "What happens to the Hall voltage if the magnetic field strength is doubled?",
-          options: ["It remains the same", "It doubles", "It becomes half", "It becomes four times"],
-          correctAnswer: 1
-        },
-        {
-          question: "The Hall effect can be used to determine:",
+          question: 'What happens to the Hall voltage if the magnetic field strength is doubled?',
           options: [
-            "Only carrier type",
-            "Only carrier concentration",
-            "Both carrier type and concentration",
-            "None of the above"
+            'It remains the same',
+            'It doubles',
+            'It becomes half',
+            'It becomes four times',
           ],
-          correctAnswer: 2
-        }
+          correctAnswer: 1,
+        },
+        {
+          question: 'The Hall effect can be used to determine:',
+          options: [
+            'Only carrier type',
+            'Only carrier concentration',
+            'Both carrier type and concentration',
+            'None of the above',
+          ],
+          correctAnswer: 2,
+        },
       ],
       references: [
         {
-          title: "Principles of Semiconductor Devices by Sima Dimitrijev"
+          title: 'Principles of Semiconductor Devices by Sima Dimitrijev',
         },
         {
-          title: "Semiconductor Physics and Devices by Donald A. Neamen"
-        }
-      ]
-    }
+          title: 'Semiconductor Physics and Devices by Donald A. Neamen',
+        },
+      ],
+    },
   },
   {
-    id: "band-gap",
-    title: "Band Gap Determination",
-    shortDescription: "Determine the band gap of semiconductor materials using a post office box",
+    id: 'band-gap',
+    title: 'Band Gap Determination',
+    shortDescription: 'Determine the band gap of semiconductor materials using a post office box',
     imageUrl: '../../public/Post-Office-Box.png',
     highlights: [
-      "Temperature control",
-      "Resistance measurement",
-      "ln(R) vs 1/T plotting",
-      "Band gap calculation"
+      'Temperature control',
+      'Resistance measurement',
+      'ln(R) vs 1/T plotting',
+      'Band gap calculation',
     ],
     sections: {
       theory: `The band gap of a semiconductor is the energy difference between the top of the valence band and the bottom of the conduction band. It represents the minimum energy required to excite an electron from the valence band to the conduction band, where it can participate in conduction.
@@ -121,50 +125,50 @@ ln(R) = ln(R₀) + Eg/2kT
 
 By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this slope, we can calculate the band gap energy Eg.`,
       procedure: [
-        "Set up the post office box configuration",
-        "Adjust the temperature controller to set the semiconductor sample to different temperatures",
-        "Measure the resistance at each temperature",
-        "Record the resistance values and corresponding temperatures",
-        "Plot ln(R) against 1/T (in Kelvin)",
-        "Calculate the slope of the line and determine the band gap using the formula: Eg = 2k × slope, where k is Boltzmann's constant"
+        'Set up the post office box configuration',
+        'Adjust the temperature controller to set the semiconductor sample to different temperatures',
+        'Measure the resistance at each temperature',
+        'Record the resistance values and corresponding temperatures',
+        'Plot ln(R) against 1/T (in Kelvin)',
+        "Calculate the slope of the line and determine the band gap using the formula: Eg = 2k × slope, where k is Boltzmann's constant",
       ],
       selfEvaluation: [
         {
-          question: "In the equation ln(R) = ln(R₀) + Eg/2kT, what does k represent?",
-          options: ["Kelvin", "Kinetic energy", "Boltzmann's constant", "Wave vector"],
-          correctAnswer: 2
+          question: 'In the equation ln(R) = ln(R₀) + Eg/2kT, what does k represent?',
+          options: ['Kelvin', 'Kinetic energy', "Boltzmann's constant", 'Wave vector'],
+          correctAnswer: 2,
         },
         {
-          question: "What is the expected trend when plotting ln(R) vs 1/T for a semiconductor?",
-          options: ["Horizontal line", "Vertical line", "Positive slope", "Negative slope"],
-          correctAnswer: 2
+          question: 'What is the expected trend when plotting ln(R) vs 1/T for a semiconductor?',
+          options: ['Horizontal line', 'Vertical line', 'Positive slope', 'Negative slope'],
+          correctAnswer: 2,
         },
         {
-          question: "The unit of band gap energy is typically expressed in:",
-          options: ["Joules", "Electron volts (eV)", "Kelvin", "Amperes"],
-          correctAnswer: 1
-        }
+          question: 'The unit of band gap energy is typically expressed in:',
+          options: ['Joules', 'Electron volts (eV)', 'Kelvin', 'Amperes'],
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Solid State Physics by N.W. Ashcroft and N.D. Mermin"
+          title: 'Solid State Physics by N.W. Ashcroft and N.D. Mermin',
         },
         {
-          title: "Semiconductor Material and Device Characterization by Dieter K. Schroder"
-        }
-      ]
-    }
+          title: 'Semiconductor Material and Device Characterization by Dieter K. Schroder',
+        },
+      ],
+    },
   },
   {
-    id: "four-probe",
-    title: "Four-Probe Method",
-    shortDescription: "Measure resistivity of semiconductor materials using the four-probe method",
+    id: 'four-probe',
+    title: 'Four-Probe Method',
+    shortDescription: 'Measure resistivity of semiconductor materials using the four-probe method',
     imageUrl: '../../public/Four-probe-method.png',
     highlights: [
-      "Adjustable probe spacing",
-      "Material selection",
-      "Contact-less measurement",
-      "Temperature effects"
+      'Adjustable probe spacing',
+      'Material selection',
+      'Contact-less measurement',
+      'Temperature effects',
     ],
     sections: {
       theory: `The four-probe method is a technique used to measure the resistivity of semiconductor materials. It overcomes the limitations of two-probe methods by eliminating the effects of contact resistance, spreading resistance, and other parasitic resistances.
@@ -183,65 +187,66 @@ Where:
 
 For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, and for very thin samples (thickness much less than probe spacing), CF = (π/ln(2)).`,
       procedure: [
-        "Place the semiconductor sample on the measurement platform",
-        "Adjust the four probes to make good contact with the sample, maintaining equal spacing",
-        "Set the desired current using the current source control",
-        "Measure the voltage between the inner two probes using the voltmeter",
-        "Calculate the resistivity using the formula: ρ = 2πs × (V/I) × CF, where s is the probe spacing",
-        "Repeat the measurement at different locations or with different probe spacings to confirm the results"
+        'Place the semiconductor sample on the measurement platform',
+        'Adjust the four probes to make good contact with the sample, maintaining equal spacing',
+        'Set the desired current using the current source control',
+        'Measure the voltage between the inner two probes using the voltmeter',
+        'Calculate the resistivity using the formula: ρ = 2πs × (V/I) × CF, where s is the probe spacing',
+        'Repeat the measurement at different locations or with different probe spacings to confirm the results',
       ],
       selfEvaluation: [
         {
-          question: "Why is the four-probe method preferred over the two-probe method for resistivity measurements?",
+          question:
+            'Why is the four-probe method preferred over the two-probe method for resistivity measurements?',
           options: [
             "It's easier to set up",
-            "It eliminates contact resistance effects",
-            "It requires less equipment",
-            "It works at higher temperatures"
+            'It eliminates contact resistance effects',
+            'It requires less equipment',
+            'It works at higher temperatures',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "In the four-probe method, current is passed through:",
+          question: 'In the four-probe method, current is passed through:',
           options: [
-            "All four probes",
-            "Only the inner two probes",
-            "Only the outer two probes",
-            "Alternating pairs of probes"
+            'All four probes',
+            'Only the inner two probes',
+            'Only the outer two probes',
+            'Alternating pairs of probes',
           ],
-          correctAnswer: 2
+          correctAnswer: 2,
         },
         {
-          question: "How does probe spacing affect the measured resistivity in a four-probe setup?",
+          question: 'How does probe spacing affect the measured resistivity in a four-probe setup?',
           options: [
-            "It has no effect",
-            "Resistivity is directly proportional to spacing",
-            "Resistivity is inversely proportional to spacing",
-            "The relationship is non-linear"
+            'It has no effect',
+            'Resistivity is directly proportional to spacing',
+            'Resistivity is inversely proportional to spacing',
+            'The relationship is non-linear',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Semiconductor Measurements and Instrumentation by W.R. Runyan"
+          title: 'Semiconductor Measurements and Instrumentation by W.R. Runyan',
         },
         {
-          title: "Electronic Properties of Materials by Rolf E. Hummel"
-        }
-      ]
-    }
+          title: 'Electronic Properties of Materials by Rolf E. Hummel',
+        },
+      ],
+    },
   },
   {
-    id: "ldr-characteristics",
-    title: "V-I Characteristics of LDR",
-    shortDescription: "Study the voltage-current characteristics of a light-dependent resistor",
+    id: 'ldr-characteristics',
+    title: 'V-I Characteristics of LDR',
+    shortDescription: 'Study the voltage-current characteristics of a light-dependent resistor',
     imageUrl: '../../public/LDR.png',
     highlights: [
-      "Adjustable light intensity",
-      "Real-time V-I curve plotting",
-      "Resistance vs illumination analysis",
-      "Temperature effects"
+      'Adjustable light intensity',
+      'Real-time V-I curve plotting',
+      'Resistance vs illumination analysis',
+      'Temperature effects',
     ],
     sections: {
       theory: `A Light Dependent Resistor (LDR) or photoresistor is a light-controlled variable resistor. The resistance of an LDR decreases with increasing incident light intensity. This property makes LDRs useful in light-sensing applications.
@@ -261,56 +266,57 @@ V = I × R
 
 However, as the illumination changes, the resistance changes, resulting in a family of V-I curves for different illumination levels.`,
       procedure: [
-        "Connect the LDR to the circuit setup with variable voltage source",
-        "Set the light source at a specific intensity using the control slider",
-        "Vary the applied voltage in small increments and record the corresponding current",
-        "Repeat the measurements for different light intensities",
-        "Plot the V-I curves for each light intensity",
-        "Calculate the resistance at each operating point using R = V/I",
-        "Plot the resistance vs. illumination curve to determine the sensitivity of the LDR"
+        'Connect the LDR to the circuit setup with variable voltage source',
+        'Set the light source at a specific intensity using the control slider',
+        'Vary the applied voltage in small increments and record the corresponding current',
+        'Repeat the measurements for different light intensities',
+        'Plot the V-I curves for each light intensity',
+        'Calculate the resistance at each operating point using R = V/I',
+        'Plot the resistance vs. illumination curve to determine the sensitivity of the LDR',
       ],
       selfEvaluation: [
         {
-          question: "How does the resistance of an LDR change with increasing light intensity?",
-          options: ["Increases", "Decreases", "Remains constant", "First increases then decreases"],
-          correctAnswer: 1
+          question: 'How does the resistance of an LDR change with increasing light intensity?',
+          options: ['Increases', 'Decreases', 'Remains constant', 'First increases then decreases'],
+          correctAnswer: 1,
         },
         {
-          question: "Which of the following materials is commonly used in LDRs?",
-          options: ["Silicon", "Germanium", "Cadmium Sulfide (CdS)", "Gallium Arsenide (GaAs)"],
-          correctAnswer: 2
+          question: 'Which of the following materials is commonly used in LDRs?',
+          options: ['Silicon', 'Germanium', 'Cadmium Sulfide (CdS)', 'Gallium Arsenide (GaAs)'],
+          correctAnswer: 2,
         },
         {
-          question: "What is the mathematical relationship between resistance and illumination for an LDR?",
+          question:
+            'What is the mathematical relationship between resistance and illumination for an LDR?',
           options: [
-            "Linear relationship",
-            "Logarithmic relationship",
-            "Exponential relationship",
-            "Power law relationship"
+            'Linear relationship',
+            'Logarithmic relationship',
+            'Exponential relationship',
+            'Power law relationship',
           ],
-          correctAnswer: 3
-        }
+          correctAnswer: 3,
+        },
       ],
       references: [
         {
-          title: "Photonic Devices by Jia-Ming Liu"
+          title: 'Photonic Devices by Jia-Ming Liu',
         },
         {
-          title: "Fundamentals of Photonics by B.E.A. Saleh and M.C. Teich"
-        }
-      ]
-    }
+          title: 'Fundamentals of Photonics by B.E.A. Saleh and M.C. Teich',
+        },
+      ],
+    },
   },
   {
-    id: "solar-cell",
-    title: "Solar Cell Characteristics",
-    shortDescription: "Study V-I characteristics and efficiency of a solar cell",
+    id: 'solar-cell',
+    title: 'Solar Cell Characteristics',
+    shortDescription: 'Study V-I characteristics and efficiency of a solar cell',
     imageUrl: '../../public/Solar-Cell.png',
     highlights: [
-      "Adjustable light intensity",
-      "Load resistance variation",
-      "Efficiency calculation",
-      "Maximum power point tracking"
+      'Adjustable light intensity',
+      'Load resistance variation',
+      'Efficiency calculation',
+      'Maximum power point tracking',
     ],
     sections: {
       theory: `A solar cell, or photovoltaic cell, is a device that converts light energy directly into electricity through the photovoltaic effect. When light is absorbed by a semiconductor material, electron-hole pairs are generated, which can be separated by the built-in electric field at a p-n junction, creating a voltage and current.
@@ -343,67 +349,70 @@ Where:
 - Pin is the incident light power
 - Vmp and Imp are the voltage and current at maximum power point`,
       procedure: [
-        "Connect the solar cell to the measurement circuit",
-        "Set the desired light intensity using the control slider",
-        "Vary the load resistance to measure the current and voltage at different operating points",
-        "Record the current and voltage values for each load resistance setting",
-        "Plot the I-V curve and identify the short-circuit current (Isc) and open-circuit voltage (Voc)",
-        "Calculate the power at each operating point using P = V × I and identify the maximum power point",
-        "Calculate the fill factor and efficiency of the solar cell",
-        "Repeat the measurements for different light intensities to study the effect on cell performance"
+        'Connect the solar cell to the measurement circuit',
+        'Set the desired light intensity using the control slider',
+        'Vary the load resistance to measure the current and voltage at different operating points',
+        'Record the current and voltage values for each load resistance setting',
+        'Plot the I-V curve and identify the short-circuit current (Isc) and open-circuit voltage (Voc)',
+        'Calculate the power at each operating point using P = V × I and identify the maximum power point',
+        'Calculate the fill factor and efficiency of the solar cell',
+        'Repeat the measurements for different light intensities to study the effect on cell performance',
       ],
       selfEvaluation: [
         {
-          question: "What is the fill factor of a solar cell?",
+          question: 'What is the fill factor of a solar cell?',
           options: [
-            "The ratio of maximum power to the product of Voc and Isc",
-            "The ratio of output power to input power",
-            "The ratio of Voc to Isc",
-            "The maximum efficiency possible"
+            'The ratio of maximum power to the product of Voc and Isc',
+            'The ratio of output power to input power',
+            'The ratio of Voc to Isc',
+            'The maximum efficiency possible',
           ],
-          correctAnswer: 0
+          correctAnswer: 0,
         },
         {
-          question: "How does increasing light intensity affect the short-circuit current of a solar cell?",
+          question:
+            'How does increasing light intensity affect the short-circuit current of a solar cell?',
           options: [
-            "It decreases",
-            "It increases",
-            "It remains constant",
-            "It first increases then decreases"
+            'It decreases',
+            'It increases',
+            'It remains constant',
+            'It first increases then decreases',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "The maximum power point of a solar cell is found at:",
+          question: 'The maximum power point of a solar cell is found at:',
           options: [
-            "Short-circuit current",
-            "Open-circuit voltage",
-            "The point where the product V×I is maximum",
-            "The point where resistance is minimum"
+            'Short-circuit current',
+            'Open-circuit voltage',
+            'The point where the product V×I is maximum',
+            'The point where resistance is minimum',
           ],
-          correctAnswer: 2
-        }
+          correctAnswer: 2,
+        },
       ],
       references: [
         {
-          title: "Physics of Semiconductor Devices by S.M. Sze"
+          title: 'Physics of Semiconductor Devices by S.M. Sze',
         },
         {
-          title: "Solar Cells: Operating Principles, Technology and System Applications by Martin A. Green"
-        }
-      ]
-    }
+          title:
+            'Solar Cells: Operating Principles, Technology and System Applications by Martin A. Green',
+        },
+      ],
+    },
   },
   {
-    id: "pn-junction",
-    title: "PN Junction Diode Characteristics",
-    shortDescription: "Study the characteristics of PN junction diodes under forward and reverse bias",
+    id: 'pn-junction',
+    title: 'PN Junction Diode Characteristics',
+    shortDescription:
+      'Study the characteristics of PN junction diodes under forward and reverse bias',
     imageUrl: 'https://i.ytimg.com/vi/0yyFiJw5emw/maxresdefault.jpg',
     highlights: [
-      "Depletion region visualization",
-      "Temperature effects",
-      "Breakdown voltage study",
-      "Diode parameters extraction"
+      'Depletion region visualization',
+      'Temperature effects',
+      'Breakdown voltage study',
+      'Diode parameters extraction',
     ],
     sections: {
       theory: `A p-n junction diode is formed by joining p-type and n-type semiconductor materials. At the junction, a depletion region forms due to diffusion of charge carriers, creating a built-in electric field.
@@ -429,63 +438,64 @@ Key parameters of a diode include:
 - Reverse saturation current
 - Ideality factor`,
       procedure: [
-        "Connect the diode to the circuit setup with variable voltage source",
-        "Start with zero bias and gradually increase the forward bias voltage",
-        "Record the current at each voltage step",
-        "Reverse the polarity and gradually increase the reverse bias voltage",
-        "Record the current at each voltage step in reverse bias",
-        "Plot the complete I-V characteristic curve",
-        "Observe the depletion region visualization at different bias conditions",
-        "Repeat the measurements at different temperatures to study temperature effects",
-        "Extract diode parameters such as saturation current and ideality factor from the measurements"
+        'Connect the diode to the circuit setup with variable voltage source',
+        'Start with zero bias and gradually increase the forward bias voltage',
+        'Record the current at each voltage step',
+        'Reverse the polarity and gradually increase the reverse bias voltage',
+        'Record the current at each voltage step in reverse bias',
+        'Plot the complete I-V characteristic curve',
+        'Observe the depletion region visualization at different bias conditions',
+        'Repeat the measurements at different temperatures to study temperature effects',
+        'Extract diode parameters such as saturation current and ideality factor from the measurements',
       ],
       selfEvaluation: [
         {
-          question: "What happens to the depletion region width when a p-n junction diode is forward biased?",
-          options: ["Increases", "Decreases", "Remains unchanged", "Disappears completely"],
-          correctAnswer: 1
+          question:
+            'What happens to the depletion region width when a p-n junction diode is forward biased?',
+          options: ['Increases', 'Decreases', 'Remains unchanged', 'Disappears completely'],
+          correctAnswer: 1,
         },
         {
-          question: "The reverse saturation current in a p-n junction diode is primarily due to:",
+          question: 'The reverse saturation current in a p-n junction diode is primarily due to:',
           options: [
-            "Majority carrier drift",
-            "Majority carrier diffusion",
-            "Minority carrier drift",
-            "Minority carrier diffusion"
+            'Majority carrier drift',
+            'Majority carrier diffusion',
+            'Minority carrier drift',
+            'Minority carrier diffusion',
           ],
-          correctAnswer: 3
+          correctAnswer: 3,
         },
         {
-          question: "How does temperature affect the forward voltage drop of a silicon diode?",
+          question: 'How does temperature affect the forward voltage drop of a silicon diode?',
           options: [
-            "Increases with temperature",
-            "Decreases with temperature",
-            "Remains constant with temperature",
-            "First increases then decreases with temperature"
+            'Increases with temperature',
+            'Decreases with temperature',
+            'Remains constant with temperature',
+            'First increases then decreases with temperature',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Semiconductor Physics and Devices by Donald A. Neamen"
+          title: 'Semiconductor Physics and Devices by Donald A. Neamen',
         },
         {
-          title: "Solid State Electronic Devices by Ben G. Streetman and Sanjay Banerjee"
-        }
-      ]
-    }
+          title: 'Solid State Electronic Devices by Ben G. Streetman and Sanjay Banerjee',
+        },
+      ],
+    },
   },
   {
-    id: "photocell",
-    title: "Photocell Characteristics",
-    shortDescription: "Study illumination and V-I characteristics of a photocell",
+    id: 'photocell',
+    title: 'Photocell Characteristics',
+    shortDescription: 'Study illumination and V-I characteristics of a photocell',
     imageUrl: '../../public/photo-cell.png',
     highlights: [
-      "Adjustable light wavelength",
-      "Variable light intensity",
-      "Spectral response analysis",
-      "Quantum efficiency calculation"
+      'Adjustable light wavelength',
+      'Variable light intensity',
+      'Spectral response analysis',
+      'Quantum efficiency calculation',
     ],
     sections: {
       theory: `A photocell, or photoelectric cell, is a device that converts light energy into electrical energy based on the photoelectric effect. When light with sufficient energy (above the work function of the material) strikes the photosensitive surface, electrons are emitted and can be collected to generate a current.
@@ -513,68 +523,69 @@ Where:
 - v is the frequency of the incident light
 - φ is the work function of the material`,
       procedure: [
-        "Set up the photocell in the measurement circuit",
-        "Adjust the light source to the desired wavelength using the monochromator",
-        "Set the light intensity using the control slider",
-        "Measure the photocurrent at different light intensities for a fixed wavelength",
-        "Plot the photocurrent vs. light intensity curve",
-        "Repeat the measurements for different wavelengths of light",
-        "Plot the spectral response curve (photocurrent vs. wavelength) at constant intensity",
-        "Calculate the quantum efficiency at different wavelengths",
-        "Determine the threshold frequency and work function of the photosensitive material"
+        'Set up the photocell in the measurement circuit',
+        'Adjust the light source to the desired wavelength using the monochromator',
+        'Set the light intensity using the control slider',
+        'Measure the photocurrent at different light intensities for a fixed wavelength',
+        'Plot the photocurrent vs. light intensity curve',
+        'Repeat the measurements for different wavelengths of light',
+        'Plot the spectral response curve (photocurrent vs. wavelength) at constant intensity',
+        'Calculate the quantum efficiency at different wavelengths',
+        'Determine the threshold frequency and work function of the photosensitive material',
       ],
       selfEvaluation: [
         {
-          question: "The photoelectric effect occurs when:",
+          question: 'The photoelectric effect occurs when:',
           options: [
-            "Electrons absorb thermal energy and escape",
-            "Electrons absorb light energy and escape",
-            "Protons absorb light energy and escape",
-            "Neutrons absorb light energy and escape"
+            'Electrons absorb thermal energy and escape',
+            'Electrons absorb light energy and escape',
+            'Protons absorb light energy and escape',
+            'Neutrons absorb light energy and escape',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "According to Einstein's photoelectric equation, the maximum kinetic energy of emitted electrons depends on:",
+          question:
+            "According to Einstein's photoelectric equation, the maximum kinetic energy of emitted electrons depends on:",
           options: [
-            "Only the intensity of light",
-            "Only the frequency of light",
-            "Both intensity and frequency of light",
-            "Neither intensity nor frequency of light"
+            'Only the intensity of light',
+            'Only the frequency of light',
+            'Both intensity and frequency of light',
+            'Neither intensity nor frequency of light',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "The quantum efficiency of a photocell is defined as:",
+          question: 'The quantum efficiency of a photocell is defined as:',
           options: [
-            "The ratio of output power to input power",
-            "The ratio of electrons generated to incident photons",
-            "The ratio of output current to input voltage",
-            "The ratio of input current to output voltage"
+            'The ratio of output power to input power',
+            'The ratio of electrons generated to incident photons',
+            'The ratio of output current to input voltage',
+            'The ratio of input current to output voltage',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Optoelectronics: An Introduction by J. Wilson and J.F.B. Hawkes"
+          title: 'Optoelectronics: An Introduction by J. Wilson and J.F.B. Hawkes',
         },
         {
-          title: "Introduction to Solid State Physics by Charles Kittel"
-        }
-      ]
-    }
+          title: 'Introduction to Solid State Physics by Charles Kittel',
+        },
+      ],
+    },
   },
   {
-    id: "carrier-mobility",
-    title: "Electron and Hole Mobility",
-    shortDescription: "Study electron and hole mobility vs doping concentration",
+    id: 'carrier-mobility',
+    title: 'Electron and Hole Mobility',
+    shortDescription: 'Study electron and hole mobility vs doping concentration',
     imageUrl: '../../public/Electron-and-Hole-Mobility.png',
     highlights: [
-      "Doping concentration variation",
-      "Temperature dependence",
-      "Scattering mechanisms",
-      "Mobility calculation"
+      'Doping concentration variation',
+      'Temperature dependence',
+      'Scattering mechanisms',
+      'Mobility calculation',
     ],
     sections: {
       theory: `Carrier mobility is a measure of how quickly an electron or hole can move through a semiconductor when pulled by an electric field. It is defined as the proportionality constant between the drift velocity and the applied electric field:
@@ -604,62 +615,65 @@ The combined mobility (μ) considering both mechanisms follows Matthiessen's rul
 
 As doping concentration increases, impurity scattering becomes more significant, reducing mobility.`,
       procedure: [
-        "Select the semiconductor material (Si, Ge, or GaAs)",
-        "Set the desired doping concentration using the slider",
-        "Choose the dopant type (n-type or p-type)",
-        "Adjust the temperature if studying temperature effects",
-        "Calculate the electron and hole mobilities based on the selected parameters",
-        "Plot the mobility vs. doping concentration curve",
-        "Repeat the calculations for different temperatures to observe temperature dependence",
-        "Compare the mobility values with theoretical models and experimental data"
+        'Select the semiconductor material (Si, Ge, or GaAs)',
+        'Set the desired doping concentration using the slider',
+        'Choose the dopant type (n-type or p-type)',
+        'Adjust the temperature if studying temperature effects',
+        'Calculate the electron and hole mobilities based on the selected parameters',
+        'Plot the mobility vs. doping concentration curve',
+        'Repeat the calculations for different temperatures to observe temperature dependence',
+        'Compare the mobility values with theoretical models and experimental data',
       ],
       selfEvaluation: [
         {
-          question: "How does electron mobility in silicon compare to hole mobility at the same doping level?",
+          question:
+            'How does electron mobility in silicon compare to hole mobility at the same doping level?',
           options: [
-            "Electron mobility is lower",
-            "Electron mobility is higher",
-            "They are exactly the same",
-            "It depends on temperature only"
+            'Electron mobility is lower',
+            'Electron mobility is higher',
+            'They are exactly the same',
+            'It depends on temperature only',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "As doping concentration increases, carrier mobility generally:",
-          options: ["Increases", "Decreases", "Remains constant", "First increases then decreases"],
-          correctAnswer: 1
+          question: 'As doping concentration increases, carrier mobility generally:',
+          options: ['Increases', 'Decreases', 'Remains constant', 'First increases then decreases'],
+          correctAnswer: 1,
         },
         {
-          question: "The dominant scattering mechanism limiting mobility at high temperatures is:",
+          question: 'The dominant scattering mechanism limiting mobility at high temperatures is:',
           options: [
-            "Ionized impurity scattering",
-            "Lattice (phonon) scattering",
-            "Carrier-carrier scattering",
-            "Surface scattering"
+            'Ionized impurity scattering',
+            'Lattice (phonon) scattering',
+            'Carrier-carrier scattering',
+            'Surface scattering',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Semiconductor Physics and Devices by Donald A. Neamen"
+          title: 'Semiconductor Physics and Devices by Donald A. Neamen',
         },
         {
-          title: "Fundamentals of Semiconductor Devices by Betty Lise Anderson and Richard L. Anderson"
-        }
-      ]
-    }
+          title:
+            'Fundamentals of Semiconductor Devices by Betty Lise Anderson and Richard L. Anderson',
+        },
+      ],
+    },
   },
   {
-    id: "fermi-function",
-    title: "Fermi Function Determination",
-    shortDescription: "Visualize and study the Fermi-Dirac distribution function at different temperatures",
+    id: 'fermi-function',
+    title: 'Fermi Function Determination',
+    shortDescription:
+      'Visualize and study the Fermi-Dirac distribution function at different temperatures',
     imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
-      "Temperature variation",
-      "Interactive visualization",
-      "Energy level adjustment",
-      "Semiconductor doping effects"
+      'Temperature variation',
+      'Interactive visualization',
+      'Energy level adjustment',
+      'Semiconductor doping effects',
     ],
     sections: {
       theory: `The Fermi-Dirac distribution function describes the probability of an energy state being occupied by an electron in a system of fermions at thermal equilibrium. It is given by:
@@ -682,67 +696,67 @@ The temperature dependence of the Fermi function is significant:
 - At T = 0 K, the function is a step function (states below EF are filled, above are empty)
 - As T increases, the function becomes smoother, with states near EF having partial occupancy probabilities`,
       procedure: [
-        "Select the semiconductor material (Si, Ge, or GaAs)",
-        "Set the doping type (intrinsic, n-type, or p-type) and concentration",
-        "Adjust the temperature using the slider",
-        "Observe the Fermi-Dirac distribution function plotted against energy",
-        "Note the position of the Fermi level relative to the band edges",
-        "Study how the distribution changes with increasing temperature",
-        "Compare the carrier concentration in conduction and valence bands at different temperatures",
-        "Calculate the carrier concentrations using the Fermi function and density of states"
+        'Select the semiconductor material (Si, Ge, or GaAs)',
+        'Set the doping type (intrinsic, n-type, or p-type) and concentration',
+        'Adjust the temperature using the slider',
+        'Observe the Fermi-Dirac distribution function plotted against energy',
+        'Note the position of the Fermi level relative to the band edges',
+        'Study how the distribution changes with increasing temperature',
+        'Compare the carrier concentration in conduction and valence bands at different temperatures',
+        'Calculate the carrier concentrations using the Fermi function and density of states',
       ],
       selfEvaluation: [
         {
-          question: "At what energy level is the Fermi function value exactly 0.5?",
+          question: 'At what energy level is the Fermi function value exactly 0.5?',
           options: [
-            "At the conduction band edge",
-            "At the valence band edge",
-            "At the Fermi energy level",
-            "At the middle of the band gap"
+            'At the conduction band edge',
+            'At the valence band edge',
+            'At the Fermi energy level',
+            'At the middle of the band gap',
           ],
-          correctAnswer: 2
+          correctAnswer: 2,
         },
         {
-          question: "How does the Fermi function change as temperature increases?",
+          question: 'How does the Fermi function change as temperature increases?',
           options: [
-            "It becomes steeper at the Fermi level",
-            "It becomes more gradual (less steep) around the Fermi level",
-            "It remains unchanged with temperature",
-            "It shifts to higher energies without changing shape"
+            'It becomes steeper at the Fermi level',
+            'It becomes more gradual (less steep) around the Fermi level',
+            'It remains unchanged with temperature',
+            'It shifts to higher energies without changing shape',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "In an n-type semiconductor, where is the Fermi level located?",
+          question: 'In an n-type semiconductor, where is the Fermi level located?',
           options: [
-            "Below the valence band",
-            "In the middle of the band gap",
-            "Closer to the conduction band",
-            "Closer to the valence band"
+            'Below the valence band',
+            'In the middle of the band gap',
+            'Closer to the conduction band',
+            'Closer to the valence band',
           ],
-          correctAnswer: 2
-        }
+          correctAnswer: 2,
+        },
       ],
       references: [
         {
-          title: "Solid State Physics by Neil W. Ashcroft and N. David Mermin"
+          title: 'Solid State Physics by Neil W. Ashcroft and N. David Mermin',
         },
         {
-          title: "Principles of Electronic Materials and Devices by S.O. Kasap"
-        }
-      ]
-    }
+          title: 'Principles of Electronic Materials and Devices by S.O. Kasap',
+        },
+      ],
+    },
   },
   {
-    id: "optical-fiber",
-    title: "Optical Fiber Attenuation",
-    shortDescription: "Study attenuation and propagation in optical fiber cables",
+    id: 'optical-fiber',
+    title: 'Optical Fiber Attenuation',
+    shortDescription: 'Study attenuation and propagation in optical fiber cables',
     imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
-      "Light propagation visualization",
-      "Attenuation calculation",
-      "Wavelength dependence",
-      "Fiber parameter adjustment"
+      'Light propagation visualization',
+      'Attenuation calculation',
+      'Wavelength dependence',
+      'Fiber parameter adjustment',
     ],
     sections: {
       theory: `Optical fibers are waveguides that transmit light through total internal reflection. The attenuation (loss) in optical fibers is a measure of the decrease in optical power as light travels through the fiber, typically expressed in decibels per kilometer (dB/km).
@@ -774,57 +788,58 @@ Where:
 - n₁ is the core refractive index
 - n₂ is the cladding refractive index`,
       procedure: [
-        "Select the fiber type (single-mode or multi-mode)",
-        "Set the wavelength of light using the slider",
-        "Adjust the fiber parameters (core diameter, NA, etc.)",
-        "Visualize the light propagation in the fiber",
-        "Measure the input and output power for different fiber lengths",
-        "Calculate the attenuation coefficient using the formula: α = (10/L) × log₁₀(Pin/Pout)",
-        "Plot the attenuation vs. wavelength curve",
-        "Study the effect of bending on attenuation by adjusting the bend radius"
+        'Select the fiber type (single-mode or multi-mode)',
+        'Set the wavelength of light using the slider',
+        'Adjust the fiber parameters (core diameter, NA, etc.)',
+        'Visualize the light propagation in the fiber',
+        'Measure the input and output power for different fiber lengths',
+        'Calculate the attenuation coefficient using the formula: α = (10/L) × log₁₀(Pin/Pout)',
+        'Plot the attenuation vs. wavelength curve',
+        'Study the effect of bending on attenuation by adjusting the bend radius',
       ],
       selfEvaluation: [
         {
-          question: "Which of the following wavelengths typically has the lowest attenuation in silica optical fibers?",
-          options: ["850 nm", "1310 nm", "1550 nm", "2000 nm"],
-          correctAnswer: 2
+          question:
+            'Which of the following wavelengths typically has the lowest attenuation in silica optical fibers?',
+          options: ['850 nm', '1310 nm', '1550 nm', '2000 nm'],
+          correctAnswer: 2,
         },
         {
-          question: "Rayleigh scattering in optical fibers is proportional to:",
-          options: ["λ⁴", "λ²", "1/λ²", "1/λ⁴"],
-          correctAnswer: 3
+          question: 'Rayleigh scattering in optical fibers is proportional to:',
+          options: ['λ⁴', 'λ²', '1/λ²', '1/λ⁴'],
+          correctAnswer: 3,
         },
         {
-          question: "The numerical aperture (NA) of an optical fiber is related to:",
+          question: 'The numerical aperture (NA) of an optical fiber is related to:',
           options: [
-            "Core diameter only",
-            "The maximum acceptance angle of light entering the fiber",
-            "The wavelength of transmitted light only",
-            "The fiber length"
+            'Core diameter only',
+            'The maximum acceptance angle of light entering the fiber',
+            'The wavelength of transmitted light only',
+            'The fiber length',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Fiber-Optic Communication Systems by Govind P. Agrawal"
+          title: 'Fiber-Optic Communication Systems by Govind P. Agrawal',
         },
         {
-          title: "Optical Fiber Communications: Principles and Practice by John M. Senior"
-        }
-      ]
-    }
+          title: 'Optical Fiber Communications: Principles and Practice by John M. Senior',
+        },
+      ],
+    },
   },
   {
-    id: "diode-iv",
-    title: "Diode I-V Characteristics",
-    shortDescription: "Study I-V characteristics of diodes using computational tools",
+    id: 'diode-iv',
+    title: 'Diode I-V Characteristics',
+    shortDescription: 'Study I-V characteristics of diodes using computational tools',
     imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
-      "Parameter inputs",
-      "Automatic plotting",
-      "Temperature variation",
-      "Multiple diode comparison"
+      'Parameter inputs',
+      'Automatic plotting',
+      'Temperature variation',
+      'Multiple diode comparison',
     ],
     sections: {
       theory: `The current-voltage (I-V) characteristics of a diode can be modeled using the Shockley diode equation:
@@ -857,52 +872,58 @@ For real diodes, the I-V characteristics are also affected by series resistance 
 
 I = Is × [exp(q(V-IRs)/nkT) - 1] + (V-IRs)/Rp`,
       procedure: [
-        "Select the diode type from available options (Si, Ge, Schottky, etc.)",
-        "Set diode parameters: saturation current (Is), ideality factor (n), series resistance (Rs), etc.",
-        "Set the temperature using the temperature control",
-        "Define the voltage range for analysis",
-        "Run the simulation to calculate and plot the I-V curve",
-        "Observe the forward and reverse characteristics",
-        "Analyze the effects of changing parameters on the I-V characteristics",
-        "Compare the computational results with theoretical models"
+        'Select the diode type from available options (Si, Ge, Schottky, etc.)',
+        'Set diode parameters: saturation current (Is), ideality factor (n), series resistance (Rs), etc.',
+        'Set the temperature using the temperature control',
+        'Define the voltage range for analysis',
+        'Run the simulation to calculate and plot the I-V curve',
+        'Observe the forward and reverse characteristics',
+        'Analyze the effects of changing parameters on the I-V characteristics',
+        'Compare the computational results with theoretical models',
       ],
       selfEvaluation: [
         {
-          question: "What is the ideality factor for an ideal diode?",
-          options: ["0", "1", "2", "Infinity"],
-          correctAnswer: 1
+          question: 'What is the ideality factor for an ideal diode?',
+          options: ['0', '1', '2', 'Infinity'],
+          correctAnswer: 1,
         },
         {
-          question: "How does an increase in temperature affect the forward voltage drop of a silicon diode at constant current?",
-          options: ["Increases", "Decreases", "Remains unchanged", "First increases then decreases"],
-          correctAnswer: 1
+          question:
+            'How does an increase in temperature affect the forward voltage drop of a silicon diode at constant current?',
+          options: [
+            'Increases',
+            'Decreases',
+            'Remains unchanged',
+            'First increases then decreases',
+          ],
+          correctAnswer: 1,
         },
         {
-          question: "Which of the following diode types has the lowest forward voltage drop?",
-          options: ["Silicon diode", "Germanium diode", "Schottky diode", "Light-emitting diode"],
-          correctAnswer: 2
-        }
+          question: 'Which of the following diode types has the lowest forward voltage drop?',
+          options: ['Silicon diode', 'Germanium diode', 'Schottky diode', 'Light-emitting diode'],
+          correctAnswer: 2,
+        },
       ],
       references: [
         {
-          title: "Semiconductor Physics and Devices by Donald A. Neamen"
+          title: 'Semiconductor Physics and Devices by Donald A. Neamen',
         },
         {
-          title: "Microelectronic Circuits by Adel S. Sedra and Kenneth C. Smith"
-        }
-      ]
-    }
+          title: 'Microelectronic Circuits by Adel S. Sedra and Kenneth C. Smith',
+        },
+      ],
+    },
   },
   {
-    id: "xray-diffraction",
-    title: "Lattice Cell Parameters",
-    shortDescription: "Calculate lattice cell parameters using X-ray diffraction",
+    id: 'xray-diffraction',
+    title: 'Lattice Cell Parameters',
+    shortDescription: 'Calculate lattice cell parameters using X-ray diffraction',
     imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
     highlights: [
-      "Crystal structure visualization",
-      "Diffraction pattern simulation",
+      'Crystal structure visualization',
+      'Diffraction pattern simulation',
       "Bragg's law application",
-      "Lattice constant calculation"
+      'Lattice constant calculation',
     ],
     sections: {
       theory: `X-ray diffraction (XRD) is a powerful technique for determining the crystal structure and lattice parameters of materials. It is based on Bragg's law:
@@ -931,55 +952,57 @@ The intensity of diffracted X-rays depends on:
 3. The Lorentz-polarization factor
 4. The temperature factor (Debye-Waller factor)`,
       procedure: [
-        "Select the crystal structure (simple cubic, body-centered cubic, face-centered cubic, etc.)",
-        "Set the material parameters (atomic radius, bond length, etc.)",
-        "Choose the X-ray source and wavelength (Cu Kα, Mo Kα, etc.)",
-        "Visualize the crystal structure in 3D",
-        "Simulate the X-ray diffraction pattern",
-        "Identify the peaks in the diffraction pattern and their corresponding planes (Miller indices)",
+        'Select the crystal structure (simple cubic, body-centered cubic, face-centered cubic, etc.)',
+        'Set the material parameters (atomic radius, bond length, etc.)',
+        'Choose the X-ray source and wavelength (Cu Kα, Mo Kα, etc.)',
+        'Visualize the crystal structure in 3D',
+        'Simulate the X-ray diffraction pattern',
+        'Identify the peaks in the diffraction pattern and their corresponding planes (Miller indices)',
         "Calculate the interplanar spacing from the diffraction angles using Bragg's law",
-        "Determine the lattice constants and other structural parameters"
+        'Determine the lattice constants and other structural parameters',
       ],
       selfEvaluation: [
         {
           question: "Bragg's law relates which of the following?",
           options: [
-            "X-ray wavelength, interplanar spacing, and diffraction angle",
-            "Lattice constant, atomic radius, and bond angle",
-            "Unit cell volume, atomic weight, and density",
-            "Crystal symmetry, atomic number, and thermal expansion"
+            'X-ray wavelength, interplanar spacing, and diffraction angle',
+            'Lattice constant, atomic radius, and bond angle',
+            'Unit cell volume, atomic weight, and density',
+            'Crystal symmetry, atomic number, and thermal expansion',
           ],
-          correctAnswer: 0
+          correctAnswer: 0,
         },
         {
-          question: "For a cubic crystal, how does the lattice parameter 'a' relate to the interplanar spacing 'd' for planes with Miller indices (h,k,l)?",
+          question:
+            "For a cubic crystal, how does the lattice parameter 'a' relate to the interplanar spacing 'd' for planes with Miller indices (h,k,l)?",
           options: [
-            "a = d",
-            "a = d × √(h² + k² + l²)",
-            "a = d / √(h² + k² + l²)",
-            "a = d × (h + k + l)"
+            'a = d',
+            'a = d × √(h² + k² + l²)',
+            'a = d / √(h² + k² + l²)',
+            'a = d × (h + k + l)',
           ],
-          correctAnswer: 1
+          correctAnswer: 1,
         },
         {
-          question: "Which of the following would NOT produce a diffraction peak in a body-centered cubic (BCC) crystal?",
+          question:
+            'Which of the following would NOT produce a diffraction peak in a body-centered cubic (BCC) crystal?',
           options: [
-            "Planes with h+k+l = even",
-            "Planes with h+k+l = odd",
-            "Planes with all indices even",
-            "Planes with all indices odd"
+            'Planes with h+k+l = even',
+            'Planes with h+k+l = odd',
+            'Planes with all indices even',
+            'Planes with all indices odd',
           ],
-          correctAnswer: 1
-        }
+          correctAnswer: 1,
+        },
       ],
       references: [
         {
-          title: "Elements of X-ray Diffraction by B.D. Cullity and S.R. Stock"
+          title: 'Elements of X-ray Diffraction by B.D. Cullity and S.R. Stock',
         },
         {
-          title: "Introduction to Solid State Physics by Charles Kittel"
-        }
-      ]
-    }
-  }
+          title: 'Introduction to Solid State Physics by Charles Kittel',
+        },
+      ],
+    },
+  },
 ];
