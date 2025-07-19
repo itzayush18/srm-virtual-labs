@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 const Experiment = () => {
   const { id } = useParams<{ id: string }>();
   const [currentExperiment, setCurrentExperiment] = useState(() =>
-    experimentsList.find(exp => exp.id === id)
+    experimentsList.find(exp => exp.id === id),
   );
 
   if (!currentExperiment) {
@@ -84,13 +84,10 @@ const Experiment = () => {
             <Card>
               <CardContent className="pt-6">
                 <h2 className="section-title">Theoretical Background</h2>
-                <div className="prose max-w-none">
-                  {currentExperiment.sections.theory.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: currentExperiment.sections.theory }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -154,7 +151,7 @@ const Experiment = () => {
                           onClick={() => {
                             // This would be replaced with actual functionality
                             alert(
-                              `The correct answer is: ${question.options[question.correctAnswer]}`
+                              `The correct answer is: ${question.options[question.correctAnswer]}`,
                             );
                           }}
                         >
