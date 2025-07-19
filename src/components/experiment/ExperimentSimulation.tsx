@@ -1,4 +1,3 @@
-
 import React from 'react';
 import HallCoefficientSimulation from './simulations/HallCoefficientSimulation';
 import BandGapSimulation from './simulations/BandGapSimulation';
