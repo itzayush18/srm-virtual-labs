@@ -22,7 +22,7 @@ export const experimentsList: Experiment[] = [
   {
     id: 'hall-coefficient',
     title: 'Determination of Hall Coefficient',
-    imageUrl: '../../public/Hall-effect.png',
+    imageUrl: '/Hall-effect.png',
     shortDescription: 'Investigate the Hall effect and determine the carrier type',
     highlights: [
       'Adjustable magnetic field',
@@ -94,7 +94,7 @@ The sign of RH indicates the type of charge carriers: negative for electrons and
     id: 'band-gap',
     title: 'Band Gap Determination',
     shortDescription: 'Determine the band gap of semiconductor materials using a post office box',
-    imageUrl: '../../public/Post-Office-Box.png',
+    imageUrl: '/Post-Office-Box.png',
     highlights: [
       'Temperature control',
       'Resistance measurement',
@@ -163,7 +163,7 @@ By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this s
     id: 'four-probe',
     title: 'Four-Probe Method',
     shortDescription: 'Measure resistivity of semiconductor materials using the four-probe method',
-    imageUrl: '../../public/Four-probe-method.png',
+    imageUrl: '/Four-probe-method.png',
     highlights: [
       'Adjustable probe spacing',
       'Material selection',
@@ -241,7 +241,7 @@ For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, 
     id: 'ldr-characteristics',
     title: 'V-I Characteristics of LDR',
     shortDescription: 'Study the voltage-current characteristics of a light-dependent resistor',
-    imageUrl: '../../public/LDR.png',
+    imageUrl: '/LDR.png',
     highlights: [
       'Adjustable light intensity',
       'Real-time V-I curve plotting',
@@ -311,7 +311,7 @@ However, as the illumination changes, the resistance changes, resulting in a fam
     id: 'solar-cell',
     title: 'Solar Cell Characteristics',
     shortDescription: 'Study V-I characteristics and efficiency of a solar cell',
-    imageUrl: '../../public/Solar-Cell.jpg',
+    imageUrl: '/Solar-Cell.jpg',
     highlights: [
       'Adjustable light intensity',
       'Load resistance variation',
@@ -407,7 +407,7 @@ Where:
     title: 'PN Junction Diode Characteristics',
     shortDescription:
       'Study the characteristics of PN junction diodes under forward and reverse bias',
-    imageUrl: '../../public/PN-junction-diode.png',
+    imageUrl: '/PN-junction-diode.png',
     highlights: [
       'Depletion region visualization',
       'Temperature effects',
@@ -490,7 +490,7 @@ Key parameters of a diode include:
     id: 'photocell',
     title: 'Photocell Characteristics',
     shortDescription: 'Study illumination and V-I characteristics of a photocell',
-    imageUrl: '../../public/photo-cell.png',
+    imageUrl: '/photo-cell.png',
     highlights: [
       'Adjustable light wavelength',
       'Variable light intensity',
@@ -580,7 +580,7 @@ Where:
     id: 'carrier-mobility',
     title: 'Electron and Hole Mobility',
     shortDescription: 'Study electron and hole mobility vs doping concentration',
-    imageUrl: '../../public/Electron-and-Hole-Mobility.png',
+    imageUrl: '/Electron-and-Hole-Mobility.png',
     highlights: [
       'Doping concentration variation',
       'Temperature dependence',
@@ -668,7 +668,7 @@ As doping concentration increases, impurity scattering becomes more significant,
     title: 'Fermi Function Determination',
     shortDescription:
       'Visualize and study the Fermi-Dirac distribution function at different temperatures',
-    imageUrl: '../../public/Fermi-function.png',
+    imageUrl: '/Fermi-function.png',
     highlights: [
       'Temperature variation',
       'Interactive visualization',
@@ -834,7 +834,7 @@ Where:
     id: 'diode-iv',
     title: 'Diode I-V Characteristics',
     shortDescription: 'Study I-V characteristics of diodes using computational tools',
-    imageUrl: '../../public/Diode-Charcteristic.png',
+    imageUrl: '/Diode-Charcteristic.png',
     highlights: [
       'Parameter inputs',
       'Automatic plotting',
