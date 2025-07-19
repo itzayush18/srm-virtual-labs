@@ -23,7 +23,7 @@ export const experimentsList: Experiment[] = [
   {
     id: "hall-coefficient",
     title: "Determination of Hall Coefficient",
-    imageUrl: 'https://i.ytimg.com/vi/erzPR1N3zCY/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgXCg5MA8=&rs=AOn4CLCgPhSroBcMViZ4m0i9SucqZ0WaCQ',
+    imageUrl: '../../public/Hall-effect.png',
     shortDescription: "Investigate the Hall effect and determine the carrier type",
     highlights: [
       "Adjustable magnetic field",
@@ -90,7 +90,7 @@ The sign of RH indicates the type of charge carriers: negative for electrons and
     id: "band-gap",
     title: "Band Gap Determination",
     shortDescription: "Determine the band gap of semiconductor materials using a post office box",
-    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ87p2coFGOM8aSCQBDpJGWRi0DLp9FKHZctg&s',
+    imageUrl: '../../public/Post-Office-Box.png',
     highlights: [
       "Temperature control",
       "Resistance measurement",
@@ -159,7 +159,7 @@ By plotting ln(R) vs 1/T, we get a straight line with slope = Eg/2k. From this s
     id: "four-probe",
     title: "Four-Probe Method",
     shortDescription: "Measure resistivity of semiconductor materials using the four-probe method",
-    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLGjL-VxaTKHPI0gNVtkCK2wXWIZNjVP5QMA&s',
+    imageUrl: '../../public/Four-probe-method.png',
     highlights: [
       "Adjustable probe spacing",
       "Material selection",
