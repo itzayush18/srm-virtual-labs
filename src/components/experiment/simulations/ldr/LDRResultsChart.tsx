@@ -1,6 +1,14 @@
-
 import React from 'react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 interface DataPoint {
   intensity: number;
@@ -22,45 +30,47 @@ const LDRResultsChart: React.FC<LDRResultsChartProps> = ({ data, materialInfo })
   return (
     <div className="data-panel">
       <h3 className="text-lg font-semibold mb-4 text-lab-blue">Results</h3>
-      
+
       <div className="h-64">
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="intensity" 
-                label={{ value: 'Light Intensity (lux)', position: 'insideBottom', offset: -5 }} 
+              <XAxis
+                dataKey="intensity"
+                label={{ value: 'Light Intensity (lux)', position: 'insideBottom', offset: -5 }}
               />
-              <YAxis 
+              <YAxis
                 yAxisId="left"
-                label={{ value: 'Resistance (kΩ)', angle: -90, position: 'insideLeft' }} 
+                label={{ value: 'Resistance (kΩ)', angle: -90, position: 'insideLeft' }}
               />
-              <YAxis 
-                yAxisId="right" 
+              <YAxis
+                yAxisId="right"
                 orientation="right"
-                label={{ value: 'Current (mA)', angle: 90, position: 'insideRight' }} 
+                label={{ value: 'Current (mA)', angle: 90, position: 'insideRight' }}
               />
-              <Tooltip formatter={(value) => {
-                return typeof value === 'number' ? value.toFixed(2) : value;
-              }} />
+              <Tooltip
+                formatter={value => {
+                  return typeof value === 'number' ? value.toFixed(2) : value;
+                }}
+              />
               <Legend />
-              <Line 
+              <Line
                 yAxisId="left"
-                type="monotone" 
-                dataKey="resistance" 
-                name="Resistance" 
-                stroke="#1a237e" 
+                type="monotone"
+                dataKey="resistance"
+                name="Resistance"
+                stroke="#1a237e"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-              <Line 
+              <Line
                 yAxisId="right"
-                type="monotone" 
-                dataKey="current" 
-                name="Current" 
-                stroke="#00796b" 
+                type="monotone"
+                dataKey="current"
+                name="Current"
+                stroke="#00796b"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
@@ -73,7 +83,7 @@ const LDRResultsChart: React.FC<LDRResultsChartProps> = ({ data, materialInfo })
           </div>
         )}
       </div>
-      
+
       <div className="mt-4 p-3 bg-gray-50 rounded-md">
         <h4 className="text-sm font-medium mb-2">Material Properties: {materialInfo.name}</h4>
         <div className="grid grid-cols-2 gap-2 text-sm">
