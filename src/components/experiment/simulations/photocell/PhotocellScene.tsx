@@ -1,11 +1,10 @@
-
-import React from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import * as THREE from "three";
-import LightSource from "./LightSource";
-import PhotocellModel from "./PhotocellModel";
-import ElectricMeter from "./ElectricMeter";
+import React from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import * as THREE from 'three';
+import LightSource from './LightSource';
+import PhotocellModel from './PhotocellModel';
+import ElectricMeter from './ElectricMeter';
 
 // 3D Scene composition for the simulation
 const PhotocellScene: React.FC<{
@@ -32,12 +31,12 @@ const PhotocellScene: React.FC<{
               new THREE.Vector3(-0.8, -0.5, 0),
               new THREE.Vector3(-2, -1, 0),
               new THREE.Vector3(2, -1, 0),
-              new THREE.Vector3(0.8, -0.5, 0)
+              new THREE.Vector3(0.8, -0.5, 0),
             ]),
             16,
             0.03,
             8,
-            false
+            false,
           ]}
         />
         <meshStandardMaterial color="#222222" />

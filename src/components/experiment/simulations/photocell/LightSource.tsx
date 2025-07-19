@@ -1,13 +1,14 @@
-
-import React, { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 // Wavelength to RGB color conversion
 const wavelengthToColor = (wavelength: number) => {
-  let r = 0, g = 0, b = 0;
+  let r = 0,
+    g = 0,
+    b = 0;
   if (wavelength >= 380 && wavelength < 440) {
-    r = -1 * (wavelength - 440) / (440 - 380);
+    r = (-1 * (wavelength - 440)) / (440 - 380);
     g = 0;
     b = 1;
   } else if (wavelength >= 440 && wavelength < 490) {
@@ -17,14 +18,14 @@ const wavelengthToColor = (wavelength: number) => {
   } else if (wavelength >= 490 && wavelength < 510) {
     r = 0;
     g = 1;
-    b = -1 * (wavelength - 510) / (510 - 490);
+    b = (-1 * (wavelength - 510)) / (510 - 490);
   } else if (wavelength >= 510 && wavelength < 580) {
     r = (wavelength - 510) / (580 - 510);
     g = 1;
     b = 0;
   } else if (wavelength >= 580 && wavelength < 645) {
     r = 1;
-    g = -1 * (wavelength - 645) / (645 - 580);
+    g = (-1 * (wavelength - 645)) / (645 - 580);
     b = 0;
   } else if (wavelength >= 645 && wavelength <= 780) {
     r = 1;
@@ -51,15 +52,15 @@ const LightSource: React.FC<{
     <group position={position}>
       <mesh ref={ref}>
         <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial 
-          color={color} 
-          emissive={color} 
-          emissiveIntensity={intensity / 100 * 2} 
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={(intensity / 100) * 2}
         />
       </mesh>
       <group rotation={[0, 0, Math.PI / 2]}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <mesh key={i} position={[0, 0, 0]} rotation={[0, 0, Math.PI * 2 * i / 8]}>
+          <mesh key={i} position={[0, 0, 0]} rotation={[0, 0, (Math.PI * 2 * i) / 8]}>
             <cylinderGeometry args={[0.03, 0.03, 3 * (intensity / 100), 8]} />
             <meshBasicMaterial color={color} transparent opacity={0.3 * (intensity / 100)} />
           </mesh>
