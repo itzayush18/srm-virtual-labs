@@ -305,7 +305,7 @@ However, as the illumination changes, the resistance changes, resulting in a fam
     id: "solar-cell",
     title: "Solar Cell Characteristics",
     shortDescription: "Study V-I characteristics and efficiency of a solar cell",
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+    imageUrl: '../../public/Solar-Cell.png',
     highlights: [
       "Adjustable light intensity",
       "Load resistance variation",
@@ -480,7 +480,7 @@ Key parameters of a diode include:
     id: "photocell",
     title: "Photocell Characteristics",
     shortDescription: "Study illumination and V-I characteristics of a photocell",
-    imageUrl: 'https://i.ytimg.com/vi/sFyUeP939gQ/maxresdefault.jpg',
+    imageUrl: '../../public/photo-cell.png',
     highlights: [
       "Adjustable light wavelength",
       "Variable light intensity",
@@ -569,7 +569,7 @@ Where:
     id: "carrier-mobility",
     title: "Electron and Hole Mobility",
     shortDescription: "Study electron and hole mobility vs doping concentration",
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Hall_Effect_Measurement_Setup_for_Holes.png',
+    imageUrl: '../../public/Electron-and-Hole-Mobility.png',
     highlights: [
       "Doping concentration variation",
       "Temperature dependence",
