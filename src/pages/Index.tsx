@@ -26,14 +26,18 @@ const Index = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-lab-blue text-white py-24">
-        <div className="container mx-auto px-4">
+      <section className="bg-lab-blue text-white py-28">
+        <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-6 animate-fade-in">
               Virtual Semiconductor Physics Laboratory
             </h1>
-            <p className="text-xl mb-8 opacity-90 animate-fade-in">
-              Experience interactive semiconductor physics experiments in a virtual environment
+            <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
+              Explore the fundamentals of semiconductor physics through interactive, virtual
+              experiments — anytime, anywhere.
+            </p>
+            <p className="text-lg italic text-lab-lightBlue mb-2 animate-fade-in">
+              “No lab coats. No limits. Just clicks.”
             </p>
           </div>
         </div>
