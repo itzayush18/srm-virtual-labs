@@ -158,16 +158,24 @@ export const experimentsList: Experiment[] = [
     font-weight: bold;
   }
 </style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/post_office_box.png" alt="Post Office Box Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: Post Office Box experimental setup
+  </p>
+</div>
 <div>
   <p class="text-block">
-    The <span class="highlight">Wheatstone bridge principle</span> is used in the Post Office Box experiment as it allows the accurate determination of an unknown resistance by balancing voltages, not by directly measuring current or voltage drops. Wheatstone’s condition for a balanced network is:
+    The <span class="highlight">Wheatstone bridge principle</span> is used in the Post Office Box experiment as it allows the accurate determination of an unknown resistance by balancing voltages, not by directly measuring current or voltage drops. Wheatstone’s principle for balanced network
   </p>
 
   <p class="formula">P / Q = R / S</p>
 
   <p class="text-block">
-    Among the four resistances, if three are known and one is unknown, the unknown resistance can be calculated. This is essential for detecting small variations in resistance in semiconductors with temperature, which are used to determine the <span class="highlight">band gap energy</span>.
+   of the four resistances, if three are known and one is unknown, the unknown resistance can be calculated. This is essential for detecting small variations in resistance in semiconductors with temperature, which are used to determine the <span class="highlight">band gap energy</span>.
   </p>
 
   <p class="text-block">
@@ -187,7 +195,7 @@ export const experimentsList: Experiment[] = [
     ρ – resistivity<br>
     ρ<sub>0</sub> – material-dependent constant<br>
     E<sub>g</sub> – band gap energy (in eV)<br>
-    k<sub>B</sub> – Boltzmann constant (8.617 × 10<sup>−5</sup> eV/K)<br>
+    k<sub>B</sub> – Boltzmann constant (8.617 × 10<sup>-5</sup> eV/K)<br>
     T – absolute temperature in Kelvin
   </p>
 
@@ -208,7 +216,7 @@ export const experimentsList: Experiment[] = [
   </p>
 
   <p class="text-block">
-    By experimentally determining the resistance R of the semiconductor at various temperatures and plotting ln(R) vs 1/T, the <span class="highlight">band gap energy</span> E<sub>g</sub> can be calculated from the slope of the graph.
+    By experimentally determining the resistance R of the semiconductor at various temperatures and plotting ln(R) vs 1/T, the <span class="highlight">band gap energy</span> E<sub>g</sub> can be calculated from the slope of the linear graph.
   </p>
 </div>
 `,
@@ -259,28 +267,83 @@ export const experimentsList: Experiment[] = [
       'Temperature effects',
     ],
     sections: {
-      theory: `The four-probe method is a technique used to measure the resistivity of semiconductor materials. It overcomes the limitations of two-probe methods by eliminating the effects of contact resistance, spreading resistance, and other parasitic resistances.
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-In this method, four sharp metal probes are placed in a straight line on the sample surface with equal spacing. A constant current is passed through the outer two probes, and the voltage is measured between the inner two probes. Since the voltmeter has a high input impedance, negligible current flows through the voltage probes, eliminating the effect of contact resistance.
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-For a thin sheet of semiconductor material, the resistivity ρ is given by:
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-ρ = 2πs × (V/I) × CF
-
-Where:
-- s is the probe spacing
-- V is the measured voltage
-- I is the applied current
-- CF is a correction factor that depends on the sample dimensions and probe configuration
-
-For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, and for very thin samples (thickness much less than probe spacing), CF = (π/ln(2)).`,
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/four_probe.png" alt="Four Probe Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: Four Probe experimental setup
+  </p>
+</div>
+      <div>
+      <p class="text-block">
+        At a constant temperature, the resistance 𝑅 of a conductor is directly proportional to its length 𝐿 and inversely proportional to its cross-sectional area 𝐴:
+      </p>
+      <p class="formula">
+        R = ρ × (L/A)
+        </p>
+      <p class="text-block">
+        Here, 𝜌 is the resistivity of the material, measured in ohm-meters (Ω·m). In the four-probe method, the resistivity of the semiconductor can be calculated based on the sample thickness “W” and the distance between the probes “S”. The resistivity 𝜌 of a sample can be calculated using the relation:
+        </p>
+      <p class="formula">
+        ρ = ρ<sub>0</sub>/(f(w/s))
+        </p>
+        <p class="text-block">
+        Here, the function f(w/s) is a correction factor. It accounts for geometrical effects during measurement. We assume the metal probe tips are very small and the sample thickness is greater than the distance between the probes. The initial resistivity  ρ<sub>0</sub> is given by:
+        </p>
+        <p class="formula">
+         ρ<sub>0</sub> = V/I (2πS)
+         </p>
+         <p class="text-block">
+         where V is the measured voltage between the inner probes (in volts), I is the current passed through the outer probes (in amperes), and S is the distance between the probes (in meters).
+         </p>
+         <p class="text-block">
+          At absolute zero temperature (0 K), the conduction band is empty since it lies above the Fermi level, and no thermal energy is available to excite electrons. However, as temperature increases, more electrons gain enough energy to jump into the conduction band. This increases the number of charge carriers, thus reducing the electrical resistivity of the semiconductor. Since resistivity is the inverse of conductivity, its variation with temperature can be expressed as: 
+         </p>
+         <p class="formula">
+          ρ = A × exp(E<sub>g</sub> / (2k<sub>B</sub>T))
+          </p>
+          <p class='formula'>
+            E<sub>g</sub> = 2k<sub>B</sub> × (2.303log<sub>10</sub>(ρ))/(1/T)
+            </p>
+          <p class="text-block">
+            where:<br>
+            ρ – Resistivity of the semiconductor<br>
+            A – Constant<br>
+            E<sub>g</sub> – Band gap energy of the material(in eV)<br>
+            k<sub>B</sub> – Boltzmann constant (8.617 × 10<sup>-5</sup> eV/K)<br>
+            T – Temperature (K)<br>
+            This equation shows that the resistivity of a semiconductor increases exponentially as temperature decreases.
+          </p>
+          `,
       procedure: [
-        'Place the semiconductor sample on the measurement platform',
-        'Adjust the four probes to make good contact with the sample, maintaining equal spacing',
-        'Set the desired current using the current source control',
-        'Measure the voltage between the inner two probes using the voltmeter',
-        'Calculate the resistivity using the formula: ρ = 2πs × (V/I) × CF, where s is the probe spacing',
-        'Repeat the measurement at different locations or with different probe spacings to confirm the results',
+        'Choose a suitable given material for determining its resistivity and bandgap.',
+        'Fix a value for current, probe spacing, and sample thickness with the help of the control slider.',
+        'Vary the temperature and record the corresponding change in voltage.',
+        'Plot the log₁₀(ρ)/(1/T) graph.',
+        'Calculate the band gap by substituting the slope obtained from the graph in the given formula Eg = 2kB × (2.303 × log₁₀(ρ)) / (1/T).',
       ],
       selfEvaluation: [
         {
@@ -337,22 +400,59 @@ For a semi-infinite sample (thickness much greater than probe spacing), CF = 1, 
       'Temperature effects',
     ],
     sections: {
-      theory: `A Light Dependent Resistor (LDR) or photoresistor is a light-controlled variable resistor. The resistance of an LDR decreases with increasing incident light intensity. This property makes LDRs useful in light-sensing applications.
+      theory:`
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-The relationship between resistance and illumination for an LDR typically follows a power law:
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-R = R₀ × (E₀/E)^γ
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-Where:
-- R is the resistance at illumination E
-- R₀ is the resistance at reference illumination E₀
-- γ is a constant characteristic of the particular LDR material (typically between 0.5 and 0.8)
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/vi_chars_ldr.png" alt="LDR Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: LDR experimental setup
+  </p>
+</div>
+    <div>
+    <p class="text-block">
+      An <span class="highlight">LDR (Light Dependent Resistor)</span> is also known as a photo resistor. This works based on the principle of photoconductivity. When the light incident on the LDR material, the electrons are excited from the valence band to the conduction band. Thus, the number of free carriers increases, the electrical conductivity increases, and the resistance of the LDR tends to decrease.
+    </p>
 
-The V-I characteristics of an LDR follow Ohm's law at a fixed illumination level:
+    <p class="text-block">
+      Dark resistance is the resistance of an LDR or any photosensitive material in the absence of light. The dark resistance of the LDR normally ranges from a few kilo-ohms to several mega-ohms, depending on the type of material. 
+    </p>
 
-V = I × R
-
-However, as the illumination changes, the resistance changes, resulting in a family of V-I curves for different illumination levels.`,
+    <p class="text-block">
+      The V-I characteristics of an LDR follow Ohm's law at a fixed illumination level:
+      </p>
+      <p class="formula">
+        V = IR (or) R = (V/I)
+      </p>
+      <p class="text-block">
+        where:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;R – resistance<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;V – voltage<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;I – current<br>
+      </p>
+      </div>
+      `,
       procedure: [
         'Connect the LDR to the circuit setup with variable voltage source',
         'Set the light source at a specific intensity using the control slider',
@@ -407,44 +507,68 @@ However, as the illumination changes, the resistance changes, resulting in a fam
       'Maximum power point tracking',
     ],
     sections: {
-      theory: `A solar cell, or photovoltaic cell, is a device that converts light energy directly into electricity through the photovoltaic effect. When light is absorbed by a semiconductor material, electron-hole pairs are generated, which can be separated by the built-in electric field at a p-n junction, creating a voltage and current.
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-The I-V characteristic of a solar cell can be modeled by:
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-I = IL - I0 × [exp(qV/nkT) - 1]
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-Where:
-- I is the output current
-- IL is the light-generated current
-- I0 is the saturation current
-- q is the electron charge
-- V is the voltage
-- n is the ideality factor
-- k is Boltzmann's constant
-- T is the temperature in Kelvin
-
-Key parameters of a solar cell include:
-- Short-circuit current (Isc): The current when the voltage is zero
-- Open-circuit voltage (Voc): The voltage when the current is zero
-- Fill factor (FF): The ratio of maximum power to the product of Voc and Isc
-- Efficiency (η): The ratio of output electrical power to input light power
-
-The efficiency is calculated as:
-η = (Pmax/Pin) × 100% = (Vmp × Imp/Pin) × 100%
-
-Where:
-- Pmax is the maximum power output
-- Pin is the incident light power
-- Vmp and Imp are the voltage and current at maximum power point`,
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/solar_cell.png" alt="Solar Cell Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: Solar Cell experimental setup
+  </p>
+</div>
+    <div>
+    <p class="text-block">
+      A <span class="highlight">solar cell</span>, or photovoltaic cell, is a device that converts light energy directly into electricity through the photovoltaic effect. When light is absorbed by a semiconductor material in the solar cell, electron-hole pairs are generated, which can be separated by the built-in electric field at a p-n junction, producing a voltage and current.
+    </p>
+    <p class="text-block">
+      The efficiency of the solar cell is measured as:
+    </p>
+      <p class="formula">
+        η = (P<sub>max</sub> / AI<sub>0</sub>) × 100%
+      </p>
+      <p class="text-block">
+        where:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;η – Efficiency<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;P<sub>max</sub> – Maximum power output (W)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;A – Area of the solar panel (m²)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;I<sub>0</sub> – Intensity of the light (W/m²)
+      </p>
+      <p class="text-block">
+        The maximum power of the solar cell can be calculated using the formula:
+      </p>
+      <p class="formula">
+        P<sub>max</sub> = (V<sub>max</sub> × I<sub>max</sub>) watt
+      </p>
+      `,
       procedure: [
-        'Connect the solar cell to the measurement circuit',
-        'Set the desired light intensity using the control slider',
-        'Vary the load resistance to measure the current and voltage at different operating points',
-        'Record the current and voltage values for each load resistance setting',
-        'Plot the I-V curve and identify the short-circuit current (Isc) and open-circuit voltage (Voc)',
-        'Calculate the power at each operating point using P = V × I and identify the maximum power point',
-        'Calculate the fill factor and efficiency of the solar cell',
-        'Repeat the measurements for different light intensities to study the effect on cell performance',
+        'Connect the solar cell to the measurement circuit.',
+        'Set the desired light intensity using the control slider.',
+        'Vary the load resistance to measure the current and voltage at different operating points.',
+        'Record the current and voltage values for each load resistance setting.',
+        'Plot the I-V curve and V-R characteristics graph.',
+        'Calculate the power at each operating point using Pₘₐₓ = (Vₘₐₓ × Iₘₐₓ) and identify the maximum power point. The efficiency of the solar cell can be found by substituting the obtained values in the given formula η = (Pₘₐₓ / AI₀) × 100%.',
+        'Repeat the measurements for different light intensities to study the effect on cell performance.',
       ],
       selfEvaluation: [
         {
@@ -503,28 +627,57 @@ Where:
       'Diode parameters extraction',
     ],
     sections: {
-      theory: `A p-n junction diode is formed by joining p-type and n-type semiconductor materials. At the junction, a depletion region forms due to diffusion of charge carriers, creating a built-in electric field.
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-The current-voltage relationship of an ideal p-n junction diode is described by the Shockley diode equation:
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-I = I₀ × [exp(qV/nkT) - 1]
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-Where:
-- I is the diode current
-- I₀ is the reverse saturation current
-- q is the electron charge (1.602 × 10⁻¹⁹ C)
-- V is the voltage across the diode
-- n is the ideality factor (1 for ideal diode)
-- k is Boltzmann's constant (1.381 × 10⁻²³ J/K)
-- T is the absolute temperature in Kelvin
-
-Under forward bias (positive voltage applied to p-side), the depletion region narrows, reducing the potential barrier and allowing significant current flow. Under reverse bias (negative voltage applied to p-side), the depletion region widens, increasing the potential barrier and allowing only a small leakage current (saturation current).
-
-Key parameters of a diode include:
-- Forward voltage drop (typically 0.7V for silicon, 0.3V for germanium)
-- Reverse breakdown voltage
-- Reverse saturation current
-- Ideality factor`,
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/pn_junction.png" alt="PN Junction Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: PN Junction experimental setup
+  </p>
+</div>
+    <div>
+    <p class="text-block">
+      A <span class="highlight">PN junction diode</span> is a two-terminal semiconductor device formed by joining p-type and n-type semiconductor materials. At the junction, a depletion region forms due to the diffusion of charge carriers, creating a built-in electric field.
+    </p>
+    <p class="text-block">
+      The current-voltage relationship of an ideal p-n junction diode is described by the Shockley diode equation: 
+    </p>
+      <p class="formula">
+        I = I<sub>0</sub> × (exp(qV / nk<sub>B</sub>T) - 1)
+      </p>
+    <p class="text-block">
+      where I is the diode current, I<sub>0</sub> is the reverse saturation current, q is the electron charge (1.602 × 10⁻¹⁹ C), V is the voltage across the diode, n is the ideality factor (1 for ideal diode), k<sub>B</sub> is Boltzmann's constant (1.381 × 10⁻²³ J/K), and T is the absolute temperature in Kelvin. 
+      </p
+       <p class="text-block">
+       Under forward bias (positive voltage applied to the p-side), the depletion region narrows, which reduces the potential barrier and allows significant current flow. Under reverse bias (negative voltage applied to the p-side), the depletion region gets wider, resulting in an increase in the potential barrier and allowing only a small leakage current (saturation current). 
+       </p>
+       <p class="text-block">
+        Key parameters of a diode include: Forward voltage drop (typically 0.7V for silicon, 0.3V for germanium), Reverse breakdown voltage, Reverse saturation current, Ideality factor.
+        </p>
+      </div>
+      `,
       procedure: [
         'Connect the diode to the circuit setup with variable voltage source',
         'Start with zero bias and gradually increase the forward bias voltage',
@@ -534,7 +687,6 @@ Key parameters of a diode include:
         'Plot the complete I-V characteristic curve',
         'Observe the depletion region visualization at different bias conditions',
         'Repeat the measurements at different temperatures to study temperature effects',
-        'Extract diode parameters such as saturation current and ideality factor from the measurements',
       ],
       selfEvaluation: [
         {
@@ -586,40 +738,58 @@ Key parameters of a diode include:
       'Quantum efficiency calculation',
     ],
     sections: {
-      theory: `A photocell, or photoelectric cell, is a device that converts light energy into electrical energy based on the photoelectric effect. When light with sufficient energy (above the work function of the material) strikes the photosensitive surface, electrons are emitted and can be collected to generate a current.
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-The photocurrent in a photocell is proportional to the light intensity:
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-I = K × (E - E₀)
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+<div style="line-height:1.75; font-size:1.05rem; color:#1f2937">
 
-Where:
-- I is the photocurrent
-- K is a constant that depends on the cell
-- E is the illumination intensity
-- E₀ is the threshold illumination below which no photocurrent flows
-
-The spectral response of a photocell varies with the wavelength of incident light. The quantum efficiency (η) of a photocell is defined as the ratio of the number of electrons generated to the number of incident photons:
-
-η = Number of electrons generated / Number of incident photons
-
-The incident light energy must be greater than the work function (φ) of the photosensitive material to produce photoemission:
-
-hv > φ
-
-Where:
-- h is Planck's constant
-- v is the frequency of the incident light
-- φ is the work function of the material`,
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+  <img src="/diagrams/photo_cell.png" alt="Photo Cell Diagram"
+    style="max-width: 450px; width: 100%; height: auto; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+  <p style="font-size: 0.95rem; color: #4b5563; margin-top: 0.5rem; text-align: center;">
+    Figure: Photo Cell experimental setup
+  </p>
+</div>
+    <div>
+    <p class="text-block">
+      A <span class="highlight">photocell</span> or photoelectric cell, is a device that converts light energy into electrical energy based on the photoelectric effect. A photocell is a solid-state device where a photosensitive cathode produces electrons when the light is illuminated, and an anode collects the emitted electrons. The illumination of light results in the excitation of electrons, which are attracted to the anode, producing a current proportional to the intensity of the illumination.
+    </p>
+    <p class="text-block">
+      The photocurrent in a photocell is proportional to the light intensity:
+      </p>
+      <p class="formula">
+        I = K(E-E<sub>0</sub>)
+      </p>
+      <p class="text-block">
+        where I is the photocurrent, K is a constant that depends on the cell, E is the illumination intensity, and E<sub>0</sub> is the threshold illumination below which no photocurrent flows.
+      </p>
+      </div>
+      `,
       procedure: [
         'Set up the photocell in the measurement circuit',
         'Adjust the light source to the desired wavelength using the monochromator',
         'Set the light intensity using the control slider',
-        'Measure the photocurrent at different light intensities for a fixed wavelength',
-        'Plot the photocurrent vs. light intensity curve',
-        'Repeat the measurements for different wavelengths of light',
-        'Plot the spectral response curve (photocurrent vs. wavelength) at constant intensity',
-        'Calculate the quantum efficiency at different wavelengths',
-        'Determine the threshold frequency and work function of the photosensitive material',
+        'By varying the temperature values, measure the photocurrent and voltage for a fixed wavelength.',
+        'Plot the photocurrent vs. voltage spectral response curve.',
+        'Repeat the measurements for different intensities of light',
       ],
       selfEvaluation: [
         {
@@ -676,32 +846,78 @@ Where:
       'Mobility calculation',
     ],
     sections: {
-      theory: `Carrier mobility is a measure of how quickly an electron or hole can move through a semiconductor when pulled by an electric field. It is defined as the proportionality constant between the drift velocity and the applied electric field:
+      theory: `
+    <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-μ = vd / E
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-Where:
-- μ is the mobility (in cm²/V·s)
-- vd is the drift velocity (in cm/s)
-- E is the electric field (in V/cm)
-
-Mobility is affected by various scattering mechanisms:
-1. Lattice scattering: Due to thermal vibrations of the crystal lattice (phonons)
-2. Impurity scattering: Due to ionized impurities (dopants)
-3. Carrier-carrier scattering: Due to interactions between charge carriers
-
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+    <div>  
+  <p class="text-block">
+      Carrier mobility is a measure of how quickly an electron or hole can move through a semiconductor when pulled by an electric field. It is defined as the proportionality constant between the drift velocity and the applied electric field:
+      </p>
+      <p class="formula">
+        μ = vd / E
+      </p>
+  <p class="text-block">  
+      Where:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;μ – mobility (in cm²/V·s)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;vd – drift velocity (in cm/s)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;E – electric field (in V/cm)<br>
+  </p>
+      <p class="text-block">
+      Mobility is affected by various scattering mechanisms:
+      </p>
+     <p class="text-block">
+      1. Lattice scattering: Due to thermal vibrations of the crystal lattice (phonons)
+      </p>
+     <p class="text-block">
+      2. Impurity scattering: Due to ionized impurities (dopants)
+      </p>
+     <p class="text-block">
+      3. Carrier-carrier scattering: Due to interactions between charge carriers
+      </p>
+      <p class="text-block">
 The temperature dependence of mobility due to lattice scattering follows:
-μL ∝ T^(-3/2)
-
-The doping concentration dependence of mobility due to impurity scattering follows:
-μI ∝ N^(-1)
-
+      </p>
+      <p class="formula">
+        μL ∝ T^(-3/2)
+      </p>
+      <p class="text-block">
+      The doping concentration dependence of mobility due to impurity scattering follows:
+      </p>
+      <p class="formula">
+        μI ∝ N^(-1)
+      </p>  
+      <p class="text-block">
 Where N is the doping concentration.
-
+</p>
+<p class="text-block">
 The combined mobility (μ) considering both mechanisms follows Matthiessen's rule:
+</p>
+<p class="formula">
 1/μ = 1/μL + 1/μI
-
-As doping concentration increases, impurity scattering becomes more significant, reducing mobility.`,
+</p>
+<p class="text-block">
+As doping concentration increases, impurity scattering becomes more significant, reducing mobility.
+</p>
+</div>
+`,
       procedure: [
         'Select the semiconductor material (Si, Ge, or GaAs)',
         'Set the desired doping concentration using the slider',
@@ -764,25 +980,71 @@ As doping concentration increases, impurity scattering becomes more significant,
       'Semiconductor doping effects',
     ],
     sections: {
-      theory: `The Fermi-Dirac distribution function describes the probability of an energy state being occupied by an electron in a system of fermions at thermal equilibrium. It is given by:
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
+
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+    <div> 
+          <p class="text-block">
+      The Fermi-Dirac distribution function describes the probability of an energy state being occupied by an electron in a system of fermions at thermal equilibrium. It is given by:
+        </p>
+        <p class="formula">
 f(E) = 1 / [1 + exp((E - EF)/kT)]
+      </p>
 
-Where:
-- f(E) is the probability of occupation of an energy state E
-- EF is the Fermi energy level
-- k is Boltzmann's constant (8.617 × 10⁻⁵ eV/K)
-- T is the absolute temperature in Kelvin
+      <p class="text-block">
+        Where:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;f(E) is the probability of occupation of an energy state E<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;EF is the Fermi energy level<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;k is Boltzmann's constant (8.617 × 10⁻⁵ eV/K)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;T is the absolute temperature in Kelvin<br>
+      </p>
+      
+      <p class="text-block">
+        The Fermi level (EF) represents the energy at which the probability of occupation is exactly 0.5.
+      </p>
+      
+      <p class="text-block">
+        In intrinsic semiconductors, the Fermi level lies approximately in the middle of the band gap. In doped semiconductors, the Fermi level shifts:
+      </p>
 
-The Fermi level (EF) represents the energy at which the probability of occupation is exactly 0.5.
+      <p class="text-block">
+        - For n-type semiconductors, it moves closer to the conduction band
+      </p>
 
-In intrinsic semiconductors, the Fermi level lies approximately in the middle of the band gap. In doped semiconductors, the Fermi level shifts:
-- For n-type semiconductors, it moves closer to the conduction band
-- For p-type semiconductors, it moves closer to the valence band
+      <p class="text-block">
+        - For p-type semiconductors, it moves closer to the valence band
+      </p>
 
-The temperature dependence of the Fermi function is significant:
-- At T = 0 K, the function is a step function (states below EF are filled, above are empty)
-- As T increases, the function becomes smoother, with states near EF having partial occupancy probabilities`,
+      <p class="text-block">
+        The temperature dependence of the Fermi function is significant:
+      </p>
+      <p class="text-block">
+        - At T = 0 K, the function is a step function (states below EF are filled, above are empty)
+      </p>
+      <p class="text-block">
+        - As T increases, the function becomes smoother, with states near EF having partial occupancy probabilities
+      </p>
+      </div>
+      `,
+      
       procedure: [
         'Select the semiconductor material (Si, Ge, or GaAs)',
         'Set the doping type (intrinsic, n-type, or p-type) and concentration',
@@ -847,34 +1109,80 @@ The temperature dependence of the Fermi function is significant:
       'Fiber parameter adjustment',
     ],
     sections: {
-      theory: `Optical fibers are waveguides that transmit light through total internal reflection. The attenuation (loss) in optical fibers is a measure of the decrease in optical power as light travels through the fiber, typically expressed in decibels per kilometer (dB/km).
+      theory:` 
+    <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
+
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+    <div>  
+  
+    <p class="text-block">
+    Optical fibers are waveguides that transmit light through total internal reflection. The attenuation (loss) in optical fibers is a measure of the decrease in optical power as light travels through the fiber, typically expressed in decibels per kilometer (dB/km).
+    </p>
+    <p class="text-block">
 The attenuation coefficient (α) is given by:
+</p>
+<p class="formula">
 
 α = (10/L) × log₁₀(Pin/Pout)
+</p>
 
-Where:
-- α is the attenuation coefficient in dB/km
-- L is the fiber length in km
-- Pin is the input optical power
-- Pout is the output optical power
-
+<p class="text-block">
+Where:<br>
+- α is the attenuation coefficient in dB/km<br>
+- L is the fiber length in km<br>
+- Pin is the input optical power<br>
+- Pout is the output optical power<br>
+</p>
+<p class="text-block">
 The main sources of attenuation in optical fibers are:
+</p>
+<p class="text-block">
 1. Material absorption (intrinsic and extrinsic)
+</p>
+<p class="text-block">
 2. Rayleigh scattering
+</p>
+<p class="text-block">
 3. Waveguide imperfections
+</p>
+<p class="text-block">
 4. Bending losses
+</p>
 
+<p class="text-block">
 The attenuation spectrum varies with wavelength, with typical silica fibers having low attenuation windows around 850 nm, 1310 nm, and 1550 nm.
-
+</p>
+<p class="text-block">
 Light propagation in an optical fiber depends on the fiber's numerical aperture (NA) and V-number. The numerical aperture is related to the acceptance angle (θmax) by:
-
+</p>
+<p class="formula">
 NA = n₀ × sin(θmax) = √(n₁² - n₂²)
+</p>
+<p class="text-block">
 
-Where:
-- n₀ is the refractive index of the surrounding medium
-- n₁ is the core refractive index
-- n₂ is the cladding refractive index`,
+Where:<br>
+- n₀ is the refractive index of the surrounding medium<br>
+- n₁ is the core refractive index<br>
+- n₂ is the cladding refractive index<br>
+</p>
+</div>`,
       procedure: [
         'Select the fiber type (single-mode or multi-mode)',
         'Set the wavelength of light using the slider',
@@ -930,35 +1238,71 @@ Where:
       'Multiple diode comparison',
     ],
     sections: {
-      theory: `The current-voltage (I-V) characteristics of a diode can be modeled using the Shockley diode equation:
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-I = Is × [exp(qV/nkT) - 1]
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-Where:
-- I is the diode current
-- Is is the reverse saturation current
-- q is the electron charge (1.602 × 10⁻¹⁹ C)
-- V is the voltage across the diode
-- n is the ideality factor (1 for ideal diode, typically 1-2 for real diodes)
-- k is Boltzmann's constant (1.381 × 10⁻²³ J/K)
-- T is the absolute temperature in Kelvin
-
-The reverse saturation current Is depends on temperature and material properties:
-
-Is = Is0 × (T/T0)^γ × exp[-(Eg/k) × (1/T - 1/T0)]
-
-Where:
-- Is0 is the saturation current at reference temperature T0
-- γ is a constant (typically 3 for silicon)
-- Eg is the band gap energy of the semiconductor
-
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+    <div> 
+    <p class="text-block">
+      The current-voltage (I-V) characteristics of a diode can be modeled using the Shockley diode equation:
+      </p>
+      <p class="formula">
+I = I<sub>s</sub> × [exp(qV/nkT) - 1]
+      </p>
+      <p class="text-block">
+      Where:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;I is the diode current<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;I<sub>s</sub> is the  reverse saturation current<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;q is the electron charge (1.602 × 10⁻¹⁹ C)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;V is the voltage across the diode<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;n is the ideality factor (1 for ideal diode, typically 1-2 for real diodes)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;k is Boltzmann's constant (1.381 × 10⁻²³ J/K)<br>
+      &nbsp;&nbsp;&nbsp;T is the absolute temperature in Kelvin<br>
+      </p>
+      <p class="text-block">
+The reverse saturation current I<sub>s</sub> depends on temperature and material properties:
+      </p>
+      <p class="formula">
+I<sub>s</sub> = I<sub>s0</sub> × (T/T<sub>0</sub>)<sup>γ</sup> × exp[-(E<sub>g</sub>/k) × (1/T - 1/T<sub>0</sub>)]
+      </p>
+      <p class="text-block">
+Where:<br>
+- I<sub>s0</sub> is the saturation current at reference temperature T<sub>0</sub><br>
+- γ is a constant (typically 3 for silicon)<br>
+- E<sub>g</sub> is the band gap energy of the semiconductor<br>
+- T<sub>0</sub> is the reference temperature (usually 300 K)<br>
+</p>
+      <p class="text-block">
 The ideality factor n accounts for recombination in the depletion region and typically ranges from 1 to 2:
-- n ≈ 1: Ideal diode (diffusion current dominates)
+</p>
+      <p class="text-block">
+- n ≈ 1: Ideal diode (diffusion current dominates)<br>
 - n ≈ 2: Non-ideal diode (recombination current dominates)
-
-For real diodes, the I-V characteristics are also affected by series resistance (Rs) and parallel resistance (Rp):
-
-I = Is × [exp(q(V-IRs)/nkT) - 1] + (V-IRs)/Rp`,
+</p>
+      <p class="text-block">
+For real diodes, the I-V characteristics are also affected by series resistance (R<sub>s</sub>) and parallel resistance (R<sub>p</sub>):
+      </p>
+      <p class="formula">
+I = I<sub>s</sub> × [exp(q(V-IR<sub>s</sub>)/nkT) - 1] + (V-IR<sub>s</sub>)/R<sub>p</sub>
+      </p>
+      </div>`,
       procedure: [
         'Select the diode type from available options (Si, Ge, Schottky, etc.)',
         'Set diode parameters: saturation current (Is), ideality factor (n), series resistance (Rs), etc.',
@@ -1014,31 +1358,63 @@ I = Is × [exp(q(V-IRs)/nkT) - 1] + (V-IRs)/Rp`,
       'Lattice constant calculation',
     ],
     sections: {
-      theory: `X-ray diffraction (XRD) is a powerful technique for determining the crystal structure and lattice parameters of materials. It is based on Bragg's law:
+      theory: `
+      <style>
+  .formula {
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 500;
+    margin: 1em 0;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+  }
 
-nλ = 2d × sin(θ)
+  .text-block {
+    font-size: 1.05em;
+    line-height: 1.6;
+    text-align: justify;
+    margin: 0.8em 0;
+  }
 
-Where:
-- n is an integer (the diffraction order)
-- λ is the wavelength of the X-rays
-- d is the interplanar spacing
-- θ is the diffraction angle
-
+  .highlight {
+    font-weight: bold;
+  }
+</style>
+    <div> 
+    <p class="text-block">
+      X-ray diffraction (XRD) is a powerful technique for determining the crystal structure and lattice parameters of materials. It is based on Bragg's law:
+      </p>
+      <p class="formula">
+        nλ = 2d × sin(θ)
+      </p>
+      <p class="text-block">
+Where:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;n is the diffraction order (an integer)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;λ is the wavelength of the X-rays<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;d is the interplanar spacing<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;θ is the diffraction angle<br>
+      </p>
+      <p class="text-block">
 For cubic crystals, the interplanar spacing d for planes with Miller indices (h,k,l) is related to the lattice constant a by:
-
+      </p>
+      <p class="formula">
 d = a / √(h² + k² + l²)
-
-Combining this with Bragg's law:
-
-sin²(θ) = (λ²/4a²) × (h² + k² + l²)
-
+      </p>
+      <p class="text-block">
+        Combining this with Bragg's law:
+      </p>
+      <p class="formula">
+        sin²(θ) = (λ²/4a²) × (h² + k² + l²)
+      </p>
+      <p class="text-block">
 By measuring the diffraction angles and knowing the X-ray wavelength, we can determine the lattice constant.
-
+      </p>
+      <p class="text-block">
 The intensity of diffracted X-rays depends on:
 1. The structure factor (atomic arrangement within the unit cell)
 2. The multiplicity factor (number of equivalent planes)
 3. The Lorentz-polarization factor
-4. The temperature factor (Debye-Waller factor)`,
+4. The temperature factor (Debye-Waller factor)
+      </p>`,
       procedure: [
         'Select the crystal structure (simple cubic, body-centered cubic, face-centered cubic, etc.)',
         'Set the material parameters (atomic radius, bond length, etc.)',
