@@ -52,7 +52,7 @@ const HallCoefficientSimulation = () => {
     },
     gallium_arsenide: {
       name: 'Gallium Arsenide',
-      rh: +1e-2, // cm³/C for p-type, or appropriate value
+      rh: +0.54, // cm³/C for p-type, or appropriate value
       carrierType: 'p-type',
       carrierDensity: 9.0e21, // carriers/m³
     },
