@@ -28,7 +28,7 @@ const HallCoefficientSimulation = () => {
   const [hallVoltage, setHallVoltage] = useState(0); // mV
   const [hallCoefficient, setHallCoefficient] = useState(0); // cm³/C
   const [carrierType, setCarrierType] = useState('');
-  const [carrierDensity, setCarrierDensity] = useState(0); // carriers/cm³
+  const [carrierDensity, setCarrierDensity] = useState(0); // carriers/cm<sup>-3</sup>
   const [thicknessValue, setThicknessValue] = useState(1); // mm
   interface ChartDataPoint {
     magneticField: number;
