@@ -26,9 +26,9 @@ const HallCoefficientSimulation = () => {
   const [current, setCurrent] = useState(10); // mA
   const [magneticField, setMagneticField] = useState(0.5); // Tesla
   const [hallVoltage, setHallVoltage] = useState(0); // mV
-  const [hallCoefficient, setHallCoefficient] = useState(0); // m³/C
+  const [hallCoefficient, setHallCoefficient] = useState(0); // cm³/C
   const [carrierType, setCarrierType] = useState('');
-  const [carrierDensity, setCarrierDensity] = useState(0); // carriers/m³
+  const [carrierDensity, setCarrierDensity] = useState(0); // carriers/cm³
   const [thicknessValue, setThicknessValue] = useState(1); // mm
   interface ChartDataPoint {
     magneticField: number;
@@ -40,21 +40,21 @@ const HallCoefficientSimulation = () => {
   const materials = React.useMemo(() => ({
     silicon: {
       name: 'Silicon',
-      rh: -0.18, // m³/C for n-type, or appropriate value
+      rh: -4e-4, // cm³/C for n-type, or appropriate value
       carrierType: 'n-type',
-      carrierDensity: 1.5e16, // carriers/m³
+      carrierDensity: 1.5e22, // carriers/m³
     },
     germanium: {
       name: 'Germanium',
-      rh: -0.66, // m³/C for n-type, or appropriate value
+      rh: -3e-3, // cm³/C for n-type, or appropriate value
       carrierType: 'n-type',
-      carrierDensity: 2.4e15, // carriers/m³
+      carrierDensity: 2.4e21, // carriers/m³
     },
     gallium_arsenide: {
       name: 'Gallium Arsenide',
-      rh: 0.54, // m³/C for p-type, or appropriate value
+      rh: +1e-2, // cm³/C for p-type, or appropriate value
       carrierType: 'p-type',
-      carrierDensity: 9.0e15, // carriers/m³
+      carrierDensity: 9.0e21, // carriers/m³
     },
   }), []);
 
