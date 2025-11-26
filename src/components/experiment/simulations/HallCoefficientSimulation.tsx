@@ -40,13 +40,13 @@ const HallCoefficientSimulation = () => {
   const materials = React.useMemo(() => ({
     silicon: {
       name: 'Silicon',
-      rh: -4e-4, // cm³/C for n-type, or appropriate value
+      rh: +0.18, // cm³/C for n-type, or appropriate value
       carrierType: 'n-type',
       carrierDensity: 1.5e22, // carriers/m³
     },
     germanium: {
       name: 'Germanium',
-      rh: -3e-3, // cm³/C for n-type, or appropriate value
+      rh: +0.66, // cm³/C for n-type, or appropriate value
       carrierType: 'n-type',
       carrierDensity: 2.4e21, // carriers/m³
     },
@@ -74,9 +74,9 @@ const HallCoefficientSimulation = () => {
     const calculatedHallVoltage = ((rh * currentInA * magneticField) / thicknessInM) * 1000; // Convert to mV
 
     setHallVoltage(parseFloat(calculatedHallVoltage.toFixed(3)));
-    setHallCoefficient(rh);
+    setHallCoefficient(rh*1e6);
     setCarrierType(materialInfo.carrierType);
-    setCarrierDensity(materialInfo.carrierDensity);
+    setCarrierDensity(materialInfo.carrierDensity/ 1e6);
 
     // Update chart data
     const newDataPoint = {
