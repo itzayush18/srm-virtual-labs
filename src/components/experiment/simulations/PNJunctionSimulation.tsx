@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
@@ -334,8 +333,22 @@ const PNJunctionSimulation = () => {
                 step={0.01}
                 value={[voltage]}
                 onValueChange={values => setVoltage(values[0])}
+                className="flex-1"
               />
-              <span className="min-w-[50px] text-right">{voltage.toFixed(2)}</span>
+              <input
+                type="number"
+                min={-0.6}
+                max={0.8}
+                step={0.01}
+                value={voltage.toFixed(2)}
+                onChange={e => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= -0.6 && val <= 0.8) {
+                    setVoltage(val);
+                  }
+                }}
+                className="w-20 px-2 py-1 border rounded text-right text-sm"
+              />
             </div>
           </div>
 
@@ -348,8 +361,22 @@ const PNJunctionSimulation = () => {
                 step={5}
                 value={[temperature]}
                 onValueChange={values => setTemperature(values[0])}
+                className="flex-1"
               />
-              <span className="min-w-[50px] text-right">{temperature}</span>
+              <input
+                type="number"
+                min={250}
+                max={500}
+                step={5}
+                value={temperature}
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 250 && val <= 500) {
+                    setTemperature(val);
+                  }
+                }}
+                className="w-20 px-2 py-1 border rounded text-right text-sm"
+              />
             </div>
           </div>
 
