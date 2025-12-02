@@ -12,7 +12,22 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import PNJunctionScene from './pnjunction/PNJunctionScene';
+// Placeholder for PNJunctionScene - replace with your actual visualization component
+const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-50 to-red-50">
+      <div className="text-center">
+        <div className="text-sm text-gray-600 mb-2">PN Junction Visualization</div>
+        <div className="text-lg font-semibold">
+          {voltage < 0 ? 'Reverse Bias' : voltage > 0 ? 'Forward Bias' : 'No Bias'}
+        </div>
+        <div className="text-sm text-gray-500 mt-2">
+          V = {voltage.toFixed(2)} V, T = {temperature} K
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PNJunctionSimulation = () => {
   const [voltage, setVoltage] = useState(0);
@@ -34,7 +49,14 @@ const PNJunctionSimulation = () => {
   // Add data point to chart
   const addDataPoint = () => {
     const current = calculateCurrent(voltage, temperature);
-    const newPoint = { voltage, current: current.toExponential(4), temperature };
+    // Use absolute value for log scale, store sign separately
+    const absCurrent = Math.abs(current);
+    const newPoint = { 
+      voltage, 
+      current: absCurrent > 0 ? absCurrent : 1e-20, // Ensure positive for log scale
+      currentDisplay: current.toExponential(4), // For display only
+      temperature 
+    };
 
     setChartData(prevData => {
       const existingIndex = prevData.findIndex(
@@ -55,9 +77,12 @@ const PNJunctionSimulation = () => {
   const generateIVCurve = () => {
     const newData = [];
     for (let v = -0.6; v <= 0.8; v += 0.1) {
+      const current = calculateCurrent(v, temperature);
+      const absCurrent = Math.abs(current);
       newData.push({
         voltage: parseFloat(v.toFixed(1)),
-        current: calculateCurrent(v, temperature).toExponential(4),
+        current: absCurrent > 0 ? absCurrent : 1e-20, // Ensure positive for log scale
+        currentDisplay: current.toExponential(4), // For display only
         temperature,
       });
     }
@@ -168,9 +193,11 @@ const PNJunctionSimulation = () => {
                   <YAxis
                     label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
                     scale="log"
+                    domain={[1e-15, 'auto']}
+                    allowDataOverflow={false}
                   />
                   <Tooltip
-                    formatter={value => [`${value} A`, 'Current']}
+                    formatter={(value: any) => [typeof value === 'number' ? value.toExponential(4) + ' A' : value + ' A', 'Current']}
                     labelFormatter={label => `Voltage: ${label} V`}
                   />
                   <Legend />
