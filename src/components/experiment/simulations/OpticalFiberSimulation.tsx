@@ -1,277 +1,455 @@
-import React, { useState } from 'react';
-import { Slider } from '@/components/ui/slider';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import OpticalFiberScene from './opticalfiber/OpticalFiberScene';
+import { Slider } from '@/components/ui/slider';
+import { Power, Zap, Activity } from 'lucide-react';
 
-interface ChartDataPoint {
-  wavelength: number;
-  inputPower: number;
-  outputPower: number;
-  attenuation: number;
-  length: number;
-}
+const OpticalFiberLab = () => {
+  const [cableLength, setCableLength] = useState(1); // 1m or 5m
+  const [inputPower, setInputPower] = useState(5); // mW
+  const [isLaserOn, setIsLaserOn] = useState(false);
+  const [measurements, setMeasurements] = useState([]);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
 
-const OpticalFiberSimulation = () => {
-  const [wavelength, setWavelength] = useState(650);
-  const [fiberLength, setFiberLength] = useState(1);
-  const [inputPower, setInputPower] = useState(5);
-  const [attenuation, setAttenuation] = useState(0.3);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  // Fixed wavelength for laser diode (650nm - red laser)
+  const wavelength = 650;
+  
+  // Calculate attenuation coefficient based on cable quality (typical for plastic/glass fiber)
+  const attenuationCoefficient = cableLength === 1 ? 0.5 : 0.5; // dB/km
 
-  // Calculate output power based on fiber length and attenuation coefficient
-  const calculateOutputPower = (length: number, inputPower: number, attenuation: number) => {
-    // P_out = P_in * 10^(-α * L / 10), where α is in dB/km and L is in km
-    return inputPower * Math.pow(10, (-attenuation * length) / 10);
+  // Calculate output power: P_out = P_in × 10^(-α × L / 10)
+  const calculateOutputPower = () => {
+    const lengthInKm = cableLength / 1000;
+    const outputPower = inputPower * Math.pow(10, (-attenuationCoefficient * lengthInKm) / 10);
+    return outputPower;
   };
 
-  // Calculate wavelength-dependent attenuation (simplified model)
-  const calculateAttenuationCoefficient = (wavelength: number) => {
-    // Simplified model: minimum attenuation around 1550 nm
-    const rayleighScattering = 0.12 * Math.pow(1550 / wavelength, 4);
-    const infraredAbsorption = 0.1 * Math.exp((-(1620 - wavelength) * (1620 - wavelength)) / 10000);
-    const ohAbsorption = 0.2 * Math.exp((-(wavelength - 1380) * (wavelength - 1380)) / 5000);
-
-    return rayleighScattering + infraredAbsorption + ohAbsorption;
+  // Calculate attenuation in dB: Attenuation = 10 × log10(P_in / P_out)
+  const calculateAttenuation = () => {
+    const outputPower = calculateOutputPower();
+    const attenuation = 10 * Math.log10(inputPower / outputPower);
+    return attenuation;
   };
 
-  // Add data point to chart
-  const addDataPoint = () => {
-    const outputPower = calculateOutputPower(fiberLength, inputPower, attenuation);
-    const newPoint = {
-      wavelength,
-      inputPower,
-      outputPower: parseFloat(outputPower.toFixed(3)),
-      attenuation: parseFloat(attenuation.toFixed(2)),
-      length: fiberLength,
+  const outputPower = calculateOutputPower();
+  const attenuation = calculateAttenuation();
+
+  // Add measurement to table
+  const takeMeasurement = () => {
+    const newMeasurement = {
+      id: Date.now(),
+      cableLength,
+      inputPower: inputPower.toFixed(2),
+      outputPower: outputPower.toFixed(4),
+      attenuation: attenuation.toFixed(4),
     };
-
-    setChartData(prevData => {
-      const existingIndex = prevData.findIndex(
-        p => Math.abs(p.wavelength - wavelength) < 5 && Math.abs(p.length - fiberLength) < 0.1
-      );
-
-      if (existingIndex >= 0) {
-        const newData = [...prevData];
-        newData[existingIndex] = newPoint;
-        return newData;
-      } else {
-        return [...prevData, newPoint].sort((a, b) => a.wavelength - b.wavelength);
-      }
-    });
+    setMeasurements(prev => [...prev, newMeasurement]);
   };
 
-  // Generate attenuation curve as function of wavelength
-  const generateAttenuationCurve = () => {
-    const newData = [];
-    for (let wl = 800; wl <= 1600; wl += 50) {
-      const att = calculateAttenuationCoefficient(wl);
-      const outputPower = calculateOutputPower(fiberLength, inputPower, att);
-
-      newData.push({
-        wavelength: wl,
-        attenuation: parseFloat(att.toFixed(2)),
-        outputPower: parseFloat(outputPower.toFixed(3)),
-        inputPower,
-        length: fiberLength,
-      });
-    }
-    setChartData(newData);
+  // Clear all measurements
+  const clearMeasurements = () => {
+    setMeasurements([]);
   };
 
   // Export data as CSV
   const exportData = () => {
+    if (measurements.length === 0) return;
+
     const csvData = [
-      [
-        'Wavelength (nm)',
-        'Input Power (mW)',
-        'Output Power (mW)',
-        'Attenuation (dB/km)',
-        'Fiber Length (km)',
-      ],
-      ...chartData.map(point => [
-        point.wavelength,
-        point.inputPower,
-        point.outputPower,
-        point.attenuation,
-        point.length,
-      ]),
-    ]
-      .map(row => row.join(','))
-      .join('\n');
+      ['Cable Length (m)', 'Input Power (mW)', 'Output Power (mW)', 'Attenuation (dB)'],
+      ...measurements.map(m => [m.cableLength, m.inputPower, m.outputPower, m.attenuation])
+    ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvData], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'optical_fiber_data.csv';
-    document.body.appendChild(a);
+    a.download = 'fiber_optics_measurements.csv';
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  // Calculate current output power
-  const outputPower = calculateOutputPower(fiberLength, inputPower, attenuation);
+  // Animation for fiber optics visualization
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    let lightParticles = [];
+    let animationTime = 0;
+
+    // Create light particles
+    const createParticle = () => {
+      return {
+        x: 80,
+        y: height / 2 + (Math.random() - 0.5) * 20,
+        speed: 3 + Math.random() * 2,
+        life: 1.0,
+        angle: (Math.random() - 0.5) * 0.3,
+      };
+    };
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw fiber cable (transparent with core and cladding)
+      const fiberStartX = 100;
+      const fiberEndX = width - 100;
+      const fiberY = height / 2;
+      const coreRadius = 25;
+      const claddingRadius = 35;
+
+      // Draw cladding (outer layer)
+      ctx.fillStyle = 'rgba(200, 220, 255, 0.3)';
+      ctx.beginPath();
+      ctx.roundRect(fiberStartX, fiberY - claddingRadius, fiberEndX - fiberStartX, claddingRadius * 2, 10);
+      ctx.fill();
+
+      // Draw core (inner layer)
+      ctx.fillStyle = 'rgba(180, 200, 255, 0.5)';
+      ctx.beginPath();
+      ctx.roundRect(fiberStartX, fiberY - coreRadius, fiberEndX - fiberStartX, coreRadius * 2, 8);
+      ctx.fill();
+
+      // Draw fiber outline
+      ctx.strokeStyle = 'rgba(100, 150, 255, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(fiberStartX, fiberY - claddingRadius, fiberEndX - fiberStartX, claddingRadius * 2, 10);
+      ctx.stroke();
+
+      // Draw laser diode (source)
+      ctx.fillStyle = isLaserOn ? '#ef4444' : '#6b7280';
+      ctx.beginPath();
+      ctx.arc(50, fiberY, 20, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = isLaserOn ? '#fca5a5' : '#9ca3af';
+      ctx.beginPath();
+      ctx.arc(50, fiberY, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Laser beam to fiber
+      if (isLaserOn) {
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(70, fiberY);
+        ctx.lineTo(fiberStartX, fiberY);
+        ctx.stroke();
+      }
+
+      // Draw photodetector (receiver)
+      ctx.fillStyle = outputPower > 0.1 ? '#22c55e' : '#6b7280';
+      ctx.fillRect(fiberEndX + 20, fiberY - 25, 40, 50);
+      ctx.fillStyle = '#000';
+      ctx.font = '12px monospace';
+      ctx.fillText('PD', fiberEndX + 30, fiberY + 5);
+
+      // Animate light particles with total internal reflection
+      if (isLaserOn) {
+        // Add new particles
+        if (Math.random() > 0.7) {
+          lightParticles.push(createParticle());
+        }
+
+        // Update and draw particles
+        lightParticles = lightParticles.filter(p => {
+          p.x += p.speed;
+          p.y += Math.sin(p.x / 30) * p.angle * 2;
+
+          // Total internal reflection boundaries
+          const relativeY = p.y - fiberY;
+          if (Math.abs(relativeY) > coreRadius - 3) {
+            p.angle = -p.angle; // Reflect
+            p.y = fiberY + Math.sign(relativeY) * (coreRadius - 3);
+          }
+
+          // Calculate intensity based on distance (attenuation)
+          const progress = (p.x - fiberStartX) / (fiberEndX - fiberStartX);
+          const intensity = Math.pow(outputPower / inputPower, progress);
+          p.life = Math.max(0, intensity);
+
+          // Draw particle with trail
+          if (p.x < fiberEndX && p.life > 0) {
+            const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 8);
+            gradient.addColorStop(0, `rgba(255, 50, 50, ${p.life * 0.8})`);
+            gradient.addColorStop(1, `rgba(255, 100, 100, 0)`);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw reflection lines
+            ctx.strokeStyle = `rgba(255, 150, 150, ${p.life * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x - 10, p.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+
+          return p.x < fiberEndX + 50 && p.life > 0;
+        });
+      }
+
+      // Draw labels
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('Laser Diode', 20, fiberY - 40);
+      ctx.fillText('Optical Fiber', width / 2 - 40, fiberY - 50);
+      ctx.fillText('Photodetector', fiberEndX + 10, fiberY - 40);
+
+      // Draw cable length indicator
+      ctx.strokeStyle = '#6b7280';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(fiberStartX, fiberY + claddingRadius + 15);
+      ctx.lineTo(fiberEndX, fiberY + claddingRadius + 15);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(`${cableLength}m`, (fiberStartX + fiberEndX) / 2 - 15, fiberY + claddingRadius + 35);
+
+      animationTime++;
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isLaserOn, cableLength, inputPower, outputPower]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Control Panel */}
-      <div className="control-panel">
-        <h3 className="text-lg font-semibold mb-4 text-lab-blue">Optical Fiber Control Panel</h3>
-
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Wavelength (nm)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={400}
-                max={1600}
-                step={10}
-                value={[wavelength]}
-                onValueChange={values => setWavelength(values[0])}
-              />
-              <span className="min-w-[50px] text-right">{wavelength}</span>
-            </div>
-            <div
-              className="h-2 w-full rounded-full"
-              style={{
-                background: `linear-gradient(to right, violet, blue, cyan, green, yellow, orange, red, rgba(0,0,0,0.2), rgba(0,0,0,0.2))`,
-              }}
-            ></div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Fiber Length (km)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0.1}
-                max={10}
-                step={0.1}
-                value={[fiberLength]}
-                onValueChange={values => setFiberLength(values[0])}
-              />
-              <span className="min-w-[50px] text-right">{fiberLength.toFixed(1)}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Input Power (mW)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={1}
-                max={20}
-                step={0.5}
-                value={[inputPower]}
-                onValueChange={values => setInputPower(values[0])}
-              />
-              <span className="min-w-[50px] text-right">{inputPower.toFixed(1)}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Attenuation Coefficient (dB/km)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0.1}
-                max={2}
-                step={0.05}
-                value={[attenuation]}
-                onValueChange={values => setAttenuation(values[0])}
-              />
-              <span className="min-w-[50px] text-right">{attenuation.toFixed(2)}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 bg-gray-50 p-3 rounded-md">
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">Output Power</div>
-              <div className="text-2xl font-bold text-lab-teal">{outputPower.toFixed(3)} mW</div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={addDataPoint} className="flex-1">
-              Add Data Point
-            </Button>
-            <Button onClick={generateAttenuationCurve} variant="outline" className="flex-1">
-              Generate Curve
-            </Button>
-          </div>
-
-          <Button onClick={exportData} disabled={chartData.length === 0}>
-            Export Data
-          </Button>
-        </div>
-      </div>
-
-      {/* Visualization and Results */}
-      <div className="space-y-6">
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">Optical Fiber Visualization</h3>
-
-          <div className="h-80 bg-gray-100 border rounded-md overflow-hidden">
-            <OpticalFiberScene wavelength={wavelength} attenuation={attenuation} />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Optical Fiber Attenuation Virtual Lab
+          </h1>
+          <p className="text-gray-600">
+            Visualize light propagation and measure power attenuation in optical fibers
+          </p>
         </div>
 
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">Attenuation vs Wavelength</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Control Panel */}
+          <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-500" />
+              Control Panel
+            </h2>
 
-          <div className="h-64">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="wavelength"
-                    label={{ value: 'Wavelength (nm)', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    label={{ value: 'Output Power (mW)', angle: -90, position: 'insideLeft' }}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    label={{ value: 'Attenuation (dB/km)', angle: 90, position: 'insideRight' }}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="outputPower"
-                    name="Output Power"
-                    stroke="#00796b"
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="attenuation"
-                    name="Attenuation"
-                    stroke="#ef6c00"
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Add data points or generate curve to see characteristics
+            <div className="space-y-6">
+              {/* Laser Control */}
+              <div className="p-4 bg-red-50 rounded-lg border-2 border-red-200">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Laser Diode (λ = {wavelength}nm)
+                </label>
+                <Button
+                  onClick={() => setIsLaserOn(!isLaserOn)}
+                  className={`w-full ${isLaserOn ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'}`}
+                >
+                  <Power className="w-4 h-4 mr-2" />
+                  {isLaserOn ? 'Turn OFF Laser' : 'Turn ON Laser'}
+                </Button>
               </div>
-            )}
+
+              {/* Cable Length Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Cable Length
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => setCableLength(1)}
+                    variant={cableLength === 1 ? 'default' : 'outline'}
+                    className="w-full"
+                  >
+                    1 meter
+                  </Button>
+                  <Button
+                    onClick={() => setCableLength(5)}
+                    variant={cableLength === 5 ? 'default' : 'outline'}
+                    className="w-full"
+                  >
+                    5 meters
+                  </Button>
+                </div>
+              </div>
+
+              {/* Input Power Control */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Input Power: {inputPower.toFixed(1)} mW
+                </label>
+                <Slider
+                  min={1}
+                  max={10}
+                  step={0.5}
+                  value={[inputPower]}
+                  onValueChange={values => setInputPower(values[0])}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Min (1 mW)</span>
+                  <span>Max (10 mW)</span>
+                </div>
+              </div>
+
+              {/* Measurements Display */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-xs text-gray-600 mb-1">Input Power</div>
+                  <div className="text-lg font-bold text-blue-700">
+                    {inputPower.toFixed(2)} mW
+                  </div>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-xs text-gray-600 mb-1">Output Power</div>
+                  <div className="text-lg font-bold text-green-700">
+                    {outputPower.toFixed(4)} mW
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+                <div className="text-sm text-gray-600 mb-1">Attenuation</div>
+                <div className="text-2xl font-bold text-orange-700">
+                  {attenuation.toFixed(4)} dB
+                </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Formula: 10 × log₁₀(Pᵢₙ / Pₒᵤₜ)
+                </div>
+              </div>
+
+              {/* Measurement Button */}
+              <Button
+                onClick={takeMeasurement}
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                disabled={!isLaserOn}
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Record Measurement
+              </Button>
+            </div>
+          </div>
+
+          {/* Visualization and Data */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Fiber Visualization */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Total Internal Reflection Visualization
+              </h2>
+              <div className="bg-gray-900 rounded-lg overflow-hidden">
+                <canvas
+                  ref={canvasRef}
+                  width={800}
+                  height={300}
+                  className="w-full"
+                />
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>Watch:</strong> Light particles travel through the fiber core, reflecting off the boundary 
+                  between core and cladding (total internal reflection). Notice how intensity decreases along the fiber 
+                  due to attenuation.
+                </p>
+              </div>
+            </div>
+
+            {/* Measurement Table */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Recorded Measurements</h2>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={exportData}
+                    disabled={measurements.length === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Export CSV
+                  </Button>
+                  <Button
+                    onClick={clearMeasurements}
+                    disabled={measurements.length === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Cable Length (m)</th>
+                      <th className="px-4 py-2 text-left">Input Power (mW)</th>
+                      <th className="px-4 py-2 text-left">Output Power (mW)</th>
+                      <th className="px-4 py-2 text-left">Attenuation (dB)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {measurements.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                          No measurements recorded yet. Turn on the laser and click "Record Measurement"
+                        </td>
+                      </tr>
+                    ) : (
+                      measurements.map(m => (
+                        <tr key={m.id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-2">{m.cableLength}</td>
+                          <td className="px-4 py-2">{m.inputPower}</td>
+                          <td className="px-4 py-2">{m.outputPower}</td>
+                          <td className="px-4 py-2 font-semibold text-orange-600">{m.attenuation}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Theory Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-3">Understanding the Experiment</h2>
+              <div className="space-y-3 text-sm text-gray-700">
+                <p>
+                  <strong>Total Internal Reflection:</strong> Light travels through the fiber core by continuously 
+                  reflecting off the boundary with the cladding. This occurs because the core has a higher refractive 
+                  index than the cladding.
+                </p>
+                <p>
+                  <strong>Attenuation:</strong> As light travels through the fiber, some energy is lost due to 
+                  absorption, scattering, and other factors. This power loss is measured in decibels (dB).
+                </p>
+                <p>
+                  <strong>Formula:</strong> Attenuation (dB) = 10 × log₁₀(Pᵢₙ / Pₒᵤₜ)
+                  <br />
+                  where Pᵢₙ is input power and Pₒᵤₜ is output power
+                </p>
+                <p>
+                  <strong>Expected Result:</strong> Longer cables show higher attenuation. Try measuring both 1m and 5m 
+                  cables at different power levels to see the relationship!
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -279,4 +457,4 @@ const OpticalFiberSimulation = () => {
   );
 };
 
-export default OpticalFiberSimulation;
+export default OpticalFiberLab;
