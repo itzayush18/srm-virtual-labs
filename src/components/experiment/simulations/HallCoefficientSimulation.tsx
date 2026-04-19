@@ -5,25 +5,22 @@ const MATERIALS = {
     name: 'Silicon',
     label: 'Silicon (n-type)',
     type: 'n',
-    rh: +0.0038,
-    sigma: 4.4e-4,
-    n: 1.5e14,
+    carrierDensity: 1.64e21,
+    mobility: 0.135,
   },
   ge: {
     name: 'Germanium',
     label: 'Germanium (n-type)',
     type: 'n',
-    rh: +0.0093,
-    sigma: 2.17,
-    n: 2.4e13,
+    carrierDensity: 6.72e20,
+    mobility: 0.39,
   },
   gaas: {
     name: 'GaAs',
     label: 'GaAs (p-type)',
     type: 'p',
-    rh: -0.0056,
-    sigma: 1e-6,
-    n: 9.0e13,
+    carrierDensity: 1.12e21,
+    mobility: 0.04,
   },
 };
 
@@ -68,6 +65,20 @@ function fmtVh(v) {
 
 function calcB(coilI, coilN) {
   return (MU0 * coilN * coilI) / SOLENOID_L;
+}
+
+function calcHallCoefficient(material) {
+  const sign = material.type === 'n' ? 1 : -1;
+  return sign / (E_CHARGE * material.carrierDensity);
+}
+
+function calcConductivity(material) {
+  return E_CHARGE * material.carrierDensity * material.mobility;
+}
+
+function fmtDensityWithAltUnit(v) {
+  const perCm3 = v / 1e6;
+  return `${fmtSci(perCm3, 'cm⁻³')} (${fmtSci(v, 'm⁻³')})`;
 }
 
 function SliderRow({ label, id, min, max, step, value, onChange, display }) {
@@ -477,14 +488,15 @@ const HallCoefficientSimulation = () => {
   }, []);
 
   const mat = MATERIALS[matKey];
+  const rh = calcHallCoefficient(mat);
+  const sigma = calcConductivity(mat);
   const B = calcB(coilI, coilN);
   const I = I_mA / 1e3;
   const t = thickness / 1e3;
-  const Vh = ((mat.rh * I * B) / t) * 1e3;
-
+  const Vh = ((rh * I * B) / t) * 1e3;
   const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
-  const carrierDensity = Math.abs(measuredRh) > 1e-18 ? 1 / (E_CHARGE * Math.abs(measuredRh)) : 0;
-  const muH = Math.abs(measuredRh) * mat.sigma;
+  const carrierDensity = 1 / (E_CHARGE * Math.abs(rh));
+  const muH = Math.abs(rh) * sigma;
 
   useEffect(() => {
     const Bkey = parseFloat(B.toFixed(5));
@@ -646,17 +658,17 @@ const HallCoefficientSimulation = () => {
             <MetricCard
               label="Hall coeff. RH"
               value={fmtSci(measuredRh, 'm³/C')}
-              sub="Computed from VH x t / (I x B)"
+              sub="Derived from VH x t / (I x B); fixed for a selected material"
             />
             <MetricCard
               label="Carrier density"
-              value={fmtSci(carrierDensity, 'm⁻³')}
-              sub="Estimated from 1 / (q x |RH|)"
+              value={fmtDensityWithAltUnit(carrierDensity)}
+              sub="Shown in cm⁻³ and m⁻³ to keep the scale readable"
             />
             <MetricCard
               label="Hall mobility μH"
               value={fmtSci(muH, 'm²/V·s')}
-              sub={`μH = |RH| x σ   (σ = ${mat.sigma.toExponential(2)} S/m)`}
+              sub={`μH = |RH| x σ   (σ = ${sigma.toExponential(2)} S/m)`}
               span
             />
           </div>
