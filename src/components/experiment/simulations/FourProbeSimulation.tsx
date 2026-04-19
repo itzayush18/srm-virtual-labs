@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import {
@@ -123,21 +123,10 @@ const FourProbeResistivitySimulation = () => {
   const [currentmA, setCurrentmA] = useState(2);
   const [spacingMm, setSpacingMm] = useState(2);
   const [thicknessMm, setThicknessMm] = useState(0.05);
+  const [chartData, setChartData] = useState([]);
 
   const material = MATERIALS[materialKey];
   const correctionFactor = calcCorrectionFactor(thicknessMm, spacingMm);
-
-  const chartData = useMemo(
-    () => buildChartData(material, currentmA, spacingMm, thicknessMm),
-    [material, currentmA, spacingMm, thicknessMm]
-  );
-
-  const regression = useMemo(
-    () => linearRegression(chartData.map((point) => ({ x: point.x, y: point.y }))),
-    [chartData]
-  );
-
-  const energyGapEV = 2 * BOLTZMANN_EV * Math.LN10 * 1000 * regression.slope;
 
   const currentPoint = useMemo(() => {
     const rho = calcResistivityAtTemp(material, temperatureC);
@@ -153,6 +142,35 @@ const FourProbeResistivitySimulation = () => {
       y: log10(rho),
     };
   }, [material, temperatureC, currentmA, spacingMm, correctionFactor]);
+
+  useEffect(() => {
+    setChartData((prev) => {
+      const nextPoint = {
+        tempC: currentPoint.tempC,
+        tempK: currentPoint.tempK,
+        voltage: currentPoint.voltage,
+        rho: currentPoint.rho,
+        rho0: currentPoint.rho0,
+        x: currentPoint.x,
+        y: currentPoint.y,
+      };
+      const existingIndex = prev.findIndex((point) => point.tempC === currentPoint.tempC);
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next[existingIndex] = nextPoint;
+        return next.sort((a, b) => a.x - b.x);
+      }
+      return [...prev, nextPoint].sort((a, b) => a.x - b.x);
+    });
+  }, [currentPoint]);
+
+  const regression = useMemo(
+    () => linearRegression(chartData.map((point) => ({ x: point.x, y: point.y }))),
+    [chartData]
+  );
+
+  const energyGapEV =
+    chartData.length >= 2 ? 2 * BOLTZMANN_EV * Math.LN10 * 1000 * regression.slope : 0;
 
   const exportData = () => {
     const rows = [
@@ -204,7 +222,12 @@ const FourProbeResistivitySimulation = () => {
     setCurrentmA(2);
     setSpacingMm(2);
     setThicknessMm(0.05);
+    setChartData([]);
   };
+
+  useEffect(() => {
+    setChartData([]);
+  }, [materialKey, currentmA, spacingMm, thicknessMm]);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -303,7 +326,7 @@ const FourProbeResistivitySimulation = () => {
             </p>
           </div>
 
-          <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
             <div>Correction factor, f(w/s) = {correctionFactor.toFixed(3)}</div>
             <div>w / s = {(thicknessMm / spacingMm).toFixed(4)}</div>
           </div>
@@ -360,7 +383,7 @@ const FourProbeResistivitySimulation = () => {
             <div className="rounded-lg border p-4">
               <div className="text-sm text-slate-500">Energy Gap</div>
               <div className="mt-1 text-2xl font-bold text-rose-700">
-                {energyGapEV.toFixed(3)} eV
+                {chartData.length >= 2 ? `${energyGapEV.toFixed(3)} eV` : '--'}
               </div>
             </div>
           </div>
@@ -372,6 +395,7 @@ const FourProbeResistivitySimulation = () => {
               <div>ρ = ρ₀ / f(w/s)</div>
               <div>For the graph, y = log10 ρ and x = 1000 / T</div>
               <div>Energy gap, Eg = 2k ln(10) × 1000 × slope</div>
+              <div>Move the temperature slider to collect graph points experimentally</div>
             </div>
           </div>
         </div>
@@ -379,54 +403,59 @@ const FourProbeResistivitySimulation = () => {
         <div className="rounded-xl border bg-white p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-800">log10 ρ versus 1000 / T</h3>
           <div className="mt-4 h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 16, right: 20, left: 10, bottom: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="x"
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(value) => round(value, 3)}
-                  label={{ value: '1000 / T (K^-1)', position: 'insideBottom', offset: -6 }}
-                />
-                <YAxis
-                  domain={['auto', 'auto']}
-                  tickFormatter={(value) => round(value, 3)}
-                  label={{ value: 'log10 ρ', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip
-                  formatter={(value, name) => {
-                    if (name === 'log10 ρ') return [Number(value).toFixed(4), name];
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => `1000 / T = ${Number(label).toFixed(4)} K^-1`}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="y"
-                  name="log10 ρ"
-                  stroke="#0f766e"
-                  strokeWidth={2.5}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <ReferenceDot
-                  x={currentPoint.x}
-                  y={currentPoint.y}
-                  r={7}
-                  fill="#dc2626"
-                  stroke="white"
-                  strokeWidth={2}
-                  label={{ value: `${temperatureC} °C`, position: 'top', fill: '#dc2626' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 16, right: 20, left: 10, bottom: 16 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="x"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    tickFormatter={(value) => round(value, 3)}
+                    label={{ value: '1000 / T (K^-1)', position: 'insideBottom', offset: -6 }}
+                  />
+                  <YAxis
+                    domain={['auto', 'auto']}
+                    tickFormatter={(value) => round(value, 3)}
+                    label={{ value: 'log10 ρ', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      if (name === 'log10 ρ') return [Number(value).toFixed(4), name];
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => `1000 / T = ${Number(label).toFixed(4)} K^-1`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="y"
+                    name="log10 ρ"
+                    stroke="#0f766e"
+                    strokeWidth={2.5}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <ReferenceDot
+                    x={currentPoint.x}
+                    y={currentPoint.y}
+                    r={7}
+                    fill="#dc2626"
+                    stroke="white"
+                    strokeWidth={2}
+                    label={{ value: `${temperatureC} °C`, position: 'top', fill: '#dc2626' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-sm text-slate-500">
+                Move the temperature slider to start plotting data points
+              </div>
+            )}
           </div>
           <p className="mt-3 text-sm text-slate-500">
-            The graph is regenerated for the selected semiconductor and geometry. Changing current alters
-            the measured voltage, while changing thickness updates the correction factor and corrected
-            resistivity.
+            The graph is built from the temperatures you actually visit with the slider. Changing material,
+            current, spacing, or thickness clears the old plot so you can record a fresh trial.
           </p>
         </div>
       </div>
