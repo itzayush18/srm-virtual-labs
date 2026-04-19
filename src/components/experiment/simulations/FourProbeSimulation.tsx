@@ -24,13 +24,17 @@ const MATERIALS = {
   germanium: {
     name: 'Germanium',
     symbol: 'Ge',
-    energyGapEV: 0.67,
+    eg0EV: 0.7437,
+    varshniAlpha: 4.774e-4,
+    varshniBeta: 235,
     rhoAtRoomOhmCm: 45,
   },
   silicon: {
     name: 'Silicon',
     symbol: 'Si',
-    energyGapEV: 1.12,
+    eg0EV: 1.166,
+    varshniAlpha: 4.73e-4,
+    varshniBeta: 636,
     rhoAtRoomOhmCm: 2300,
   },
 };
@@ -54,11 +58,17 @@ function calcCorrectionFactor(thicknessMm, spacingMm) {
   return Math.max(1, factor);
 }
 
+function calcEnergyGapAtTemp(material, tempC) {
+  const tempK = toKelvin(tempC);
+  return material.eg0EV - (material.varshniAlpha * tempK * tempK) / (tempK + material.varshniBeta);
+}
+
 function calcResistivityAtTemp(material, tempC) {
   const tRef = toKelvin(ROOM_TEMP_C);
   const tNow = toKelvin(tempC);
-  const exponent =
-    (material.energyGapEV / (2 * BOLTZMANN_EV)) * ((1 / tNow) - (1 / tRef));
+  const egRef = calcEnergyGapAtTemp(material, ROOM_TEMP_C);
+  const egNow = calcEnergyGapAtTemp(material, tempC);
+  const exponent = (egNow / (2 * BOLTZMANN_EV * tNow)) - (egRef / (2 * BOLTZMANN_EV * tRef));
   return material.rhoAtRoomOhmCm * Math.exp(exponent);
 }
 
@@ -72,10 +82,6 @@ function calcRho0(voltageV, currentmA, spacingMm) {
   const currentA = currentmA / 1000;
   const spacingCm = spacingMm / 10;
   return (voltageV / currentA) * 2 * Math.PI * spacingCm;
-}
-
-function calcCorrectedRho(voltageV, currentmA, spacingMm, correctionFactor) {
-  return calcRho0(voltageV, currentmA, spacingMm) / correctionFactor;
 }
 
 function linearRegression(points) {
@@ -95,28 +101,6 @@ function linearRegression(points) {
   return { slope, intercept };
 }
 
-function buildChartData(material, currentmA, spacingMm, thicknessMm) {
-  const correctionFactor = calcCorrectionFactor(thicknessMm, spacingMm);
-  const data = [];
-
-  for (let temp = ROOM_TEMP_C; temp <= MAX_TEMP_C; temp += 5) {
-    const tempK = toKelvin(temp);
-    const rho = calcResistivityAtTemp(material, temp);
-    const voltage = calcMeasuredVoltage(rho, currentmA, spacingMm, correctionFactor);
-    data.push({
-      tempC: temp,
-      tempK,
-      voltage,
-      rho,
-      rho0: calcRho0(voltage, currentmA, spacingMm),
-      x: 1000 / tempK,
-      y: log10(rho),
-    });
-  }
-
-  return data;
-}
-
 const FourProbeResistivitySimulation = () => {
   const [materialKey, setMaterialKey] = useState('germanium');
   const [temperatureC, setTemperatureC] = useState(ROOM_TEMP_C);
@@ -129,12 +113,15 @@ const FourProbeResistivitySimulation = () => {
   const correctionFactor = calcCorrectionFactor(thicknessMm, spacingMm);
 
   const currentPoint = useMemo(() => {
+    const tempK = toKelvin(temperatureC);
+    const energyGapEV = calcEnergyGapAtTemp(material, temperatureC);
     const rho = calcResistivityAtTemp(material, temperatureC);
     const voltage = calcMeasuredVoltage(rho, currentmA, spacingMm, correctionFactor);
-    const tempK = toKelvin(temperatureC);
+
     return {
       tempC: temperatureC,
       tempK,
+      energyGapEV,
       voltage,
       rho,
       rho0: calcRho0(voltage, currentmA, spacingMm),
@@ -148,28 +135,35 @@ const FourProbeResistivitySimulation = () => {
       const nextPoint = {
         tempC: currentPoint.tempC,
         tempK: currentPoint.tempK,
+        energyGapEV: currentPoint.energyGapEV,
         voltage: currentPoint.voltage,
         rho: currentPoint.rho,
         rho0: currentPoint.rho0,
         x: currentPoint.x,
         y: currentPoint.y,
       };
+
       const existingIndex = prev.findIndex((point) => point.tempC === currentPoint.tempC);
       if (existingIndex >= 0) {
         const next = [...prev];
         next[existingIndex] = nextPoint;
         return next.sort((a, b) => a.x - b.x);
       }
+
       return [...prev, nextPoint].sort((a, b) => a.x - b.x);
     });
   }, [currentPoint]);
+
+  useEffect(() => {
+    setChartData([]);
+  }, [materialKey, currentmA, spacingMm, thicknessMm]);
 
   const regression = useMemo(
     () => linearRegression(chartData.map((point) => ({ x: point.x, y: point.y }))),
     [chartData]
   );
 
-  const energyGapEV =
+  const fittedEnergyGapEV =
     chartData.length >= 2 ? 2 * BOLTZMANN_EV * Math.LN10 * 1000 * regression.slope : 0;
 
   const exportData = () => {
@@ -187,7 +181,8 @@ const FourProbeResistivitySimulation = () => {
         'Corrected rho (ohm-cm)',
         '1000/T (K^-1)',
         'log10(rho)',
-        'Energy gap (eV)',
+        'Eg(T) (eV)',
+        'Fitted Eg from graph (eV)',
       ],
       ...chartData.map((point) => [
         material.name,
@@ -202,7 +197,8 @@ const FourProbeResistivitySimulation = () => {
         point.rho.toFixed(4),
         point.x.toFixed(4),
         point.y.toFixed(5),
-        energyGapEV.toFixed(3),
+        point.energyGapEV.toFixed(4),
+        fittedEnergyGapEV.toFixed(4),
       ]),
     ];
 
@@ -225,18 +221,14 @@ const FourProbeResistivitySimulation = () => {
     setChartData([]);
   };
 
-  useEffect(() => {
-    setChartData([]);
-  }, [materialKey, currentmA, spacingMm, thicknessMm]);
-
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="space-y-6 rounded-xl border bg-white p-5 shadow-sm lg:col-span-1">
         <div>
           <h3 className="text-lg font-semibold text-slate-800">Four Probe Controls</h3>
           <p className="mt-1 text-sm text-slate-500">
-            The outer probes supply current and the two inner probes measure voltage. You can change the
-            current level, sample thickness, and semiconductor to study how the measured voltage responds.
+            The outer probes supply current and the inner probes measure voltage. The displayed band gap
+            now changes with temperature through a temperature-dependent semiconductor model.
           </p>
         </div>
 
@@ -263,12 +255,12 @@ const FourProbeResistivitySimulation = () => {
 
           <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
             <div>Selected sample: {material.name}</div>
-            <div>Reference gap used in model: {material.energyGapEV.toFixed(2)} eV</div>
+            <div>Band-gap model: Eg(T) = Eg(0) - alpha T^2 / (T + beta)</div>
           </div>
 
           <div className="space-y-3">
             <label className="text-sm font-medium text-slate-700">
-              Temperature: {temperatureC} °C ({currentPoint.tempK.toFixed(2)} K)
+              Temperature: {temperatureC} C ({currentPoint.tempK.toFixed(2)} K)
             </label>
             <Slider
               min={ROOM_TEMP_C}
@@ -290,10 +282,6 @@ const FourProbeResistivitySimulation = () => {
               value={[currentmA]}
               onValueChange={(values) => setCurrentmA(values[0])}
             />
-            <p className="text-xs leading-5 text-slate-500">
-              Resistivity should remain essentially independent of current in the ideal ohmic region, while
-              the measured voltage changes in direct proportion to current.
-            </p>
           </div>
 
           <div className="space-y-3">
@@ -320,13 +308,9 @@ const FourProbeResistivitySimulation = () => {
               value={[thicknessMm]}
               onValueChange={(values) => setThicknessMm(values[0])}
             />
-            <p className="text-xs leading-5 text-slate-500">
-              The thickness changes the thickness-to-spacing ratio w/s, so the correction factor f(w/s) is
-              updated automatically in this simulation.
-            </p>
           </div>
 
-            <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
+          <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
             <div>Correction factor, f(w/s) = {correctionFactor.toFixed(3)}</div>
             <div>w / s = {(thicknessMm / spacingMm).toFixed(4)}</div>
           </div>
@@ -353,55 +337,62 @@ const FourProbeResistivitySimulation = () => {
             </div>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm text-slate-500">Uncorrected Resistivity, ρ₀</div>
+              <div className="text-sm text-slate-500">Uncorrected Resistivity, rho0</div>
               <div className="mt-1 text-2xl font-bold text-teal-700">
-                {currentPoint.rho0.toFixed(2)} Ω·cm
+                {currentPoint.rho0.toFixed(2)} ohm-cm
               </div>
             </div>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm text-slate-500">Corrected Resistivity, ρ</div>
+              <div className="text-sm text-slate-500">Corrected Resistivity, rho</div>
               <div className="mt-1 text-2xl font-bold text-teal-700">
-                {currentPoint.rho.toFixed(2)} Ω·cm
+                {currentPoint.rho.toFixed(2)} ohm-cm
               </div>
             </div>
 
             <div className="rounded-lg border p-4">
               <div className="text-sm text-slate-500">1000 / T</div>
               <div className="mt-1 text-2xl font-bold text-indigo-700">
-                {currentPoint.x.toFixed(4)} K⁻¹
+                {currentPoint.x.toFixed(4)} K^-1
               </div>
             </div>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm text-slate-500">log10 ρ</div>
+              <div className="text-sm text-slate-500">log10 rho</div>
               <div className="mt-1 text-2xl font-bold text-indigo-700">
                 {currentPoint.y.toFixed(4)}
               </div>
             </div>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm text-slate-500">Energy Gap</div>
+              <div className="text-sm text-slate-500">Energy Gap at This Temperature</div>
               <div className="mt-1 text-2xl font-bold text-rose-700">
-                {chartData.length >= 2 ? `${energyGapEV.toFixed(3)} eV` : '--'}
+                {currentPoint.energyGapEV.toFixed(3)} eV
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+            {chartData.length >= 2
+              ? `Fitted energy gap from the current graph: ${fittedEnergyGapEV.toFixed(3)} eV`
+              : 'Record at least two temperatures to estimate a fitted energy gap from the graph.'}
           </div>
 
           <div className="mt-5 rounded-xl border bg-slate-50 p-4">
             <h4 className="text-sm font-semibold text-slate-700">Four Probe Relations</h4>
             <div className="mt-2 space-y-1 text-sm leading-6 text-slate-600">
-              <div>ρ₀ = (V / I) × 2πs</div>
-              <div>ρ = ρ₀ / f(w/s)</div>
-              <div>For the graph, y = log10 ρ and x = 1000 / T</div>
-              <div>Energy gap, Eg = 2k ln(10) × 1000 × slope</div>
+              <div>rho0 = (V / I) x 2pi s</div>
+              <div>rho = rho0 / f(w/s)</div>
+              <div>For the graph, y = log10 rho and x = 1000 / T</div>
+              <div>Temperature-dependent band gap: Eg(T) = Eg(0) - alpha T^2 / (T + beta)</div>
+              <div>Graph-fit gap: Eg = 2k ln(10) x 1000 x slope</div>
               <div>Move the temperature slider to collect graph points experimentally</div>
             </div>
           </div>
         </div>
 
         <div className="rounded-xl border bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-800">log10 ρ versus 1000 / T</h3>
+          <h3 className="text-lg font-semibold text-slate-800">log10 rho versus 1000 / T</h3>
           <div className="mt-4 h-80">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -417,11 +408,11 @@ const FourProbeResistivitySimulation = () => {
                   <YAxis
                     domain={['auto', 'auto']}
                     tickFormatter={(value) => round(value, 3)}
-                    label={{ value: 'log10 ρ', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'log10 rho', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip
                     formatter={(value, name) => {
-                      if (name === 'log10 ρ') return [Number(value).toFixed(4), name];
+                      if (name === 'log10 rho') return [Number(value).toFixed(4), name];
                       return [value, name];
                     }}
                     labelFormatter={(label) => `1000 / T = ${Number(label).toFixed(4)} K^-1`}
@@ -430,7 +421,7 @@ const FourProbeResistivitySimulation = () => {
                   <Line
                     type="monotone"
                     dataKey="y"
-                    name="log10 ρ"
+                    name="log10 rho"
                     stroke="#0f766e"
                     strokeWidth={2.5}
                     dot={{ r: 4 }}
@@ -443,7 +434,7 @@ const FourProbeResistivitySimulation = () => {
                     fill="#dc2626"
                     stroke="white"
                     strokeWidth={2}
-                    label={{ value: `${temperatureC} °C`, position: 'top', fill: '#dc2626' }}
+                    label={{ value: `${temperatureC} C`, position: 'top', fill: '#dc2626' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -454,8 +445,9 @@ const FourProbeResistivitySimulation = () => {
             )}
           </div>
           <p className="mt-3 text-sm text-slate-500">
-            The graph is built from the temperatures you actually visit with the slider. Changing material,
-            current, spacing, or thickness clears the old plot so you can record a fresh trial.
+            The curve is now allowed to bend slightly because the displayed band gap changes with
+            temperature. The fitted graph value is still shown separately as an average estimate from the
+            recorded points.
           </p>
         </div>
       </div>
