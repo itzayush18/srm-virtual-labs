@@ -1,281 +1,331 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ReferenceDot,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from 'recharts';
 
-const FourProbeSimulation = () => {
-  const [material, setMaterial] = useState('silicon');
-  const [current, setCurrent] = useState(1); // mA
-  const [probeSpacing, setProbeSpacing] = useState(2); // mm
-  const [thickness, setThickness] = useState(0.5); // mm
-  const [resistivity, setResistivity] = useState(0);
-  const [voltage, setVoltage] = useState(0);
-  type ChartPoint = { current: number; voltage: number };
-  const [chartData, setChartData] = useState<ChartPoint[]>([]);
+const CURRENT_MA = 2;
+const PROBE_SPACING_MM = 2;
+const THICKNESS_MM = 0.05;
+const CORRECTION_FACTOR = 5.52;
+const ROOM_TEMP_C = 25;
+const MAX_TEMP_C = 90;
+const BOLTZMANN_EV = 8.617333262e-5;
 
-  // Materials and their properties
-  const materials = React.useMemo(
-    () => ({
-      silicon: { resistivity: 1000 }, // Ω·cm
-      germanium: { resistivity: 60 }, // Ω·cm
-      gallium_arsenide: { resistivity: 1e8 }, // Ω·cm
-    }),
-    []
-  );
+const GERMANIUM = {
+  name: 'Germanium',
+  symbol: 'Ge',
+  energyGapEV: 0.67,
+  rhoAtRoomOhmCm: 45,
+};
 
-  // Calculate voltage and resistivity when parameters change
-  React.useEffect(() => {
-    const materialInfo = materials[material as keyof typeof materials];
-    const baseResistivity = materialInfo.resistivity;
+function toKelvin(tempC) {
+  return tempC + 273.15;
+}
 
-    // Add some variability based on thickness and probe spacing
-    const factor = 1 + thickness * 0.1 * (Math.random() * 0.2 - 0.1);
-    const actualResistivity = baseResistivity * factor;
+function log10(value) {
+  return Math.log(value) / Math.LN10;
+}
 
-    // Calculate voltage using four-probe method formula
-    const currentInA = current / 1000;
-    const spacingInCm = probeSpacing / 10;
-    const calculatedVoltage = (currentInA * actualResistivity) / (2 * Math.PI * spacingInCm);
+function round(value, digits = 3) {
+  return Number(value.toFixed(digits));
+}
 
-    setVoltage(parseFloat(calculatedVoltage.toFixed(3)));
-    setResistivity(parseFloat(actualResistivity.toFixed(2)));
+function calcResistivityAtTemp(tempC) {
+  const tRef = toKelvin(ROOM_TEMP_C);
+  const tNow = toKelvin(tempC);
+  const exponent =
+    (GERMANIUM.energyGapEV / (2 * BOLTZMANN_EV)) * ((1 / tNow) - (1 / tRef));
+  return GERMANIUM.rhoAtRoomOhmCm * Math.exp(exponent);
+}
 
-    // Update chart data
-    if (current > 0) {
-      setChartData(prev => {
-        const existingIndex = prev.findIndex(d => Math.abs(d.current - current) < 0.01);
-        const newPoint = { current, voltage: calculatedVoltage };
+function calcMeasuredVoltage(resistivityOhmCm) {
+  const currentA = CURRENT_MA / 1000;
+  const spacingCm = PROBE_SPACING_MM / 10;
+  return (resistivityOhmCm * currentA * CORRECTION_FACTOR) / (2 * Math.PI * spacingCm);
+}
 
-        if (existingIndex >= 0) {
-          const newData = [...prev];
-          newData[existingIndex] = newPoint;
-          return newData.sort((a, b) => a.current - b.current);
-        } else {
-          return [...prev, newPoint].sort((a, b) => a.current - b.current);
-        }
+function calcRho0(voltageV) {
+  const currentA = CURRENT_MA / 1000;
+  const spacingCm = PROBE_SPACING_MM / 10;
+  return ((voltageV / currentA) * 2 * Math.PI * spacingCm);
+}
+
+function calcCorrectedRho(voltageV) {
+  return calcRho0(voltageV) / CORRECTION_FACTOR;
+}
+
+function linearRegression(points) {
+  const n = points.length;
+  const sumX = points.reduce((acc, p) => acc + p.x, 0);
+  const sumY = points.reduce((acc, p) => acc + p.y, 0);
+  const sumXY = points.reduce((acc, p) => acc + p.x * p.y, 0);
+  const sumX2 = points.reduce((acc, p) => acc + p.x * p.x, 0);
+  const denominator = n * sumX2 - sumX * sumX;
+
+  if (n < 2 || denominator === 0) {
+    return { slope: 0, intercept: 0 };
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
+
+const FourProbeResistivitySimulation = () => {
+  const [temperatureC, setTemperatureC] = useState(ROOM_TEMP_C);
+
+  const chartData = useMemo(() => {
+    const data = [];
+    for (let temp = ROOM_TEMP_C; temp <= MAX_TEMP_C; temp += 5) {
+      const temperatureK = toKelvin(temp);
+      const rho = calcResistivityAtTemp(temp);
+      const voltage = calcMeasuredVoltage(rho);
+      data.push({
+        tempC: temp,
+        tempK: temperatureK,
+        voltage,
+        rho,
+        rho0: calcRho0(voltage),
+        x: 1000 / temperatureK,
+        y: log10(rho),
       });
     }
-  }, [material, current, probeSpacing, thickness, materials]);
+    return data;
+  }, []);
 
-  const resetExperiment = () => {
-    setMaterial('silicon');
-    setCurrent(1);
-    setProbeSpacing(2);
-    setThickness(0.5);
-    setChartData([]);
-  };
+  const regression = useMemo(
+    () => linearRegression(chartData.map((point) => ({ x: point.x, y: point.y }))),
+    [chartData]
+  );
+
+  const energyGapEV = 2 * BOLTZMANN_EV * Math.LN10 * 1000 * regression.slope;
+
+  const currentPoint = useMemo(() => {
+    const rho = calcResistivityAtTemp(temperatureC);
+    const voltage = calcMeasuredVoltage(rho);
+    const temperatureK = toKelvin(temperatureC);
+    return {
+      tempC: temperatureC,
+      tempK: temperatureK,
+      voltage,
+      rho,
+      rho0: calcRho0(voltage),
+      x: 1000 / temperatureK,
+      y: log10(rho),
+    };
+  }, [temperatureC]);
 
   const exportData = () => {
-    const csvData = [
-      ['Current (mA)', 'Voltage (V)', 'Resistivity (Ω·cm)'],
-      ...chartData.map(point => [point.current, point.voltage, resistivity]),
-    ]
-      .map(row => row.join(','))
-      .join('\n');
+    const rows = [
+      [
+        'Temperature (C)',
+        'Temperature (K)',
+        'Voltage (V)',
+        'rho0 (ohm-cm)',
+        'Corrected rho (ohm-cm)',
+        '1000/T (K^-1)',
+        'log10(rho)',
+      ],
+      ...chartData.map((point) => [
+        point.tempC,
+        point.tempK.toFixed(2),
+        point.voltage.toFixed(6),
+        point.rho0.toFixed(4),
+        point.rho.toFixed(4),
+        point.x.toFixed(4),
+        point.y.toFixed(5),
+      ]),
+    ];
 
-    const blob = new Blob([csvData], { type: 'text/csv' });
+    const csv = rows.map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'four_probe_data.csv';
-    document.body.appendChild(a);
+    a.download = 'four_probe_germanium.csv';
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
+  const resetExperiment = () => {
+    setTemperatureC(ROOM_TEMP_C);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Control Panel */}
-      <div className="md:col-span-1 control-panel">
-        <h3 className="text-lg font-semibold mb-4 text-lab-blue">Control Panel</h3>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="space-y-6 rounded-xl border bg-white p-5 shadow-sm lg:col-span-1">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-800">Four Probe Controls</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Outer probes supply a fixed current of 2 mA. Inner probes measure the voltage across the
+            germanium sample.
+          </p>
+        </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Material Selection</label>
-            <Select value={material} onValueChange={setMaterial}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select material" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="silicon">Silicon</SelectItem>
-                <SelectItem value="germanium">Germanium</SelectItem>
-                <SelectItem value="gallium_arsenide">Gallium Arsenide</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Current (mA)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0.1}
-                max={10}
-                step={0.1}
-                value={[current]}
-                onValueChange={values => setCurrent(values[0])}
-              />
-              <span className="min-w-[40px] text-right">{current}</span>
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-slate-50 p-3">
+            <div className="text-sm font-medium text-slate-700">Material</div>
+            <div className="mt-1 text-base font-semibold text-slate-900">
+              {GERMANIUM.name} ({GERMANIUM.symbol})
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Probe Spacing (mm)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0.5}
-                max={10}
-                step={0.5}
-                value={[probeSpacing]}
-                onValueChange={values => setProbeSpacing(values[0])}
-              />
-              <span className="min-w-[40px] text-right">{probeSpacing}</span>
-            </div>
+          <div className="rounded-lg border bg-slate-50 p-3 text-sm text-slate-700">
+            <div>Current, I = {CURRENT_MA} mA</div>
+            <div>Probe spacing, s = {PROBE_SPACING_MM} mm</div>
+            <div>Thickness, w = {THICKNESS_MM} mm</div>
+            <div>Correction factor, f(w/s) = {CORRECTION_FACTOR}</div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Sample Thickness (mm)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={[thickness]}
-                onValueChange={values => setThickness(values[0])}
-              />
-              <span className="min-w-[40px] text-right">{thickness}</span>
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700">
+              Temperature: {temperatureC} °C ({currentPoint.tempK.toFixed(2)} K)
+            </label>
+            <Slider
+              min={ROOM_TEMP_C}
+              max={MAX_TEMP_C}
+              step={1}
+              value={[temperatureC]}
+              onValueChange={(values) => setTemperatureC(values[0])}
+            />
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>{ROOM_TEMP_C} °C</span>
+              <span>{MAX_TEMP_C} °C</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
             <Button onClick={resetExperiment} variant="outline">
-              Reset Experiment
+              Reset Temperature
             </Button>
             <Button onClick={exportData}>Export Data</Button>
           </div>
         </div>
       </div>
 
-      {/* Visualization */}
-      <div className="md:col-span-2 space-y-6">
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">Measurement Data</h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border rounded-md p-3">
-              <div className="text-sm text-gray-500 mb-1">Measured Voltage</div>
-              <div className="text-2xl font-bold text-lab-teal">{voltage} V</div>
+      <div className="space-y-6 lg:col-span-2">
+        <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800">Measured Data</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">Measured Voltage</div>
+              <div className="mt-1 text-2xl font-bold text-teal-700">
+                {currentPoint.voltage.toFixed(4)} V
+              </div>
             </div>
 
-            <div className="border rounded-md p-3">
-              <div className="text-sm text-gray-500 mb-1">Calculated Resistivity</div>
-              <div className="text-2xl font-bold text-lab-teal">{resistivity} Ω·cm</div>
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">Uncorrected Resistivity, ρ₀</div>
+              <div className="mt-1 text-2xl font-bold text-teal-700">
+                {currentPoint.rho0.toFixed(2)} Ω·cm
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">Corrected Resistivity, ρ</div>
+              <div className="mt-1 text-2xl font-bold text-teal-700">
+                {currentPoint.rho.toFixed(2)} Ω·cm
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">1000 / T</div>
+              <div className="mt-1 text-2xl font-bold text-indigo-700">
+                {currentPoint.x.toFixed(4)} K⁻¹
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">log10 ρ</div>
+              <div className="mt-1 text-2xl font-bold text-indigo-700">
+                {currentPoint.y.toFixed(4)}
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-slate-500">Energy Gap</div>
+              <div className="mt-1 text-2xl font-bold text-rose-700">
+                {energyGapEV.toFixed(3)} eV
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 border p-4 rounded-md bg-gray-50">
-            <h4 className="text-md font-medium mb-2">Four-Probe Setup Visualization</h4>
-            <div className="relative h-40 bg-blue-50 border rounded-md flex items-center justify-center">
-              {/* Four-probe method visualization */}
-              <div className="relative w-3/4 h-12 bg-gray-300 rounded">
-                {/* The four probes */}
-                <div className="absolute top-0 left-1/5 transform -translate-x-1/2 -translate-y-full flex flex-col items-center">
-                  <div className="w-1 h-8 bg-gray-600"></div>
-                  <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
-                </div>
-                <div className="absolute top-0 left-2/5 transform -translate-x-1/2 -translate-y-full flex flex-col items-center">
-                  <div className="w-1 h-8 bg-gray-600"></div>
-                  <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
-                </div>
-                <div className="absolute top-0 left-3/5 transform -translate-x-1/2 -translate-y-full flex flex-col items-center">
-                  <div className="w-1 h-8 bg-gray-600"></div>
-                  <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
-                </div>
-                <div className="absolute top-0 left-4/5 transform -translate-x-1/2 -translate-y-full flex flex-col items-center">
-                  <div className="w-1 h-8 bg-gray-600"></div>
-                  <div className="w-2 h-2 bg-gray-700 rounded-full"></div>
-                </div>
-
-                {/* Sample label */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-xs">
-                    {material === 'silicon' ? 'Si' : material === 'germanium' ? 'Ge' : 'GaAs'}
-                  </div>
-                </div>
-
-                {/* Current flow indication */}
-                <div className="absolute -bottom-8 w-full flex justify-between px-4">
-                  <div className="text-xs text-red-600">I = {current} mA</div>
-                  <div className="text-xs text-green-600">V = {voltage.toFixed(3)} V</div>
-                </div>
-              </div>
+          <div className="mt-5 rounded-xl border bg-slate-50 p-4">
+            <h4 className="text-sm font-semibold text-slate-700">Four Probe Relations</h4>
+            <div className="mt-2 space-y-1 text-sm leading-6 text-slate-600">
+              <div>ρ₀ = (V / I) × 2πs</div>
+              <div>ρ = ρ₀ / f(w/s)</div>
+              <div>For the graph, y = log10 ρ and x = 1000 / T</div>
+              <div>Energy gap, E₉ = 2k ln(10) × 1000 × slope</div>
             </div>
           </div>
         </div>
 
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">Results</h3>
-
-          <div className="h-64">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="current"
-                    label={{ value: 'Current (mA)', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip
-                    formatter={value => {
-                      // Fix: Ensure value is a number before calling toFixed
-                      return typeof value === 'number' ? value.toFixed(5) + ' V' : value + ' V';
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="voltage"
-                    name="Measured Voltage"
-                    stroke="#00796b"
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Adjust the current to collect data points
-              </div>
-            )}
+        <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-800">log10 ρ versus 1000 / T</h3>
+          <div className="mt-4 h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 16, right: 20, left: 10, bottom: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="x"
+                  type="number"
+                  domain={['dataMin', 'dataMax']}
+                  tickFormatter={(value) => round(value, 3)}
+                  label={{ value: '1000 / T (K^-1)', position: 'insideBottom', offset: -6 }}
+                />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tickFormatter={(value) => round(value, 3)}
+                  label={{ value: 'log10 ρ', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  formatter={(value, name) => {
+                    if (name === 'log10 ρ') return [Number(value).toFixed(4), name];
+                    return [value, name];
+                  }}
+                  labelFormatter={(label) => `1000 / T = ${Number(label).toFixed(4)} K^-1`}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="y"
+                  name="log10 ρ"
+                  stroke="#0f766e"
+                  strokeWidth={2.5}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <ReferenceDot
+                  x={currentPoint.x}
+                  y={currentPoint.y}
+                  r={7}
+                  fill="#dc2626"
+                  stroke="white"
+                  strokeWidth={2}
+                  label={{ value: `${temperatureC} °C`, position: 'top', fill: '#dc2626' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-
-          <div className="mt-4">
-            <div className="text-sm font-medium mb-2">Experimental Progress</div>
-            <Progress value={Math.min(100, chartData.length * 10)} className="h-2" />
-          </div>
+          <p className="mt-3 text-sm text-slate-500">
+            Move the temperature slider to inspect the voltage and resistivity at each temperature. The red
+            point marks the currently selected temperature on the graph.
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default FourProbeSimulation;
+export default FourProbeResistivitySimulation;
