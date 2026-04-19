@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-// ─── Material database ────────────────────────────────────────────────────────
 const MATERIALS = {
   si: {
     name: 'Silicon',
     label: 'Silicon (n-type)',
     type: 'n',
-    rh: +0.0038,      // m³/C  (Hall coefficient)
-    sigma: 4.4e-4,    // S/m   (electrical conductivity)
-    n: 1.5e14,        // m⁻³   (intrinsic carrier density)
+    rh: +0.0038,
+    sigma: 4.4e-4,
+    n: 1.5e14,
   },
   ge: {
     name: 'Germanium',
@@ -28,45 +27,63 @@ const MATERIALS = {
   },
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const MU0 = 4 * Math.PI * 1e-7;
+const SOLENOID_L = 0.1;
+const E_CHARGE = 1.602176634e-19;
+
 function toSup(n) {
   return String(n)
     .split('')
     .map(
       (c) =>
-        ({ '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' }[c] || c)
+        ({
+          '0': '⁰',
+          '1': '¹',
+          '2': '²',
+          '3': '³',
+          '4': '⁴',
+          '5': '⁵',
+          '6': '⁶',
+          '7': '⁷',
+          '8': '⁸',
+          '9': '⁹',
+          '-': '⁻',
+        }[c] || c)
     )
     .join('');
 }
 
 function fmtSci(v, unit = '') {
-  if (v === 0) return '0';
+  if (!Number.isFinite(v)) return '--';
+  if (v === 0) return `0${unit ? ` ${unit}` : ''}`;
   const e = Math.floor(Math.log10(Math.abs(v)));
   const m = (v / Math.pow(10, e)).toFixed(2);
-  return `${m}×10${toSup(e)}${unit ? ' ' + unit : ''}`;
+  return `${m}×10${toSup(e)}${unit ? ` ${unit}` : ''}`;
 }
 
 function fmtVh(v) {
-  return Math.abs(v) < 10 ? v.toFixed(3) + ' mV' : v.toFixed(1) + ' mV';
+  if (!Number.isFinite(v)) return '--';
+  return `${v.toFixed(Math.abs(v) < 10 ? 3 : 1)} mV`;
 }
-
-// Solenoid B field: B = μ₀ × N × I / L  (L = 10 cm assumed)
-const MU0 = 4 * Math.PI * 1e-7;
-const SOLENOID_L = 0.1; // metres
 
 function calcB(coilI, coilN) {
   return (MU0 * coilN * coilI) / SOLENOID_L;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-/** Labeled slider row */
 function SliderRow({ label, id, min, max, step, value, onChange, display }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '92px minmax(0, 1fr) 68px',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 6,
+      }}
+    >
       <label
         htmlFor={id}
-        style={{ fontSize: 11, color: 'var(--color-text-secondary)', minWidth: 84 }}
+        style={{ fontSize: 11, color: 'var(--color-text-secondary)', lineHeight: 1.25 }}
       >
         {label}
       </label>
@@ -78,16 +95,15 @@ function SliderRow({ label, id, min, max, step, value, onChange, display }) {
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        style={{ flex: 1, accentColor: 'var(--color-text-info)', height: 3 }}
+        style={{ width: '100%', accentColor: 'var(--color-text-info)', height: 3 }}
       />
-      <span style={{ fontSize: 11, fontWeight: 500, minWidth: 52, textAlign: 'right' }}>
+      <span style={{ fontSize: 11, fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
         {display}
       </span>
     </div>
   );
 }
 
-/** Metric card */
 function MetricCard({ label, value, sub, span }) {
   return (
     <div
@@ -95,22 +111,23 @@ function MetricCard({ label, value, sub, span }) {
         background: 'var(--color-background-secondary)',
         border: '0.5px solid var(--color-border-tertiary)',
         borderRadius: 8,
-        padding: '8px 10px',
+        padding: '10px 11px',
         gridColumn: span ? 'span 2' : undefined,
       }}
     >
-      <div style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
+      <div style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 500 }}>{value}</div>
-      {sub && (
-        <div style={{ fontSize: 9, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{sub}</div>
-      )}
+      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{value}</div>
+      {sub ? (
+        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 4, lineHeight: 1.35 }}>
+          {sub}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-/** DC Source card */
 function SourceCard({ color, title, subtitle, children }) {
   return (
     <div
@@ -124,56 +141,53 @@ function SourceCard({ color, title, subtitle, children }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <span
-          style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }}
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: color,
+            display: 'inline-block',
+            flexShrink: 0,
+          }}
         />
-        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
           {title}
         </span>
       </div>
-      {subtitle && (
-        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>
-          {subtitle}
-        </div>
-      )}
+      {subtitle ? (
+        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginBottom: 4 }}>{subtitle}</div>
+      ) : null}
       {children}
     </div>
   );
 }
 
-// ─── Hall Effect SVG Visualization ───────────────────────────────────────────
-function HallViz({ mat, B, I_mA, Vh }) {
+function HallViz({ mat, B, Vh }) {
   const isN = mat.type === 'n';
   const hasField = B > 0.001;
-  const I = I_mA / 1e3;
-
-  // Accumulated carrier side:
-  // For n-type: electrons deflect in one direction, accumulate on one edge
-  // For p-type: holes deflect opposite. Sign of Vh tells us which side.
   const accumTop = (isN && Vh > 0) || (!isN && Vh < 0);
 
-  // Seeded pseudo-random for stable layout
   function seededRnd(seed) {
-    let x = Math.sin(seed + 1) * 43758.5453123;
+    const x = Math.sin(seed + 1) * 43758.5453123;
     return x - Math.floor(x);
   }
 
-  const nEdge = 10, nBulk = 8;
-  const edgeCarriers = Array.from({ length: nEdge }, (_, i) => {
+  const edgeCarriers = Array.from({ length: 10 }, (_, i) => {
     const px = 182 + seededRnd(i * 7) * 130;
-    const py = accumTop ? 78 + seededRnd(i * 3) * 13 : 126 + seededRnd(i * 5) * 13;
+    const py = accumTop ? 86 + seededRnd(i * 3) * 10 : 122 + seededRnd(i * 5) * 10;
     return { px, py };
   });
-  const bulkCarriers = Array.from({ length: nBulk }, (_, i) => ({
+
+  const bulkCarriers = Array.from({ length: 8 }, (_, i) => ({
     px: 185 + seededRnd(i * 11) * 125,
-    py: 96 + seededRnd(i * 13) * 22,
+    py: 97 + seededRnd(i * 13) * 20,
   }));
 
   const carrierColor = isN ? '#185fa5' : '#D85A30';
   const carrierSign = isN ? '−' : '+';
   const deficitSign = isN ? '+' : '−';
   const deficitColor = isN ? '#D85A30' : '#185fa5';
-
-  const oppEdgeY = accumTop ? 131 : 73;
+  const oppEdgeY = accumTop ? 129 : 85;
 
   return (
     <svg width="100%" viewBox="0 0 430 218" style={{ display: 'block' }}>
@@ -184,293 +198,294 @@ function HallViz({ mat, B, I_mA, Vh }) {
         <marker id="arrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
           <path d="M2 1L8 5L2 9" fill="none" stroke="#185fa5" strokeWidth="1.5" strokeLinecap="round" />
         </marker>
-        <marker id="arrV" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#0F6E56" strokeWidth="1.5" strokeLinecap="round" />
-        </marker>
         <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
           <path d="M2 1L8 5L2 9" fill="none" stroke={carrierColor} strokeWidth="1.5" strokeLinecap="round" />
         </marker>
       </defs>
 
-      {/* ── DC Source 1 — Electromagnet ── */}
       <rect x="6" y="38" width="60" height="40" rx="5" fill="none" stroke="#D05538" strokeWidth="1" />
-      <text fontSize="8" fontWeight="500" fill="#D05538" x="36" y="54" textAnchor="middle">DC Src 1</text>
-      <text fontSize="7" fill="#D05538" x="36" y="66" textAnchor="middle">Electromagnet</text>
+      <text fontSize="8" fontWeight="600" fill="#D05538" x="36" y="54" textAnchor="middle">
+        DC Src 1
+      </text>
+      <text fontSize="7" fill="#D05538" x="36" y="66" textAnchor="middle">
+        Electromagnet
+      </text>
       <line x1="66" y1="57" x2="124" y2="57" stroke="#D05538" strokeWidth="1" strokeDasharray="3 2" />
 
-      {/* ── DC Source 2 — Semiconductor ── */}
       <rect x="6" y="90" width="60" height="40" rx="5" fill="none" stroke="#185fa5" strokeWidth="1" />
-      <text fontSize="8" fontWeight="500" fill="#185fa5" x="36" y="106" textAnchor="middle">DC Src 2</text>
-      <text fontSize="7" fill="#185fa5" x="36" y="118" textAnchor="middle">Sample bias</text>
+      <text fontSize="8" fontWeight="600" fill="#185fa5" x="36" y="106" textAnchor="middle">
+        DC Src 2
+      </text>
+      <text fontSize="7" fill="#185fa5" x="36" y="118" textAnchor="middle">
+        Sample bias
+      </text>
       <line x1="66" y1="107" x2="118" y2="107" stroke="#D05538" strokeWidth="1.5" markerEnd="url(#arrI)" />
 
-      {/* ── Electromagnet coil (top) ── */}
       <rect x="124" y="38" width="162" height="18" rx="4" fill="none" stroke="#185fa5" strokeWidth="1" strokeDasharray="4 2" />
-      <text fontSize="7" fill="#185fa5" x="205" y="50" textAnchor="middle">N pole</text>
-
-      {/* ── B field arrows (into sample) ── */}
-      {hasField &&
-        [0, 1, 2, 3, 4].map((i) => (
-          <line
-            key={i}
-            x1={148 + i * 32}
-            y1={56}
-            x2={148 + i * 32}
-            y2={72}
-            stroke="#185fa5"
-            strokeWidth={1}
-            opacity={0.55}
-            markerEnd="url(#arrB)"
-          />
-        ))}
-      {!hasField && (
-        <text fontSize="7" fill="#185fa5" opacity={0.4} x="205" y="66" textAnchor="middle">
-          B = 0 (no deflection)
-        </text>
-      )}
-
-      {/* ── Semiconductor sample ── */}
-      <rect x="118" y="74" width="162" height="66" rx="7"
-        fill="#E6F1FB"
-        stroke="#185fa5"
-        strokeWidth={1.4}
-      />
-      <text fontSize="9" fontWeight="500" fill="#185fa5" x="199" y="89" textAnchor="middle">
-        {mat.name} ({mat.type}-type)
+      <text fontSize="7" fill="#185fa5" x="205" y="50" textAnchor="middle">
+        N pole
       </text>
 
-      {/* Bulk carriers (always shown, reduced when field present) */}
+      {hasField
+        ? [0, 1, 2, 3, 4].map((i) => (
+            <line
+              key={i}
+              x1={148 + i * 32}
+              y1={56}
+              x2={148 + i * 32}
+              y2={72}
+              stroke="#185fa5"
+              strokeWidth={1}
+              opacity={0.55}
+              markerEnd="url(#arrB)"
+            />
+          ))
+        : (
+          <text fontSize="7" fill="#185fa5" opacity={0.4} x="205" y="66" textAnchor="middle">
+            No magnetic deflection
+          </text>
+        )}
+
+      <text fontSize="9" fontWeight="600" fill="#185fa5" x="199" y="69" textAnchor="middle">
+        {mat.name} sample ({mat.type}-type)
+      </text>
+
+      <rect x="118" y="74" width="162" height="66" rx="7" fill="#E6F1FB" stroke="#185fa5" strokeWidth={1.4} />
+
       {bulkCarriers.map((c, i) => (
         <g key={i}>
-          <circle cx={c.px} cy={c.py} r={3.2}
-            fill={carrierColor}
-            opacity={hasField ? 0.3 : 0.7}
-          />
-          <text fontSize="7" textAnchor="middle" dominantBaseline="central"
-            fill="white" opacity={hasField ? 0.5 : 1}
-            x={c.px} y={c.py}>
+          <circle cx={c.px} cy={c.py} r={3.2} fill={carrierColor} opacity={hasField ? 0.3 : 0.7} />
+          <text
+            fontSize="7"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="white"
+            opacity={hasField ? 0.55 : 1}
+            x={c.px}
+            y={c.py}
+          >
             {carrierSign}
           </text>
         </g>
       ))}
 
-      {/* Edge-accumulated carriers (shown when field is on) */}
-      {hasField &&
-        edgeCarriers.map((c, i) => (
-          <g key={i}>
-            <circle cx={c.px} cy={c.py} r={3.5} fill={carrierColor} opacity={0.9} />
-            <text fontSize="8" textAnchor="middle" dominantBaseline="central" fill="white" x={c.px} y={c.py}>
-              {carrierSign}
-            </text>
-          </g>
-        ))}
+      {hasField
+        ? edgeCarriers.map((c, i) => (
+            <g key={i}>
+              <circle cx={c.px} cy={c.py} r={3.5} fill={carrierColor} opacity={0.9} />
+              <text fontSize="8" textAnchor="middle" dominantBaseline="central" fill="white" x={c.px} y={c.py}>
+                {carrierSign}
+              </text>
+            </g>
+          ))
+        : null}
 
-      {/* Deficit symbols on opposite edge */}
-      {hasField &&
-        [0, 1, 2, 3].map((i) => (
-          <text
-            key={i}
-            fontSize="9"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill={deficitColor}
-            opacity={0.6}
-            x={152 + i * 36}
-            y={oppEdgeY}
-          >
-            {deficitSign}
-          </text>
-        ))}
-
-      {/* Lorentz force arrows on carriers (edge side) */}
-      {hasField &&
-        [0, 1, 2].map((i) => {
-          const px = 160 + i * 40;
-          const dy = accumTop ? -1 : 1;
-          const y1 = accumTop ? 100 : 100;
-          const y2 = accumTop ? 82 : 130;
-          return (
-            <line
+      {hasField
+        ? [0, 1, 2, 3].map((i) => (
+            <text
               key={i}
-              x1={px} y1={y1} x2={px} y2={y2}
-              stroke={carrierColor}
-              strokeWidth={1.2}
-              opacity={0.45}
-              markerEnd="url(#arrC)"
-            />
-          );
-        })}
+              fontSize="9"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill={deficitColor}
+              opacity={0.6}
+              x={152 + i * 36}
+              y={oppEdgeY}
+            >
+              {deficitSign}
+            </text>
+          ))
+        : null}
 
-      {/* ── Current flow ── */}
-      <line x1={118} y1={107} x2={74} y2={107} stroke="#D05538" strokeWidth={1} opacity={0.3} />
-      <line x1={280} y1={107} x2={330} y2={107} stroke="#D05538" strokeWidth={1.5} markerEnd="url(#arrI)" />
-      <text fontSize="7" fill="#D05538" x={305} y={102} textAnchor="middle">I={I_mA}mA</text>
+      {hasField
+        ? [0, 1, 2].map((i) => {
+            const px = 160 + i * 40;
+            return (
+              <line
+                key={i}
+                x1={px}
+                y1={100}
+                x2={px}
+                y2={accumTop ? 84 : 128}
+                stroke={carrierColor}
+                strokeWidth={1.2}
+                opacity={0.45}
+                markerEnd="url(#arrC)"
+              />
+            );
+          })
+        : null}
 
-      {/* ── Electromagnet coil (bottom) ── */}
-      <rect x="124" y="140" width="162" height="18" rx="4" fill="none" stroke="#185fa5" strokeWidth={1} strokeDasharray="4 2" />
-      <text fontSize="7" fill="#185fa5" x="205" y="152" textAnchor="middle">S pole</text>
+      <line x1={118} y1="107" x2="74" y2="107" stroke="#D05538" strokeWidth="1" opacity="0.3" />
+      <line x1="280" y1="107" x2="330" y2="107" stroke="#D05538" strokeWidth="1.5" markerEnd="url(#arrI)" />
 
-      {/* ── Hall voltage probes ── */}
-      <line x1={205} y1={74} x2={205} y2={55} stroke="#0F6E56" strokeWidth={1} strokeDasharray="3 2" />
-      <line x1={205} y1={140} x2={205} y2={158} stroke="#0F6E56" strokeWidth={1} strokeDasharray="3 2" />
-      <circle cx={205} cy={55} r={3} fill="#0F6E56" />
-      <circle cx={205} cy={158} r={3} fill="#0F6E56" />
+      <rect x="124" y="140" width="162" height="18" rx="4" fill="none" stroke="#185fa5" strokeWidth="1" strokeDasharray="4 2" />
+      <text fontSize="7" fill="#185fa5" x="205" y="152" textAnchor="middle">
+        S pole
+      </text>
 
-      {/* VH wire to right side */}
-      <line x1={205} y1={55} x2={370} y2={55} stroke="#0F6E56" strokeWidth={0.8} strokeDasharray="3 2" />
-      <line x1={205} y1={158} x2={370} y2={158} stroke="#0F6E56" strokeWidth={0.8} strokeDasharray="3 2" />
+      <line x1="205" y1="74" x2="205" y2="55" stroke="#0F6E56" strokeWidth="1" strokeDasharray="3 2" />
+      <line x1="205" y1="140" x2="205" y2="158" stroke="#0F6E56" strokeWidth="1" strokeDasharray="3 2" />
+      <circle cx="205" cy="55" r="3" fill="#0F6E56" />
+      <circle cx="205" cy="158" r="3" fill="#0F6E56" />
 
-      {/* Voltmeter box */}
-      <rect x="340" y="90" width="80" height="32" rx="5" fill="none" stroke="#0F6E56" strokeWidth={1} />
-      <text fontSize="8" fontWeight="500" fill="#0F6E56" x="380" y="104" textAnchor="middle">Voltmeter</text>
-      <text fontSize="9" fontWeight="500" fill="#0F6E56" x="380" y="117" textAnchor="middle">
+      <line x1="205" y1="55" x2="370" y2="55" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
+      <line x1="205" y1="158" x2="370" y2="158" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
+
+      <rect x="340" y="90" width="80" height="32" rx="5" fill="none" stroke="#0F6E56" strokeWidth="1" />
+      <text fontSize="8" fontWeight="600" fill="#0F6E56" x="380" y="104" textAnchor="middle">
+        Voltmeter
+      </text>
+      <text fontSize="9" fontWeight="600" fill="#0F6E56" x="380" y="117" textAnchor="middle">
         {fmtVh(Vh)}
       </text>
-      <line x1={370} y1={90} x2={370} y2={55} stroke="#0F6E56" strokeWidth={0.8} strokeDasharray="3 2" />
-      <line x1={370} y1={122} x2={370} y2={158} stroke="#0F6E56" strokeWidth={0.8} strokeDasharray="3 2" />
+      <line x1="370" y1="90" x2="370" y2="55" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
+      <line x1="370" y1="122" x2="370" y2="158" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
 
-      {/* ── Gauss meter ── */}
-      <rect x="340" y="34" width="80" height="30" rx="5" fill="none" stroke="#185fa5" strokeWidth={1} />
-      <text fontSize="8" fontWeight="500" fill="#185fa5" x="380" y="47" textAnchor="middle">Gauss meter</text>
-      <text fontSize="9" fontWeight="500" fill="#185fa5" x="380" y="59" textAnchor="middle">
-        {B.toFixed(4)} T
-      </text>
-
-      {/* ── Labels: accumulation ── */}
-      {hasField && (
+      {hasField ? (
         <>
-          <text fontSize="7" fill={carrierColor} x="282" y={accumTop ? 80 : 138} textAnchor="start">
-            ← {carrierSign} accumulate (Lorentz force)
+          <text fontSize="7" fill={carrierColor} x="286" y={accumTop ? 82 : 136} textAnchor="start">
+            Accumulated {carrierSign} charge
           </text>
-          <text fontSize="7" fill={deficitColor} x="282" y={accumTop ? 136 : 80} textAnchor="start">
-            ← {deficitSign} deficit
+          <text fontSize="7" fill={deficitColor} x="286" y={accumTop ? 134 : 84} textAnchor="start">
+            Opposite edge: {deficitSign} deficit
           </text>
         </>
-      )}
-
-      {/* B field label */}
-      <text fontSize="7" fill="#185fa5" x="126" y="35" textAnchor="start">
-        B = {B.toFixed(4)} T ↓ (into sample)
-      </text>
+      ) : null}
     </svg>
   );
 }
 
-// ─── Chart (canvas) ───────────────────────────────────────────────────────────
 function HallChart({ data }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const W = canvas.offsetWidth;
-    const H = 140;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.height = H + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+    if (!canvas) return undefined;
 
-    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const textC = dark ? '#c2c0b6' : '#3d3d3a';
-    const gridC = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+    const draw = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.offsetWidth || 320;
+      const H = 180;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.height = `${H}px`;
 
-    ctx.clearRect(0, 0, W, H);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    if (data.length < 2) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const textC = dark ? '#d6d2c8' : '#3d3d3a';
+      const gridC = dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+
+      ctx.clearRect(0, 0, W, H);
+
+      if (data.length < 2) {
+        ctx.fillStyle = textC;
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Vary coil current or turns to collect data points', W / 2, H / 2);
+        return;
+      }
+
+      const pad = { l: 56, r: 16, t: 12, b: 34 };
+      const xs = data.map((p) => p.x);
+      const ys = data.map((p) => p.y);
+      const xmin = Math.min(...xs);
+      const xmax = Math.max(...xs) || 0.01;
+      const ymin = Math.min(...ys, 0);
+      const ymax = Math.max(...ys, 0);
+      const xr = xmax - xmin || 0.01;
+      const yr = ymax - ymin || 1;
+      const toX = (x) => pad.l + ((x - xmin) / xr) * (W - pad.l - pad.r);
+      const toY = (y) => pad.t + ((ymax - y) / yr) * (H - pad.t - pad.b);
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = ymin + (yr * i) / 4;
+        const cy = toY(y);
+        ctx.strokeStyle = gridC;
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(pad.l, cy);
+        ctx.lineTo(W - pad.r, cy);
+        ctx.stroke();
+
+        ctx.fillStyle = textC;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(y.toFixed(2), pad.l - 6, cy + 3);
+      }
+
       ctx.fillStyle = textC;
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Vary coil current or turns to collect data points', W / 2, H / 2);
-      return;
-    }
+      ctx.fillText('Magnetic field B (T)', toX((xmin + xmax) / 2), H - 8);
+      ctx.save();
+      ctx.translate(15, H / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Hall voltage VH (mV)', 0, 0);
+      ctx.restore();
 
-    const pad = { l: 50, r: 16, t: 10, b: 26 };
-    const xs = data.map((p) => p.x);
-    const ys = data.map((p) => p.y);
-    const xmin = Math.min(...xs), xmax = Math.max(...xs) || 0.01;
-    const ymin = Math.min(...ys, 0), ymax = Math.max(...ys, 0);
-    const xr = xmax - xmin || 0.01;
-    const yr = ymax - ymin || 1;
-    const toX = (x) => pad.l + ((x - xmin) / xr) * (W - pad.l - pad.r);
-    const toY = (y) => pad.t + ((ymax - y) / yr) * (H - pad.t - pad.b);
-
-    // Grid
-    for (let i = 0; i <= 4; i++) {
-      const y = ymin + (yr * i) / 4;
-      const cy = toY(y);
-      ctx.strokeStyle = gridC;
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = '#185fa5';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
       ctx.beginPath();
-      ctx.moveTo(pad.l, cy);
-      ctx.lineTo(W - pad.r, cy);
+      data.forEach((p, i) => {
+        if (i === 0) {
+          ctx.moveTo(toX(p.x), toY(p.y));
+        } else {
+          ctx.lineTo(toX(p.x), toY(p.y));
+        }
+      });
       ctx.stroke();
-      ctx.fillStyle = textC;
-      ctx.font = '9px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(y.toFixed(2), pad.l - 4, cy + 3);
-    }
 
-    // Axis labels
-    ctx.fillStyle = textC;
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('B (T)', toX((xmin + xmax) / 2), H - 4);
-    ctx.save();
-    ctx.translate(11, H / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('VH (mV)', 0, 0);
-    ctx.restore();
+      data.forEach((p) => {
+        ctx.beginPath();
+        ctx.arc(toX(p.x), toY(p.y), 4, 0, 2 * Math.PI);
+        ctx.fillStyle = '#185fa5';
+        ctx.fill();
+      });
+    };
 
-    // Line
-    ctx.strokeStyle = '#185fa5';
-    ctx.lineWidth = 1.8;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    data.forEach((p, i) => {
-      i === 0 ? ctx.moveTo(toX(p.x), toY(p.y)) : ctx.lineTo(toX(p.x), toY(p.y));
-    });
-    ctx.stroke();
-
-    // Dots
-    data.forEach((p) => {
-      ctx.beginPath();
-      ctx.arc(toX(p.x), toY(p.y), 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = '#185fa5';
-      ctx.fill();
-    });
+    draw();
+    window.addEventListener('resize', draw);
+    return () => window.removeEventListener('resize', draw);
   }, [data]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ display: 'block', width: '100%' }}
-    />
-  );
+  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%' }} />;
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 const HallCoefficientSimulation = () => {
   const [matKey, setMatKey] = useState('si');
-  const [coilI, setCoilI] = useState(5);       // A
-  const [coilN, setCoilN] = useState(800);     // turns
-  const [I_mA, setI_mA] = useState(10);        // mA
-  const [thickness, setThickness] = useState(1); // mm
+  const [coilI, setCoilI] = useState(5);
+  const [coilN, setCoilN] = useState(800);
+  const [I_mA, setI_mA] = useState(10);
+  const [thickness, setThickness] = useState(1);
   const [chartPts, setChartPts] = useState([]);
+  const [isCompact, setIsCompact] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 980 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => setIsCompact(window.innerWidth < 980);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const mat = MATERIALS[matKey];
   const B = calcB(coilI, coilN);
   const I = I_mA / 1e3;
   const t = thickness / 1e3;
+  const Vh = ((mat.rh * I * B) / t) * 1e3;
 
-  // VH = (RH × I × B) / t  [V] → convert to mV
-  const Vh = (mat.rh * I * B) / t * 1e3;
+  const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
+  const carrierDensity = Math.abs(measuredRh) > 1e-18 ? 1 / (E_CHARGE * Math.abs(measuredRh)) : 0;
+  const muH = Math.abs(measuredRh) * mat.sigma;
 
-  // Hall mobility: μH = |RH| × σ  [m²/V·s]
-  const muH = Math.abs(mat.rh) * mat.sigma;
-
-  // Collect chart points keyed by B
   useEffect(() => {
     const Bkey = parseFloat(B.toFixed(5));
     setChartPts((prev) => {
@@ -497,15 +512,17 @@ const HallCoefficientSimulation = () => {
   const exportCSV = () => {
     const rows = [['B (T)', 'VH (mV)'], ...chartPts.map((p) => [p.x, p.y.toFixed(4)])];
     const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = 'hall_effect.csv';
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const sectionLabel = {
     fontSize: 11,
-    fontWeight: 500,
+    fontWeight: 600,
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.04em',
     textTransform: 'uppercase',
@@ -516,24 +533,25 @@ const HallCoefficientSimulation = () => {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '264px 1fr',
-        gap: 0,
+        gridTemplateColumns: isCompact ? '1fr' : 'minmax(300px, 340px) minmax(0, 1fr)',
+        gap: 16,
         minHeight: 620,
         fontFamily: 'var(--font-sans)',
+        alignItems: 'start',
       }}
     >
-      {/* ── LEFT PANEL ── */}
       <div
         style={{
           background: 'var(--color-background-secondary)',
-          borderRight: '0.5px solid var(--color-border-tertiary)',
+          border: '0.5px solid var(--color-border-tertiary)',
+          borderRadius: 12,
           padding: 14,
           display: 'flex',
           flexDirection: 'column',
           gap: 12,
+          minWidth: 0,
         }}
       >
-        {/* Material */}
         <div>
           <div style={sectionLabel}>Material</div>
           <select
@@ -544,31 +562,36 @@ const HallCoefficientSimulation = () => {
               background: 'var(--color-background-primary)',
               border: '0.5px solid var(--color-border-secondary)',
               borderRadius: 6,
-              padding: '5px 8px',
+              padding: '6px 8px',
               fontSize: 12,
               color: 'var(--color-text-primary)',
             }}
           >
             {Object.entries(MATERIALS).map(([k, m]) => (
-              <option key={k} value={k}>{m.label}</option>
+              <option key={k} value={k}>
+                {m.label}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* DC Source 1 — Electromagnet */}
-        <SourceCard color="#D05538" title="DC Source 1 — Electromagnet coil">
+        <SourceCard color="#D05538" title="DC Source 1 - Electromagnet coil">
           <SliderRow
             label="Coil current"
             id="coilI"
-            min={0} max={10} step={0.5}
+            min={0}
+            max={10}
+            step={0.5}
             value={coilI}
             onChange={setCoilI}
-            display={coilI.toFixed(1) + ' A'}
+            display={`${coilI.toFixed(1)} A`}
           />
           <SliderRow
             label="Coil turns"
             id="coilN"
-            min={100} max={2000} step={100}
+            min={100}
+            max={2000}
+            step={100}
             value={coilN}
             onChange={setCoilN}
             display={coilN}
@@ -581,60 +604,64 @@ const HallCoefficientSimulation = () => {
               marginTop: 8,
               background: 'var(--color-background-tertiary)',
               borderRadius: 6,
-              padding: '5px 8px',
+              padding: '6px 8px',
+              gap: 8,
             }}
           >
-            <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>Gauss meter (B)</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-info)' }}>
+            <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>Magnetic field B</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-info)', whiteSpace: 'nowrap' }}>
               {B.toFixed(4)} T
             </span>
           </div>
         </SourceCard>
 
-        {/* DC Source 2 — Sample bias */}
-        <SourceCard color="#185fa5" title="DC Source 2 — Semiconductor bias">
+        <SourceCard color="#185fa5" title="DC Source 2 - Semiconductor bias">
           <SliderRow
             label="Sample current"
             id="sampleI"
-            min={1} max={50} step={1}
+            min={1}
+            max={50}
+            step={1}
             value={I_mA}
             onChange={setI_mA}
-            display={I_mA + ' mA'}
+            display={`${I_mA} mA`}
           />
           <SliderRow
             label="Thickness"
             id="thick"
-            min={0.1} max={5} step={0.1}
+            min={0.1}
+            max={5}
+            step={0.1}
             value={thickness}
             onChange={setThickness}
-            display={parseFloat(thickness).toFixed(1) + ' mm'}
+            display={`${thickness.toFixed(1)} mm`}
           />
         </SourceCard>
 
-        {/* Computed metrics */}
         <div>
           <div style={sectionLabel}>Measurements</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <MetricCard label="Hall voltage" value={fmtVh(Vh)} />
-            <MetricCard label="Carrier type" value={mat.type === 'n' ? 'n-type' : 'p-type'} />
+            <MetricCard label="Hall voltage" value={fmtVh(Vh)} sub="Live voltmeter reading" />
+            <MetricCard label="Carrier type" value={mat.type === 'n' ? 'n-type' : 'p-type'} sub={mat.name} />
             <MetricCard
               label="Hall coeff. RH"
-              value={fmtSci(mat.rh, 'm³/C')}
+              value={fmtSci(measuredRh, 'm³/C')}
+              sub="Computed from VH x t / (I x B)"
             />
             <MetricCard
               label="Carrier density"
-              value={fmtSci(mat.n, 'm⁻³')}
+              value={fmtSci(carrierDensity, 'm⁻³')}
+              sub="Estimated from 1 / (q x |RH|)"
             />
             <MetricCard
               label="Hall mobility μH"
               value={fmtSci(muH, 'm²/V·s')}
-              sub={`μH = |RH| × σ  (σ = ${mat.sigma.toExponential(2)} S/m)`}
+              sub={`μH = |RH| x σ   (σ = ${mat.sigma.toExponential(2)} S/m)`}
               span
             />
           </div>
         </div>
 
-        {/* Buttons */}
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={resetAll}
@@ -643,7 +670,7 @@ const HallCoefficientSimulation = () => {
               background: 'var(--color-background-primary)',
               border: '0.5px solid var(--color-border-secondary)',
               borderRadius: 6,
-              padding: '6px 10px',
+              padding: '7px 10px',
               fontSize: 11,
               cursor: 'pointer',
               color: 'var(--color-text-primary)',
@@ -658,7 +685,7 @@ const HallCoefficientSimulation = () => {
               background: 'var(--color-background-primary)',
               border: '0.5px solid var(--color-border-secondary)',
               borderRadius: 6,
-              padding: '6px 10px',
+              padding: '7px 10px',
               fontSize: 11,
               cursor: 'pointer',
               color: 'var(--color-text-primary)',
@@ -669,10 +696,7 @@ const HallCoefficientSimulation = () => {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ── */}
-      <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-        {/* Hall effect visualization */}
+      <div style={{ padding: 0, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
         <div
           style={{
             background: 'var(--color-background-primary)',
@@ -681,17 +705,15 @@ const HallCoefficientSimulation = () => {
             overflow: 'hidden',
           }}
         >
-          <HallViz mat={mat} B={B} I_mA={I_mA} Vh={Vh} />
+          <HallViz mat={mat} B={B} Vh={Vh} />
         </div>
 
-        {/* Chart */}
         <div
           style={{
             background: 'var(--color-background-primary)',
             border: '0.5px solid var(--color-border-tertiary)',
             borderRadius: 10,
             padding: 12,
-            flex: 1,
           }}
         >
           <div
@@ -699,10 +721,12 @@ const HallCoefficientSimulation = () => {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: 8,
+              gap: 8,
+              marginBottom: 10,
+              flexWrap: 'wrap',
             }}
           >
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
               VH vs magnetic field B
             </span>
             <button
@@ -711,8 +735,8 @@ const HallCoefficientSimulation = () => {
                 background: 'none',
                 border: '0.5px solid var(--color-border-secondary)',
                 borderRadius: 5,
-                padding: '3px 8px',
-                fontSize: 10,
+                padding: '4px 8px',
+                fontSize: 11,
                 cursor: 'pointer',
                 color: 'var(--color-text-secondary)',
               }}
@@ -721,10 +745,17 @@ const HallCoefficientSimulation = () => {
             </button>
           </div>
           <HallChart data={chartPts} />
-          <div style={{ fontSize: 9, color: 'var(--color-text-tertiary)', marginTop: 6 }}>
-            Formula: V<sub>H</sub> = R<sub>H</sub> · I · B / t &nbsp;|&nbsp;
-            μ<sub>H</sub> = |R<sub>H</sub>| · σ &nbsp;|&nbsp;
-            B = μ₀ · N · I<sub>coil</sub> / L (solenoid, L = 10 cm)
+          <div
+            style={{
+              fontSize: 12,
+              lineHeight: 1.6,
+              color: 'var(--color-text-secondary)',
+              marginTop: 10,
+              whiteSpace: 'normal',
+            }}
+          >
+            Formula: V<sub>H</sub> = R<sub>H</sub> x I x B / t | μ<sub>H</sub> = |R<sub>H</sub>| x σ | B = μ₀ x N x I
+            <sub>coil</sub> / L, with solenoid length L = 10 cm.
           </div>
         </div>
       </div>
