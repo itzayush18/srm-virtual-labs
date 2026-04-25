@@ -34,6 +34,8 @@ type ObservationPoint = {
   r: number;
   s: number;
   logResistance2303: number;
+  localSlope: number | null;
+  localEnergyGap: number | null;
 };
 
 type FitPoint = {
@@ -56,6 +58,7 @@ const thermistors: Record<
   {
     name: string;
     actualEg: number;
+    egTemperatureCoefficient: number;
     referenceResistance: number;
     referenceTemperatureK: number;
     temperatureRangeC: [number, number];
@@ -64,6 +67,7 @@ const thermistors: Record<
   ntc_10k: {
     name: 'NTC Thermistor 10k',
     actualEg: 0.682,
+    egTemperatureCoefficient: 0.00045,
     referenceResistance: 10000,
     referenceTemperatureK: 298,
     temperatureRangeC: [35, 95],
@@ -71,6 +75,7 @@ const thermistors: Record<
   ntc_5k: {
     name: 'NTC Thermistor 5k',
     actualEg: 0.611,
+    egTemperatureCoefficient: 0.00038,
     referenceResistance: 5000,
     referenceTemperatureK: 298,
     temperatureRangeC: [35, 95],
@@ -78,6 +83,7 @@ const thermistors: Record<
   ntc_precision: {
     name: 'NTC Precision Bead',
     actualEg: 0.735,
+    egTemperatureCoefficient: 0.0003,
     referenceResistance: 12000,
     referenceTemperatureK: 298,
     temperatureRangeC: [35, 95],
@@ -89,6 +95,15 @@ const toKelvin = (temperatureC: number) => temperatureC + 273;
 const round = (value: number, digits = 3) => Number(value.toFixed(digits));
 
 const log2303 = (value: number) => 2.303 * Math.log10(value);
+
+const calculateTemperatureAdjustedEg = (
+  temperatureK: number,
+  baseEg: number,
+  referenceTemperatureK: number,
+  coefficient: number
+) => {
+  return Math.max(0.05, baseEg - coefficient * (temperatureK - referenceTemperatureK));
+};
 
 const calculateThermistorResistance = (
   temperatureK: number,
@@ -153,6 +168,29 @@ const buildFitLine = (points: ObservationPoint[], regression: RegressionResult |
   });
 };
 
+const withLocalEg = (points: ObservationPoint[]): ObservationPoint[] => {
+  return points.map((point, index, array) => {
+    if (index === 0) {
+      return {
+        ...point,
+        localSlope: null,
+        localEnergyGap: null,
+      };
+    }
+
+    const previous = array[index - 1];
+    const deltaX = point.invTemperature - previous.invTemperature;
+    const deltaY = point.logResistance2303 - previous.logResistance2303;
+    const localSlope = deltaX === 0 ? null : deltaY / deltaX;
+
+    return {
+      ...point,
+      localSlope,
+      localEnergyGap: localSlope === null ? null : 2 * kB * localSlope,
+    };
+  });
+};
+
 const BandGapSimulation = () => {
   const [thermistor, setThermistor] = useState<ThermistorKey>('ntc_10k');
   const [temperatureC, setTemperatureC] = useState(95);
@@ -165,14 +203,23 @@ const BandGapSimulation = () => {
   const [minTempC, maxTempC] = selectedThermistor.temperatureRangeC;
   const temperatureK = toKelvin(temperatureC);
 
+  const currentTemperatureAdjustedEg = useMemo(() => {
+    return calculateTemperatureAdjustedEg(
+      temperatureK,
+      selectedThermistor.actualEg,
+      selectedThermistor.referenceTemperatureK,
+      selectedThermistor.egTemperatureCoefficient
+    );
+  }, [selectedThermistor, temperatureK]);
+
   const actualResistance = useMemo(() => {
     return calculateThermistorResistance(
       temperatureK,
-      selectedThermistor.actualEg,
+      currentTemperatureAdjustedEg,
       selectedThermistor.referenceResistance,
       selectedThermistor.referenceTemperatureK
     );
-  }, [selectedThermistor, temperatureK]);
+  }, [currentTemperatureAdjustedEg, selectedThermistor, temperatureK]);
 
   const bridgeBalanceR = useMemo(() => {
     return actualResistance * (p / q);
@@ -199,11 +246,13 @@ const BandGapSimulation = () => {
       r: round(bridgeBalanceR, 2),
       s: round(calculatedUnknownResistance, 2),
       logResistance2303: round(log2303(calculatedUnknownResistance), 4),
+      localSlope: null,
+      localEnergyGap: null,
     };
 
     setObservations(previous => {
       const filtered = previous.filter(item => item.temperatureC !== temperatureC);
-      return [...filtered, point].sort((a, b) => b.temperatureC - a.temperatureC);
+      return withLocalEg([...filtered, point].sort((a, b) => b.temperatureC - a.temperatureC));
     });
   };
 
@@ -257,7 +306,12 @@ const BandGapSimulation = () => {
       const nextTemperatureK = toKelvin(temperatureC);
       const nextActualResistance = calculateThermistorResistance(
         nextTemperatureK,
-        selectedThermistor.actualEg,
+        calculateTemperatureAdjustedEg(
+          nextTemperatureK,
+          selectedThermistor.actualEg,
+          selectedThermistor.referenceTemperatureK,
+          selectedThermistor.egTemperatureCoefficient
+        ),
         selectedThermistor.referenceResistance,
         selectedThermistor.referenceTemperatureK
       );
@@ -274,11 +328,13 @@ const BandGapSimulation = () => {
         r: round(nextBalanceR, 2),
         s: round(nextUnknownResistance, 2),
         logResistance2303: round(log2303(nextUnknownResistance), 4),
+        localSlope: null,
+        localEnergyGap: null,
       };
 
       setObservations(previous => {
         const filtered = previous.filter(item => item.temperatureC !== temperatureC);
-        return [...filtered, point].sort((a, b) => b.temperatureC - a.temperatureC);
+        return withLocalEg([...filtered, point].sort((a, b) => b.temperatureC - a.temperatureC));
       });
 
       setTemperatureC(previousTemperature => {
@@ -424,6 +480,12 @@ const BandGapSimulation = () => {
               </div>
             </div>
             <div className="rounded-md border p-3">
+              <div className="text-sm text-slate-500">Eg at Current T</div>
+              <div className="text-2xl font-bold text-sky-700">
+                {currentTemperatureAdjustedEg.toFixed(3)} eV
+              </div>
+            </div>
+            <div className="rounded-md border p-3">
               <div className="text-sm text-slate-500">Reference Eg</div>
               <div className="text-2xl font-bold text-amber-700">
                 {selectedThermistor.actualEg.toFixed(3)} eV
@@ -527,12 +589,14 @@ const BandGapSimulation = () => {
                   <th className="px-3 py-2">S</th>
                   <th className="px-3 py-2">1/T</th>
                   <th className="px-3 py-2">2.303 log R</th>
+                  <th className="px-3 py-2">Local Slope</th>
+                  <th className="px-3 py-2">Local Eg</th>
                 </tr>
               </thead>
               <tbody>
                 {observations.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-5 text-center text-slate-500" colSpan={8}>
+                    <td className="px-3 py-5 text-center text-slate-500" colSpan={10}>
                       No observations recorded yet.
                     </td>
                   </tr>
@@ -547,6 +611,12 @@ const BandGapSimulation = () => {
                       <td className="px-3 py-2">{point.s.toFixed(2)}</td>
                       <td className="px-3 py-2">{point.invTemperature.toExponential(5)}</td>
                       <td className="px-3 py-2">{point.logResistance2303.toFixed(4)}</td>
+                      <td className="px-3 py-2">
+                        {point.localSlope === null ? '-' : point.localSlope.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {point.localEnergyGap === null ? '-' : `${point.localEnergyGap.toFixed(3)} eV`}
+                      </td>
                     </tr>
                   ))
                 )}
