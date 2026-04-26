@@ -2,38 +2,35 @@ import React, { useMemo, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ReferenceDot,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceDot,
 } from 'recharts';
 
-interface GraphPoint {
+interface SweepPoint {
   sourceVoltage: number;
+  flux: number;
   carrierGeneration: number;
+  resistance: number;
+  current: number;
 }
 
-interface LiveValuePoint {
-  label: string;
-  value: string;
+interface DistanceResistancePoint {
+  distance: number;
+  resistance: number;
 }
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const SOURCE_VOLTAGE_POINTS = [0, 2.5, 5, 7.5, 10, 12.5];
-
-const photonRows = [
-  { id: 1, left: '31%', top: '26%', delay: '0s' },
-  { id: 2, left: '40%', top: '34%', delay: '0.25s' },
-  { id: 3, left: '48%', top: '43%', delay: '0.5s' },
-  { id: 4, left: '56%', top: '52%', delay: '0.75s' },
-  { id: 5, left: '63%', top: '60%', delay: '1s' },
-];
+const DISTANCE_POINTS = [5, 10, 15];
 
 const LDRCharacteristicsSimulation = () => {
   const [lampOn, setLampOn] = useState(true);
@@ -55,17 +52,19 @@ const LDRCharacteristicsSimulation = () => {
     return normalizedVoltage * inverseSquareDistance;
   };
 
-  const computeCarrierGeneration = (lampVoltage: number, ldrDistance: number) => {
-    const flux = computeLightFlux(lampVoltage, ldrDistance);
-    return flux * 100;
-  };
+  const computeCarrierGeneration = (lampVoltage: number, ldrDistance: number) =>
+    computeLightFlux(lampVoltage, ldrDistance) * 100;
 
   const computeResistance = (lampVoltage: number, ldrDistance: number) => {
     if (!lampOn) return darkResistance;
-    const carriers = computeCarrierGeneration(lampVoltage, ldrDistance);
-    const normalizedCarriers = carriers / 100;
+    const normalizedCarriers = computeCarrierGeneration(lampVoltage, ldrDistance) / 100;
     const illuminatedResistance = darkResistance / (1 + 8 * normalizedCarriers);
     return clamp(illuminatedResistance, 0.5, darkResistance);
+  };
+
+  const computeCurrent = (lampVoltage: number, ldrDistance: number) => {
+    const ldrResistance = computeResistance(lampVoltage, ldrDistance);
+    return ldrResistance > 0 ? biasVoltage / ldrResistance : 0;
   };
 
   const lightFlux = useMemo(
@@ -83,41 +82,35 @@ const LDRCharacteristicsSimulation = () => {
     [sourceVoltage, distance, darkResistance, lampOn]
   );
 
-  const current = useMemo(() => {
-    return resistance > 0 ? biasVoltage / resistance : 0;
-  }, [biasVoltage, resistance]);
+  const current = useMemo(() => computeCurrent(sourceVoltage, distance), [
+    sourceVoltage,
+    distance,
+    biasVoltage,
+    darkResistance,
+    lampOn,
+  ]);
 
-  const chartData: GraphPoint[] = useMemo(() => {
+  const sweepData: SweepPoint[] = useMemo(() => {
     return SOURCE_VOLTAGE_POINTS.map((value) => ({
       sourceVoltage: value,
+      flux: Number(computeLightFlux(value, distance).toFixed(3)),
       carrierGeneration: Number(computeCarrierGeneration(value, distance).toFixed(2)),
+      resistance: Number(computeResistance(value, distance).toFixed(2)),
+      current: Number(computeCurrent(value, distance).toFixed(3)),
     }));
-  }, [distance, lampOn]);
+  }, [distance, biasVoltage, darkResistance, lampOn]);
 
-  const liveValues: LiveValuePoint[] = useMemo(
-    () => [
-      { label: 'Lamp State', value: lampOn ? 'ON' : 'OFF' },
-      { label: 'Source Voltage', value: `${sourceVoltage.toFixed(1)} V` },
-      { label: 'Distance', value: `${distance} cm` },
-      { label: 'Bias Voltage', value: `${biasVoltage.toFixed(1)} V` },
-      { label: 'Relative Light Flux', value: lightFlux.toFixed(3) },
-      { label: 'Carrier Generation', value: carrierGeneration.toFixed(2) },
-      { label: 'Resistance', value: `${resistance.toFixed(2)} kOhm` },
-      { label: 'Measured Current', value: `${current.toFixed(3)} mA` },
-      { label: 'Dark Resistance', value: `${darkResistance.toFixed(2)} kOhm` },
-    ],
-    [
-      lampOn,
-      sourceVoltage,
-      distance,
-      biasVoltage,
-      lightFlux,
-      carrierGeneration,
-      resistance,
-      current,
-      darkResistance,
-    ]
-  );
+  const distanceResistanceData: DistanceResistancePoint[] = useMemo(() => {
+    return DISTANCE_POINTS.map((pointDistance) => ({
+      distance: pointDistance,
+      resistance: Number(computeResistance(sourceVoltage, pointDistance).toFixed(2)),
+    }));
+  }, [sourceVoltage, darkResistance, lampOn]);
+
+  const photonOpacity = clamp(lightFlux * 2.2, 0.12, 1);
+  const lampGlow = lampOn ? 28 + lightFlux * 60 : 0;
+  const semiconductorGlow = lampOn ? clamp(lightFlux * 1.5, 0.1, 0.85) : 0.05;
+  const photonScale = lampOn ? clamp(0.85 + lightFlux, 0.85, 1.6) : 0.8;
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -259,7 +252,7 @@ const LDRCharacteristicsSimulation = () => {
               }`}
               style={{
                 boxShadow: lampOn
-                  ? `0 0 ${28 + lightFlux * 40}px ${10 + lightFlux * 24}px rgba(250, 204, 21, 0.75)`
+                  ? `0 0 ${lampGlow}px ${lampGlow / 2}px rgba(250, 204, 21, 0.75)`
                   : 'none',
               }}
             >
@@ -270,34 +263,54 @@ const LDRCharacteristicsSimulation = () => {
 
             <div className="absolute left-[106px] top-[72px] h-1 w-[46%] rounded-full bg-slate-300" />
 
-            {lampOn &&
-              photonRows.map((photon) => (
-                <div
-                  key={photon.id}
-                  className="absolute h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse"
-                  style={{
-                    left: photon.left,
-                    top: photon.top,
-                    opacity: clamp(lightFlux * 1.8, 0.25, 1),
-                    animationDelay: photon.delay,
-                  }}
-                />
-              ))}
-
             {lampOn && (
               <>
                 <div
-                  className="absolute left-[28%] top-[32%] h-0.5 origin-left bg-cyan-300"
-                  style={{ width: '34%', transform: 'rotate(18deg)', opacity: clamp(lightFlux * 1.6, 0.2, 1) }}
+                  className="absolute left-[28%] top-[30%] h-0.5 origin-left bg-cyan-300"
+                  style={{
+                    width: '35%',
+                    transform: 'rotate(18deg)',
+                    opacity: photonOpacity,
+                  }}
                 />
                 <div
-                  className="absolute left-[29%] top-[41%] h-0.5 origin-left bg-cyan-300"
-                  style={{ width: '33%', transform: 'rotate(10deg)', opacity: clamp(lightFlux * 1.6, 0.2, 1) }}
+                  className="absolute left-[29%] top-[39%] h-0.5 origin-left bg-cyan-300"
+                  style={{
+                    width: '34%',
+                    transform: 'rotate(10deg)',
+                    opacity: photonOpacity,
+                  }}
                 />
                 <div
-                  className="absolute left-[30%] top-[50%] h-0.5 origin-left bg-cyan-300"
-                  style={{ width: '31%', transform: 'rotate(2deg)', opacity: clamp(lightFlux * 1.6, 0.2, 1) }}
+                  className="absolute left-[30%] top-[48%] h-0.5 origin-left bg-cyan-300"
+                  style={{
+                    width: '32%',
+                    transform: 'rotate(2deg)',
+                    opacity: photonOpacity,
+                  }}
                 />
+                <div
+                  className="absolute left-[31%] top-[57%] h-0.5 origin-left bg-cyan-300"
+                  style={{
+                    width: '30%',
+                    transform: 'rotate(-8deg)',
+                    opacity: photonOpacity,
+                  }}
+                />
+
+                {[0, 1, 2, 3, 4].map((index) => (
+                  <div
+                    key={index}
+                    className="absolute h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse"
+                    style={{
+                      left: `${33 + index * 8}%`,
+                      top: `${28 + index * 8}%`,
+                      opacity: photonOpacity,
+                      transform: `scale(${photonScale})`,
+                      animationDelay: `${index * 0.18}s`,
+                    }}
+                  />
+                ))}
               </>
             )}
 
@@ -305,12 +318,23 @@ const LDRCharacteristicsSimulation = () => {
               className="absolute right-10 top-24 flex h-20 w-28 items-center justify-center rounded-md border-2 border-slate-500 text-sm font-bold text-slate-700"
               style={{
                 background: lampOn
-                  ? `linear-gradient(180deg, rgba(251,191,36,${clamp(lightFlux * 1.3, 0.15, 0.75)}) 0%, rgba(226,232,240,0.95) 100%)`
+                  ? `linear-gradient(180deg, rgba(251,191,36,${semiconductorGlow}) 0%, rgba(226,232,240,0.95) 100%)`
                   : 'linear-gradient(180deg, rgba(226,232,240,0.95) 0%, rgba(203,213,225,1) 100%)',
+                boxShadow: lampOn
+                  ? `0 0 ${12 + lightFlux * 20}px rgba(56, 189, 248, 0.35)`
+                  : 'none',
               }}
             >
               LDR
             </div>
+
+            {lampOn && (
+              <>
+                <div className="absolute right-[88px] top-[116px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <div className="absolute right-[66px] top-[132px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <div className="absolute right-[98px] top-[146px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+              </>
+            )}
 
             <div className="absolute right-6 bottom-4 rounded-md bg-white/85 px-3 py-2 text-right text-xs shadow-sm">
               <div>Flux: {lightFlux.toFixed(3)}</div>
@@ -330,7 +354,7 @@ const LDRCharacteristicsSimulation = () => {
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+              <LineChart data={sweepData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="sourceVoltage"
@@ -344,6 +368,7 @@ const LDRCharacteristicsSimulation = () => {
                     typeof value === 'number' ? value.toFixed(2) : value
                   }
                 />
+                <Legend />
                 <Line
                   type="monotone"
                   dataKey="carrierGeneration"
@@ -366,21 +391,74 @@ const LDRCharacteristicsSimulation = () => {
         </div>
 
         <div className="rounded-md border p-4">
-          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Live Values Table</h3>
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Distance vs Resistance</h3>
+
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={distanceResistanceData}
+                margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="distance"
+                  label={{ value: 'Distance (cm)', position: 'insideBottom', offset: -5 }}
+                />
+                <YAxis
+                  label={{ value: 'Resistance (kOhm)', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  formatter={(value) =>
+                    typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="resistance"
+                  name={`Source ${sourceVoltage.toFixed(1)} V`}
+                  stroke="#7c3aed"
+                  strokeWidth={3}
+                  dot={{ r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Sweep Table</h3>
+
+          <p className="mb-3 text-sm text-slate-600">
+            The table updates live using the current distance, bias voltage, lamp state, and dark
+            resistance inputs.
+          </p>
 
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse border text-sm">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border p-2 text-left">Parameter</th>
-                  <th className="border p-2 text-left">Current Value</th>
+                  <th className="border p-2">Source Voltage (V)</th>
+                  <th className="border p-2">Flux at {distance} cm</th>
+                  <th className="border p-2">Carrier Generation</th>
+                  <th className="border p-2">Resistance (kOhm)</th>
+                  <th className="border p-2">Current (mA)</th>
                 </tr>
               </thead>
               <tbody>
-                {liveValues.map((row) => (
-                  <tr key={row.label}>
-                    <td className="border p-2 font-medium">{row.label}</td>
-                    <td className="border p-2">{row.value}</td>
+                {sweepData.map((row) => (
+                  <tr
+                    key={row.sourceVoltage}
+                    className={
+                      row.sourceVoltage === sourceVoltage ? 'bg-amber-50 font-medium' : ''
+                    }
+                  >
+                    <td className="border p-2">{row.sourceVoltage.toFixed(1)}</td>
+                    <td className="border p-2">{row.flux.toFixed(3)}</td>
+                    <td className="border p-2">{row.carrierGeneration.toFixed(2)}</td>
+                    <td className="border p-2">{row.resistance.toFixed(2)}</td>
+                    <td className="border p-2">{row.current.toFixed(3)}</td>
                   </tr>
                 ))}
               </tbody>
