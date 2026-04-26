@@ -14,6 +14,9 @@ import {
 
 interface SweepPoint {
   sourceVoltage: number;
+  flux5: number;
+  flux10: number;
+  flux15: number;
   carriers5: number;
   carriers10: number;
   carriers15: number;
@@ -34,35 +37,44 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const LDRCharacteristicsSimulation = () => {
-  const [sourceVoltage, setSourceVoltage] = useState(7.5); // light source voltage
+  const [sourceVoltage, setSourceVoltage] = useState(7.5); // lamp voltage
   const [distance, setDistance] = useState(10); // cm
-  const [biasVoltage, setBiasVoltage] = useState(5); // only for measurement
+  const [biasVoltage, setBiasVoltage] = useState(5); // measurement only
 
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5); // V
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05); // mA
 
+  // Dark resistance from voltmeter and ammeter readings
   const darkResistance = useMemo(() => {
     if (darkAmmeterReading <= 0) return 100;
-    return darkVoltmeterReading / darkAmmeterReading; // kOhm, since V/mA = kOhm
+    return darkVoltmeterReading / darkAmmeterReading; // kOhm because V / mA = kOhm
   }, [darkVoltmeterReading, darkAmmeterReading]);
 
-  const computeFlux = (lampVoltage: number, ldrDistance: number) => {
-    const voltageFactor = lampVoltage / 12.5;
-    const distanceFactor = Math.pow(5 / ldrDistance, 2);
-    return voltageFactor * distanceFactor;
+  // Relative light flux: stronger at higher lamp voltage, weaker with distance
+  const computeLightFlux = (lampVoltage: number, ldrDistance: number) => {
+    const normalizedVoltage = lampVoltage / 12.5;
+    const inverseSquareDistance = Math.pow(5 / ldrDistance, 2);
+    return normalizedVoltage * inverseSquareDistance;
   };
 
+  // Carrier generation is caused by light flux, not by bias voltage
   const computeCarrierGeneration = (lampVoltage: number, ldrDistance: number) => {
-    const flux = computeFlux(lampVoltage, ldrDistance);
+    const flux = computeLightFlux(lampVoltage, ldrDistance);
     return flux * 100;
   };
 
+  // Resistance decreases when more carriers are generated
   const computeResistance = (lampVoltage: number, ldrDistance: number) => {
     const carriers = computeCarrierGeneration(lampVoltage, ldrDistance);
     const normalizedCarriers = carriers / 100;
     const resistance = darkResistance / (1 + 8 * normalizedCarriers);
     return clamp(resistance, 0.5, darkResistance);
   };
+
+  const lightFlux = useMemo(
+    () => computeLightFlux(sourceVoltage, distance),
+    [sourceVoltage, distance]
+  );
 
   const carrierGeneration = useMemo(
     () => computeCarrierGeneration(sourceVoltage, distance),
@@ -74,18 +86,17 @@ const LDRCharacteristicsSimulation = () => {
     [sourceVoltage, distance, darkResistance]
   );
 
+  // Bias voltage only measures the current through the already illuminated LDR
   const current = useMemo(() => {
-    return biasVoltage / resistance; // mA because V / kOhm = mA
+    return resistance > 0 ? biasVoltage / resistance : 0; // mA
   }, [biasVoltage, resistance]);
 
-  const lightFlux = useMemo(
-    () => computeFlux(sourceVoltage, distance),
-    [sourceVoltage, distance]
-  );
-
   const sweepData: SweepPoint[] = useMemo(() => {
-    return SOURCE_VOLTAGES.map(v => ({
+    return SOURCE_VOLTAGES.map((v) => ({
       sourceVoltage: v,
+      flux5: Number(computeLightFlux(v, 5).toFixed(3)),
+      flux10: Number(computeLightFlux(v, 10).toFixed(3)),
+      flux15: Number(computeLightFlux(v, 15).toFixed(3)),
       carriers5: Number(computeCarrierGeneration(v, 5).toFixed(2)),
       carriers10: Number(computeCarrierGeneration(v, 10).toFixed(2)),
       carriers15: Number(computeCarrierGeneration(v, 15).toFixed(2)),
@@ -96,7 +107,7 @@ const LDRCharacteristicsSimulation = () => {
   }, [darkResistance]);
 
   const distanceResistanceData: DistanceResistancePoint[] = useMemo(() => {
-    return DISTANCES.map(d => ({
+    return DISTANCES.map((d) => ({
       distance: d,
       resistance: Number(computeResistance(sourceVoltage, d).toFixed(2)),
     }));
@@ -117,7 +128,7 @@ const LDRCharacteristicsSimulation = () => {
                   max={12.5}
                   step={2.5}
                   value={[sourceVoltage]}
-                  onValueChange={values => setSourceVoltage(values[0])}
+                  onValueChange={(values) => setSourceVoltage(values[0])}
                 />
                 <span className="min-w-[50px] text-right">{sourceVoltage.toFixed(1)}</span>
               </div>
@@ -131,7 +142,7 @@ const LDRCharacteristicsSimulation = () => {
                   max={15}
                   step={5}
                   value={[distance]}
-                  onValueChange={values => setDistance(values[0])}
+                  onValueChange={(values) => setDistance(values[0])}
                 />
                 <span className="min-w-[50px] text-right">{distance}</span>
               </div>
@@ -145,7 +156,7 @@ const LDRCharacteristicsSimulation = () => {
                   max={10}
                   step={0.5}
                   value={[biasVoltage]}
-                  onValueChange={values => setBiasVoltage(values[0])}
+                  onValueChange={(values) => setBiasVoltage(values[0])}
                 />
                 <span className="min-w-[50px] text-right">{biasVoltage.toFixed(1)}</span>
               </div>
@@ -168,7 +179,7 @@ const LDRCharacteristicsSimulation = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Current (mA)</label>
+                <label className="text-sm font-medium">Measured Current (mA)</label>
                 <Input value={current.toFixed(3)} readOnly className="bg-gray-50" />
               </div>
             </div>
@@ -184,7 +195,7 @@ const LDRCharacteristicsSimulation = () => {
               <Input
                 type="number"
                 value={darkVoltmeterReading}
-                onChange={e => setDarkVoltmeterReading(Number(e.target.value))}
+                onChange={(e) => setDarkVoltmeterReading(Number(e.target.value))}
               />
             </div>
 
@@ -193,7 +204,7 @@ const LDRCharacteristicsSimulation = () => {
               <Input
                 type="number"
                 value={darkAmmeterReading}
-                onChange={e => setDarkAmmeterReading(Number(e.target.value))}
+                onChange={(e) => setDarkAmmeterReading(Number(e.target.value))}
               />
             </div>
 
@@ -209,14 +220,14 @@ const LDRCharacteristicsSimulation = () => {
         </div>
 
         <div className="rounded-md border p-4">
-          <h3 className="mb-4 text-lg font-semibold text-lab-blue">LDR Visualization</h3>
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">LDR Visual Representation</h3>
 
-          <div className="relative flex h-44 items-center justify-center overflow-hidden rounded-md border bg-blue-50">
+          <div className="relative flex h-48 items-center justify-center overflow-hidden rounded-md border bg-blue-50">
             <div
               className="absolute top-4 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full bg-yellow-300"
               style={{
                 opacity: clamp(lightFlux * 1.5, 0.2, 1),
-                boxShadow: `0 0 ${20 / (distance / 5)}px ${10 / (distance / 5)}px rgba(255, 204, 0, 0.75)`,
+                boxShadow: `0 0 ${24 / (distance / 5)}px ${12 / (distance / 5)}px rgba(255, 204, 0, 0.8)`,
               }}
             >
               <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
@@ -224,18 +235,19 @@ const LDRCharacteristicsSimulation = () => {
               </div>
             </div>
 
-            <div className="relative mt-10 flex h-12 w-24 items-center justify-center rounded border-2 border-gray-400 bg-gray-200">
+            <div className="relative mt-12 flex h-12 w-24 items-center justify-center rounded border-2 border-gray-500 bg-gray-200">
               <div className="text-xs font-bold">LDR</div>
             </div>
 
             <div className="absolute bottom-2 left-4 text-xs">
-              <div>Source V = {sourceVoltage.toFixed(1)} V</div>
+              <div>Source Voltage = {sourceVoltage.toFixed(1)} V</div>
               <div>Distance = {distance} cm</div>
+              <div>Flux = {lightFlux.toFixed(3)}</div>
             </div>
 
             <div className="absolute bottom-2 right-4 text-right text-xs">
               <div>Carriers = {carrierGeneration.toFixed(2)}</div>
-              <div>R = {resistance.toFixed(2)} kOhm</div>
+              <div>Resistance = {resistance.toFixed(2)} kOhm</div>
             </div>
           </div>
         </div>
@@ -283,7 +295,7 @@ const LDRCharacteristicsSimulation = () => {
                   label={{ value: 'Resistance (kOhm)', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip
-                  formatter={value =>
+                  formatter={(value) =>
                     typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
                   }
                 />
@@ -310,6 +322,9 @@ const LDRCharacteristicsSimulation = () => {
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border p-2">Source V</th>
+                  <th className="border p-2">Flux at 5 cm</th>
+                  <th className="border p-2">Flux at 10 cm</th>
+                  <th className="border p-2">Flux at 15 cm</th>
                   <th className="border p-2">Carriers at 5 cm</th>
                   <th className="border p-2">Carriers at 10 cm</th>
                   <th className="border p-2">Carriers at 15 cm</th>
@@ -319,9 +334,12 @@ const LDRCharacteristicsSimulation = () => {
                 </tr>
               </thead>
               <tbody>
-                {sweepData.map(row => (
+                {sweepData.map((row) => (
                   <tr key={row.sourceVoltage}>
                     <td className="border p-2">{row.sourceVoltage.toFixed(1)}</td>
+                    <td className="border p-2">{row.flux5.toFixed(3)}</td>
+                    <td className="border p-2">{row.flux10.toFixed(3)}</td>
+                    <td className="border p-2">{row.flux15.toFixed(3)}</td>
                     <td className="border p-2">{row.carriers5.toFixed(2)}</td>
                     <td className="border p-2">{row.carriers10.toFixed(2)}</td>
                     <td className="border p-2">{row.carriers15.toFixed(2)}</td>
