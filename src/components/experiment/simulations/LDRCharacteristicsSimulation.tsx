@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   LineChart,
   Line,
@@ -11,358 +11,311 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Input } from '@/components/ui/input';
+
+interface SweepPoint {
+  sourceVoltage: number;
+  carriers_5cm: number;
+  carriers_10cm: number;
+  carriers_15cm: number;
+  resistance_5cm: number;
+  resistance_10cm: number;
+  resistance_15cm: number;
+}
+
+interface DistanceResistancePoint {
+  distance: number;
+  resistance: number;
+}
+
+const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
+const DISTANCES = [5, 10, 15];
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
 
 const LDRCharacteristicsSimulation = () => {
-  const [lightIntensity, setLightIntensity] = useState(50); // %
-  const [voltage, setVoltage] = useState(5); // V
-  const [current, setCurrent] = useState(0); // mA
-  const [resistance, setResistance] = useState(0); // kΩ
-  interface VICurvePoint {
-    voltage: number;
-    current: number;
-    lightIntensity: number;
-  }
+  const [sourceVoltage, setSourceVoltage] = useState(7.5); // lamp/source voltage
+  const [distance, setDistance] = useState(10); // cm
+  const [biasVoltage, setBiasVoltage] = useState(5); // measurement voltage across LDR
 
-  interface ResistancePoint {
-    lightIntensity: number;
-    resistance: number;
-  }
+  // Dark measurement inputs
+  const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5); // V
+  const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05); // mA
 
-  const [viCurveData, setViCurveData] = useState<VICurvePoint[]>([]);
-  const [resistanceData, setResistanceData] = useState<ResistancePoint[]>([]);
-  const [isAutoSweeping, setIsAutoSweeping] = useState(false);
+  // Dark resistance from ammeter + voltmeter
+  const darkResistance = useMemo(() => {
+    if (darkAmmeterReading <= 0) return 100;
+    return darkVoltmeterReading / darkAmmeterReading; // V / mA = kOhm
+  }, [darkVoltmeterReading, darkAmmeterReading]);
 
-  // Calculate current based on voltage and light intensity
-  useEffect(() => {
-    // LDR characteristic: Resistance decreases with increasing light intensity
-    // R = R0 * (E0/E)^γ
-    const darkResistance = 100; // kΩ
-    const gamma = 0.7;
-
-    // Calculate resistance based on light intensity
-    const calculatedResistance = darkResistance * Math.pow(1 / (lightIntensity / 100), gamma);
-    setResistance(parseFloat(calculatedResistance.toFixed(2)));
-
-    // Calculate current: I = V / R
-    const calculatedCurrent = voltage / calculatedResistance;
-    setCurrent(parseFloat(calculatedCurrent.toFixed(3)));
-  }, [voltage, lightIntensity]);
-
-  // Add current data point to VI curve
-  const addDataPoint = React.useCallback(() => {
-    const newPoint = { voltage, current, lightIntensity };
-
-    setViCurveData(prevData => {
-      // Check if a similar voltage point already exists for this light intensity
-      const existingIndex = prevData.findIndex(
-        p => Math.abs(p.voltage - voltage) < 0.1 && Math.abs(p.lightIntensity - lightIntensity) < 1
-      );
-
-      if (existingIndex >= 0) {
-        // Update existing point
-        const newData = [...prevData];
-        newData[existingIndex] = newPoint;
-        return newData;
-      } else {
-        // Add new point
-        return [...prevData, newPoint];
-      }
-    });
-
-    // Add to resistance vs light intensity data if not already present
-    setResistanceData(prevData => {
-      const existingIndex = prevData.findIndex(
-        p => Math.abs(p.lightIntensity - lightIntensity) < 1
-      );
-
-      if (existingIndex >= 0) {
-        // Update existing point
-        const newData = [...prevData];
-        newData[existingIndex] = { lightIntensity, resistance };
-        return newData;
-      } else {
-        // Add new point and sort by light intensity
-        return [...prevData, { lightIntensity, resistance }].sort(
-          (a, b) => a.lightIntensity - b.lightIntensity
-        );
-      }
-    });
-  }, [voltage, current, lightIntensity, resistance]);
-
-  // Auto sweep through voltage values
-  useEffect(() => {
-    if (!isAutoSweeping) return;
-
-    let timeoutId: number;
-    let currentVoltage = 0;
-
-    const sweep = () => {
-      if (currentVoltage > 10) {
-        setIsAutoSweeping(false);
-        return;
-      }
-
-      setVoltage(currentVoltage);
-      timeoutId = window.setTimeout(() => {
-        addDataPoint();
-        currentVoltage += 0.5;
-        sweep();
-      }, 500);
-    };
-
-    sweep();
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [isAutoSweeping, addDataPoint]);
-
-  const resetExperiment = () => {
-    setVoltage(5);
-    setLightIntensity(50);
-    setViCurveData([]);
-    setResistanceData([]);
-    setIsAutoSweeping(false);
+  const computeFlux = (lampVoltage: number, ldrDistance: number) => {
+    // Brightness increases with lamp voltage, concentration falls with distance^2
+    const voltageFactor = lampVoltage / 12.5;
+    const distanceFactor = Math.pow(5 / ldrDistance, 2);
+    return voltageFactor * distanceFactor;
   };
 
-  const exportData = () => {
-    const csvData = [
-      ['Voltage (V)', 'Current (mA)', 'Resistance (kΩ)', 'Light Intensity (%)'],
-      ...viCurveData.map(point => [
-        point.voltage,
-        point.current,
-        point.voltage / point.current,
-        point.lightIntensity,
-      ]),
-    ]
-      .map(row => row.join(','))
-      .join('\n');
-
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ldr_data.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const computeCarriers = (lampVoltage: number, ldrDistance: number) => {
+    // Relative carrier generation proportional to photon flux
+    const flux = computeFlux(lampVoltage, ldrDistance);
+    return 100 * flux; // arbitrary relative carrier units
   };
 
-  // Filter data for current light intensity
-  const filteredViData = viCurveData
-    .filter(p => Math.abs(p.lightIntensity - lightIntensity) < 1)
-    .sort((a, b) => a.voltage - b.voltage);
+  const computeResistance = (lampVoltage: number, ldrDistance: number) => {
+    const carriers = computeCarriers(lampVoltage, ldrDistance);
+    const normalizedCarriers = carriers / 100;
+    // More carriers -> lower resistance
+    const resistance = darkResistance / (1 + 8 * normalizedCarriers);
+    return clamp(resistance, 0.5, darkResistance);
+  };
+
+  const currentResistance = useMemo(
+    () => computeResistance(sourceVoltage, distance),
+    [sourceVoltage, distance, darkResistance]
+  );
+
+  const current = useMemo(() => {
+    return biasVoltage / currentResistance; // mA because V / kOhm = mA
+  }, [biasVoltage, currentResistance]);
+
+  const currentCarriers = useMemo(
+    () => computeCarriers(sourceVoltage, distance),
+    [sourceVoltage, distance]
+  );
+
+  const sweepData: SweepPoint[] = useMemo(() => {
+    return SOURCE_VOLTAGES.map(v => ({
+      sourceVoltage: v,
+      carriers_5cm: parseFloat(computeCarriers(v, 5).toFixed(2)),
+      carriers_10cm: parseFloat(computeCarriers(v, 10).toFixed(2)),
+      carriers_15cm: parseFloat(computeCarriers(v, 15).toFixed(2)),
+      resistance_5cm: parseFloat(computeResistance(v, 5).toFixed(2)),
+      resistance_10cm: parseFloat(computeResistance(v, 10).toFixed(2)),
+      resistance_15cm: parseFloat(computeResistance(v, 15).toFixed(2)),
+    }));
+  }, [darkResistance]);
+
+  const distanceResistanceData: DistanceResistancePoint[] = useMemo(() => {
+    return DISTANCES.map(d => ({
+      distance: d,
+      resistance: parseFloat(computeResistance(sourceVoltage, d).toFixed(2)),
+    }));
+  }, [sourceVoltage, darkResistance]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Control Panel */}
-      <div className="control-panel">
-        <h3 className="text-lg font-semibold mb-4 text-lab-blue">Control Panel</h3>
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="space-y-6">
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Control Panel</h3>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Light Intensity (%)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0}
-                max={100}
-                step={1}
-                value={[lightIntensity]}
-                onValueChange={values => setLightIntensity(values[0])}
-                disabled={isAutoSweeping}
-              />
-              <span className="min-w-[40px] text-right">{lightIntensity}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Applied Voltage (V)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={0}
-                max={10}
-                step={0.1}
-                value={[voltage]}
-                onValueChange={values => setVoltage(values[0])}
-                disabled={isAutoSweeping}
-              />
-              <span className="min-w-[40px] text-right">{voltage}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Current (mA)</label>
-              <Input value={current.toFixed(3)} readOnly className="bg-gray-50" />
+              <label className="text-sm font-medium">Lamp Source Voltage (V)</label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={2.5}
+                  max={12.5}
+                  step={2.5}
+                  value={[sourceVoltage]}
+                  onValueChange={values => setSourceVoltage(values[0])}
+                />
+                <span className="min-w-[48px] text-right">{sourceVoltage.toFixed(1)}</span>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Resistance (kΩ)</label>
-              <Input value={resistance.toFixed(2)} readOnly className="bg-gray-50" />
+              <label className="text-sm font-medium">Distance from Light Source (cm)</label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={5}
+                  max={15}
+                  step={5}
+                  value={[distance]}
+                  onValueChange={values => setDistance(values[0])}
+                />
+                <span className="min-w-[48px] text-right">{distance}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Bias / Measurement Voltage (V)</label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={1}
+                  max={10}
+                  step={0.5}
+                  value={[biasVoltage]}
+                  onValueChange={values => setBiasVoltage(values[0])}
+                />
+                <span className="min-w-[48px] text-right">{biasVoltage.toFixed(1)}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Carrier Generation</label>
+                <Input value={currentCarriers.toFixed(2)} readOnly className="bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">LDR Resistance (kΩ)</label>
+                <Input value={currentResistance.toFixed(2)} readOnly className="bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">LDR Current (mA)</label>
+                <Input value={current.toFixed(3)} readOnly className="bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Relative Light Flux</label>
+                <Input
+                  value={computeFlux(sourceVoltage, distance).toFixed(3)}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Dark Resistance Measurement</h3>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Voltmeter Reading (V)</label>
+              <Input
+                type="number"
+                value={darkVoltmeterReading}
+                onChange={e => setDarkVoltmeterReading(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ammeter Reading (mA)</label>
+              <Input
+                type="number"
+                value={darkAmmeterReading}
+                onChange={e => setDarkAmmeterReading(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Dark Resistance (kΩ)</label>
+              <Input value={darkResistance.toFixed(2)} readOnly className="bg-gray-50" />
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={addDataPoint} disabled={isAutoSweeping} className="flex-1">
-              Add Data Point
-            </Button>
-            <Button
-              onClick={() => setIsAutoSweeping(!isAutoSweeping)}
-              variant={isAutoSweeping ? 'destructive' : 'default'}
-              className="flex-1"
-            >
-              {isAutoSweeping ? 'Stop Sweep' : 'Auto V-I Sweep'}
-            </Button>
-          </div>
+          <p className="mt-3 text-sm text-gray-600">
+            Dark resistance is calculated from meter readings as Rdark = V / I.
+          </p>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <Button onClick={resetExperiment} variant="outline" disabled={isAutoSweeping}>
-              Reset Experiment
-            </Button>
-            <Button onClick={exportData} disabled={viCurveData.length === 0 || isAutoSweeping}>
-              Export Data
-            </Button>
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">LDR Visualization</h3>
+
+          <div className="relative flex h-44 items-center justify-center overflow-hidden rounded-md border bg-blue-50">
+            <div
+              className="absolute top-4 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full bg-yellow-300"
+              style={{
+                opacity: clamp(computeFlux(sourceVoltage, distance) * 1.5, 0.2, 1),
+                boxShadow: `0 0 ${20 / (distance / 5)}px ${10 / (distance / 5)}px rgba(255, 204, 0, 0.75)`,
+              }}
+            />
+            <div className="relative mt-10 flex h-12 w-24 items-center justify-center rounded border-2 border-gray-400 bg-gray-200">
+              <div className="text-xs font-bold">LDR</div>
+            </div>
+
+            <div className="absolute bottom-2 left-4 text-xs">
+              <div>Source V = {sourceVoltage.toFixed(1)} V</div>
+              <div>Distance = {distance} cm</div>
+            </div>
+
+            <div className="absolute bottom-2 right-4 text-xs text-right">
+              <div>Carriers = {currentCarriers.toFixed(2)}</div>
+              <div>R = {currentResistance.toFixed(2)} kΩ</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Visualization and Results */}
       <div className="space-y-6">
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">LDR Visualization</h3>
-
-          <div className="relative h-40 bg-blue-50 border rounded-md flex items-center justify-center overflow-hidden">
-            {/* Light source */}
-            <div
-              className="absolute top-4 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-yellow-300"
-              style={{
-                opacity: lightIntensity / 100,
-                boxShadow: `0 0 ${lightIntensity / 2}px ${lightIntensity / 4}px rgba(255, 204, 0, 0.7)`,
-              }}
-            >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-8 h-8 text-yellow-600"
-                >
-                  <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* LDR component */}
-            <div className="relative mt-6 w-24 h-12 bg-gray-200 rounded border-2 border-gray-400 flex items-center justify-center">
-              <div className="absolute inset-1 bg-gray-300">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-xs font-bold">LDR</div>
-                </div>
-                {/* Zigzag pattern */}
-                <svg viewBox="0 0 100 50" className="absolute inset-0 w-full h-full">
-                  <path
-                    d="M10,25 L20,10 L30,40 L40,10 L50,40 L60,10 L70,40 L80,10 L90,25"
-                    stroke="black"
-                    strokeWidth="2"
-                    fill="none"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Current/Voltage indicators */}
-            <div className="absolute bottom-2 left-4 text-xs">
-              <div>V = {voltage.toFixed(1)} V</div>
-              <div>I = {current.toFixed(3)} mA</div>
-            </div>
-
-            {/* Light intensity indicator */}
-            <div className="absolute bottom-2 right-4 text-xs">
-              <div>Light: {lightIntensity}%</div>
-              <div>R = {resistance.toFixed(1)} kΩ</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">V-I Characteristics</h3>
-
-          <div className="h-64">
-            {filteredViData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={filteredViData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="voltage"
-                    label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis label={{ value: 'Current (mA)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip
-                    formatter={value => {
-                      // Fix: Ensure value is a number before calling toFixed
-                      return typeof value === 'number' ? value.toFixed(3) + ' mA' : value + ' mA';
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="current"
-                    name={`Current at ${lightIntensity}% light`}
-                    stroke="#00796b"
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Add data points to see V-I characteristics
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">
-            Resistance vs Light Intensity
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">
+            Carrier Generation vs Source Voltage
           </h3>
 
           <div className="h-64">
-            {resistanceData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={resistanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="lightIntensity"
-                    label={{ value: 'Light Intensity (%)', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis label={{ value: 'Resistance (kΩ)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip
-                    formatter={value => {
-                      // Fix: Ensure value is a number before calling toFixed
-                      return typeof value === 'number' ? value.toFixed(2) + ' kΩ' : value + ' kΩ';
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="resistance"
-                    name="Resistance"
-                    stroke="#ffc107"
-                    strokeWidth={2}
-                    dot={{ r: 5 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Collect data at different light intensities
-              </div>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sweepData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="sourceVoltage" label={{ value: 'Source Voltage (V)', position: 'insideBottom', offset: -5 }} />
+                <YAxis label={{ value: 'Carrier Generation', angle: -90, position: 'insideLeft' }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="carriers_5cm" stroke="#f59e0b" name="5 cm" strokeWidth={2} />
+                <Line type="monotone" dataKey="carriers_10cm" stroke="#0ea5e9" name="10 cm" strokeWidth={2} />
+                <Line type="monotone" dataKey="carriers_15cm" stroke="#10b981" name="15 cm" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Distance vs Resistance</h3>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={distanceResistanceData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="distance" label={{ value: 'Distance (cm)', position: 'insideBottom', offset: -5 }} />
+                <YAxis label={{ value: 'Resistance (kΩ)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip
+                  formatter={value =>
+                    typeof value === 'number' ? `${value.toFixed(2)} kΩ` : value
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="resistance"
+                  name="Resistance"
+                  stroke="#7c3aed"
+                  strokeWidth={2}
+                  dot={{ r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-md border p-4">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Sweep Table</h3>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50 text-left">
+                  <th className="p-2">Source V</th>
+                  <th className="p-2">5 cm Carriers</th>
+                  <th className="p-2">10 cm Carriers</th>
+                  <th className="p-2">15 cm Carriers</th>
+                  <th className="p-2">5 cm R (kΩ)</th>
+                  <th className="p-2">10 cm R (kΩ)</th>
+                  <th className="p-2">15 cm R (kΩ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sweepData.map(row => (
+                  <tr key={row.sourceVoltage} className="border-b">
+                    <td className="p-2">{row.sourceVoltage.toFixed(1)}</td>
+                    <td className="p-2">{row.carriers_5cm.toFixed(2)}</td>
+                    <td className="p-2">{row.carriers_10cm.toFixed(2)}</td>
+                    <td className="p-2">{row.carriers_15cm.toFixed(2)}</td>
+                    <td className="p-2">{row.resistance_5cm.toFixed(2)}</td>
+                    <td className="p-2">{row.resistance_10cm.toFixed(2)}</td>
+                    <td className="p-2">{row.resistance_15cm.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
