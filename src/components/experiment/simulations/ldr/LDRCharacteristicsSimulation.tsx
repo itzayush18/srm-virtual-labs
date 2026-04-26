@@ -111,6 +111,7 @@ const LDRCharacteristicsSimulation = () => {
   const lampGlow = lampOn ? 28 + lightFlux * 60 : 0;
   const semiconductorGlow = lampOn ? clamp(lightFlux * 1.5, 0.1, 0.85) : 0.05;
   const photonScale = lampOn ? clamp(0.85 + lightFlux, 0.85, 1.6) : 0.8;
+  const lampLeft = distance === 5 ? '42%' : distance === 10 ? '28%' : '14%';
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -240,17 +241,15 @@ const LDRCharacteristicsSimulation = () => {
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">LDR Live Visualization</h3>
 
           <div className="relative h-64 overflow-hidden rounded-md border bg-gradient-to-b from-sky-100 via-slate-50 to-slate-100">
-            <div className="absolute left-4 top-4 rounded-md bg-white/80 px-3 py-2 text-xs shadow-sm">
-              <div>Lamp: {lampOn ? 'ON' : 'OFF'}</div>
-              <div>Source Voltage: {sourceVoltage.toFixed(1)} V</div>
-              <div>Distance: {distance} cm</div>
-            </div>
+            <div className="absolute left-10 right-10 top-1/2 h-1 -translate-y-1/2 rounded-full bg-slate-300" />
+            <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 border-t border-dashed border-slate-400" />
 
             <div
-              className={`absolute left-10 top-10 h-16 w-16 rounded-full border-4 ${
+              className={`absolute top-1/2 h-16 w-16 -translate-y-1/2 rounded-full border-4 transition-all duration-300 ${
                 lampOn ? 'border-yellow-300 bg-yellow-300' : 'border-slate-400 bg-slate-300'
               }`}
               style={{
+                left: lampLeft,
                 boxShadow: lampOn
                   ? `0 0 ${lampGlow}px ${lampGlow / 2}px rgba(250, 204, 21, 0.75)`
                   : 'none',
@@ -261,39 +260,13 @@ const LDRCharacteristicsSimulation = () => {
               </div>
             </div>
 
-            <div className="absolute left-[106px] top-[72px] h-1 w-[46%] rounded-full bg-slate-300" />
-
             {lampOn && (
               <>
                 <div
-                  className="absolute left-[28%] top-[30%] h-0.5 origin-left bg-cyan-300"
+                  className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-cyan-300 transition-all duration-300"
                   style={{
-                    width: '35%',
-                    transform: 'rotate(18deg)',
-                    opacity: photonOpacity,
-                  }}
-                />
-                <div
-                  className="absolute left-[29%] top-[39%] h-0.5 origin-left bg-cyan-300"
-                  style={{
-                    width: '34%',
-                    transform: 'rotate(10deg)',
-                    opacity: photonOpacity,
-                  }}
-                />
-                <div
-                  className="absolute left-[30%] top-[48%] h-0.5 origin-left bg-cyan-300"
-                  style={{
-                    width: '32%',
-                    transform: 'rotate(2deg)',
-                    opacity: photonOpacity,
-                  }}
-                />
-                <div
-                  className="absolute left-[31%] top-[57%] h-0.5 origin-left bg-cyan-300"
-                  style={{
-                    width: '30%',
-                    transform: 'rotate(-8deg)',
+                    left: `calc(${lampLeft} + 64px)`,
+                    right: '152px',
                     opacity: photonOpacity,
                   }}
                 />
@@ -303,10 +276,10 @@ const LDRCharacteristicsSimulation = () => {
                     key={index}
                     className="absolute h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse"
                     style={{
-                      left: `${33 + index * 8}%`,
-                      top: `${28 + index * 8}%`,
+                      left: `calc(${lampLeft} + ${84 + index * 48}px)`,
+                      top: '50%',
                       opacity: photonOpacity,
-                      transform: `scale(${photonScale})`,
+                      transform: `translateY(-50%) scale(${photonScale})`,
                       animationDelay: `${index * 0.18}s`,
                     }}
                   />
@@ -315,7 +288,7 @@ const LDRCharacteristicsSimulation = () => {
             )}
 
             <div
-              className="absolute right-10 top-24 flex h-20 w-28 items-center justify-center rounded-md border-2 border-slate-500 text-sm font-bold text-slate-700"
+              className="absolute right-10 top-1/2 flex h-20 w-28 -translate-y-1/2 items-center justify-center rounded-md border-2 border-slate-500 text-sm font-bold text-slate-700"
               style={{
                 background: lampOn
                   ? `linear-gradient(180deg, rgba(251,191,36,${semiconductorGlow}) 0%, rgba(226,232,240,0.95) 100%)`
@@ -330,18 +303,11 @@ const LDRCharacteristicsSimulation = () => {
 
             {lampOn && (
               <>
-                <div className="absolute right-[88px] top-[116px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                <div className="absolute right-[66px] top-[132px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                <div className="absolute right-[98px] top-[146px] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <div className="absolute right-[90px] top-[45%] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <div className="absolute right-[72px] top-[50%] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <div className="absolute right-[98px] top-[55%] h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
               </>
             )}
-
-            <div className="absolute right-6 bottom-4 rounded-md bg-white/85 px-3 py-2 text-right text-xs shadow-sm">
-              <div>Flux: {lightFlux.toFixed(3)}</div>
-              <div>Carriers: {carrierGeneration.toFixed(2)}</div>
-              <div>Resistance: {resistance.toFixed(2)} kOhm</div>
-              <div>Current: {current.toFixed(3)} mA</div>
-            </div>
           </div>
         </div>
       </div>
