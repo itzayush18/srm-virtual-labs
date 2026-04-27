@@ -37,8 +37,10 @@ const LDRCharacteristicsSimulation = () => {
   const [lampOn, setLampOn] = useState(true);
   const [sourceVoltage, setSourceVoltage] = useState(7.5);
   const [distance, setDistance] = useState(10);
-  const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
-  const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
+
+  // These values represent the readings taken only when the lamp is OFF
+  const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(2.5);
+  const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.07);
 
   const darkResistance = useMemo(() => {
     const voltage = Number.isFinite(darkVoltmeterReading)
@@ -173,12 +175,18 @@ const LDRCharacteristicsSimulation = () => {
         <div className="rounded-md border p-4">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Dark Resistance Measurement</h3>
 
+          <p className="mb-4 text-sm text-slate-600">
+            Measure dark resistance only when the lamp is OFF. Enter the voltmeter and ammeter
+            readings taken in darkness.
+          </p>
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Voltmeter Reading (V)</label>
               <Input
                 type="number"
                 value={darkVoltmeterReading}
+                disabled={lampOn}
                 onChange={(e) => setDarkVoltmeterReading(Number(e.target.value))}
               />
             </div>
@@ -188,6 +196,7 @@ const LDRCharacteristicsSimulation = () => {
               <Input
                 type="number"
                 value={darkAmmeterReading}
+                disabled={lampOn}
                 onChange={(e) => setDarkAmmeterReading(Number(e.target.value))}
               />
             </div>
@@ -197,6 +206,11 @@ const LDRCharacteristicsSimulation = () => {
               <Input value={darkResistance.toFixed(2)} readOnly className="bg-gray-50" />
             </div>
           </div>
+
+          <p className="mt-3 text-xs text-slate-500">
+            Current dark reading used: {darkVoltmeterReading.toFixed(2)} V and{' '}
+            {darkAmmeterReading.toFixed(3)} mA
+          </p>
         </div>
 
         <div className="rounded-md border p-4">
@@ -359,8 +373,8 @@ const LDRCharacteristicsSimulation = () => {
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Sweep Table</h3>
 
           <p className="mb-3 text-sm text-slate-600">
-            The table updates live using the current distance, lamp state, and dark resistance
-            inputs.
+            The table updates live using the current distance, lamp state, and measured dark
+            resistance.
           </p>
 
           <div className="overflow-x-auto">
