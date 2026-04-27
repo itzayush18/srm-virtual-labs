@@ -31,18 +31,27 @@ const clamp = (value: number, min: number, max: number) =>
 
 const SOURCE_VOLTAGE_POINTS = [0, 2.5, 5, 7.5, 10, 12.5];
 const DISTANCE_POINTS = [5, 10, 15];
+const MEASUREMENT_VOLTAGE = 5;
 
 const LDRCharacteristicsSimulation = () => {
   const [lampOn, setLampOn] = useState(true);
   const [sourceVoltage, setSourceVoltage] = useState(7.5);
   const [distance, setDistance] = useState(10);
-  const [biasVoltage, setBiasVoltage] = useState(5);
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
 
   const darkResistance = useMemo(() => {
-    if (darkAmmeterReading <= 0) return 100;
-    return darkVoltmeterReading / darkAmmeterReading;
+    const voltage = Number.isFinite(darkVoltmeterReading)
+      ? Math.max(darkVoltmeterReading, 0)
+      : 0;
+    const current = Number.isFinite(darkAmmeterReading)
+      ? Math.max(darkAmmeterReading, 0)
+      : 0;
+
+    if (current === 0) return 0;
+
+    // V / mA = kOhm
+    return voltage / current;
   }, [darkVoltmeterReading, darkAmmeterReading]);
 
   const computeLightFlux = (lampVoltage: number, ldrDistance: number) => {
@@ -57,14 +66,16 @@ const LDRCharacteristicsSimulation = () => {
 
   const computeResistance = (lampVoltage: number, ldrDistance: number) => {
     if (!lampOn) return darkResistance;
+
     const normalizedCarriers = computeCarrierGeneration(lampVoltage, ldrDistance) / 100;
     const illuminatedResistance = darkResistance / (1 + 8 * normalizedCarriers);
-    return clamp(illuminatedResistance, 0.5, darkResistance);
+
+    return clamp(illuminatedResistance, 0.5, Math.max(darkResistance, 0.5));
   };
 
   const computeCurrent = (lampVoltage: number, ldrDistance: number) => {
     const ldrResistance = computeResistance(lampVoltage, ldrDistance);
-    return ldrResistance > 0 ? biasVoltage / ldrResistance : 0;
+    return ldrResistance > 0 ? MEASUREMENT_VOLTAGE / ldrResistance : 0;
   };
 
   const lightFlux = useMemo(
@@ -77,19 +88,6 @@ const LDRCharacteristicsSimulation = () => {
     [sourceVoltage, distance, lampOn]
   );
 
-  const resistance = useMemo(
-    () => computeResistance(sourceVoltage, distance),
-    [sourceVoltage, distance, darkResistance, lampOn]
-  );
-
-  const current = useMemo(() => computeCurrent(sourceVoltage, distance), [
-    sourceVoltage,
-    distance,
-    biasVoltage,
-    darkResistance,
-    lampOn,
-  ]);
-
   const sweepData: SweepPoint[] = useMemo(() => {
     return SOURCE_VOLTAGE_POINTS.map((value) => ({
       sourceVoltage: value,
@@ -98,7 +96,7 @@ const LDRCharacteristicsSimulation = () => {
       resistance: Number(computeResistance(value, distance).toFixed(2)),
       current: Number(computeCurrent(value, distance).toFixed(3)),
     }));
-  }, [distance, biasVoltage, darkResistance, lampOn]);
+  }, [distance, darkResistance, lampOn]);
 
   const distanceResistanceData: DistanceResistancePoint[] = useMemo(() => {
     return DISTANCE_POINTS.map((pointDistance) => ({
@@ -167,42 +165,6 @@ const LDRCharacteristicsSimulation = () => {
                   onValueChange={(values) => setDistance(values[0])}
                 />
                 <span className="min-w-[50px] text-right">{distance}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bias Voltage for Measurement (V)</label>
-              <div className="flex items-center gap-3">
-                <Slider
-                  min={1}
-                  max={10}
-                  step={0.5}
-                  value={[biasVoltage]}
-                  onValueChange={(values) => setBiasVoltage(values[0])}
-                />
-                <span className="min-w-[50px] text-right">{biasVoltage.toFixed(1)}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Relative Light Flux</label>
-                <Input value={lightFlux.toFixed(3)} readOnly className="bg-gray-50" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Carrier Generation</label>
-                <Input value={carrierGeneration.toFixed(2)} readOnly className="bg-gray-50" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Resistance (kOhm)</label>
-                <Input value={resistance.toFixed(2)} readOnly className="bg-gray-50" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Measured Current (mA)</label>
-                <Input value={current.toFixed(3)} readOnly className="bg-gray-50" />
               </div>
             </div>
           </div>
@@ -397,8 +359,8 @@ const LDRCharacteristicsSimulation = () => {
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Sweep Table</h3>
 
           <p className="mb-3 text-sm text-slate-600">
-            The table updates live using the current distance, bias voltage, lamp state, and dark
-            resistance inputs.
+            The table updates live using the current distance, lamp state, and dark resistance
+            inputs.
           </p>
 
           <div className="overflow-x-auto">
