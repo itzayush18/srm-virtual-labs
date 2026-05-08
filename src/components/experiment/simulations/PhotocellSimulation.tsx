@@ -46,8 +46,6 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const round = (value: number, digits = 2) => Number(value.toFixed(digits));
 
-const loadResistanceOptions = [10, 22, 47, 68, 100, 150, 220, 330];
-
 const calculateRelativeIntensity = (distance: number) => {
   const referenceDistance = 10;
   const intensityPercent = 100 * Math.pow(referenceDistance / distance, 2);
@@ -76,20 +74,9 @@ const calculateVICurrent = (collectorVoltage: number, intensity: number, stoppin
   return round(Math.max(current, 0), 2);
 };
 
-const generateVISeries = (distance: number): VIDistanceSeries => {
+const createEmptyVISeries = (distance: number): VIDistanceSeries => {
   const intensity = calculateRelativeIntensity(distance);
   const stoppingVoltage = round(3.4 + 2.2 * (intensity / 100), 2);
-
-  const readings = loadResistanceOptions.map(loadResistance => {
-    const voltage = round((loadResistance / 330) * 8, 2);
-    const current = calculateVICurrent(voltage, intensity, stoppingVoltage);
-
-    return {
-      loadResistance,
-      voltage,
-      current,
-    };
-  });
 
   return {
     label:
@@ -101,7 +88,7 @@ const generateVISeries = (distance: number): VIDistanceSeries => {
     distance,
     intensity,
     stoppingVoltage,
-    readings,
+    readings: [],
   };
 };
 
@@ -226,9 +213,9 @@ const PhotocellSimulation = () => {
   const [liveLoadResistance, setLiveLoadResistance] = useState(100);
 
   const [viSeries, setVISeries] = useState<Record<VIDistanceKey, VIDistanceSeries>>({
-    minimum: generateVISeries(DISTANCE_OPTIONS.minimum.distance),
-    medium: generateVISeries(DISTANCE_OPTIONS.medium.distance),
-    maximum: generateVISeries(DISTANCE_OPTIONS.maximum.distance),
+    minimum: createEmptyVISeries(DISTANCE_OPTIONS.minimum.distance),
+    medium: createEmptyVISeries(DISTANCE_OPTIONS.medium.distance),
+    maximum: createEmptyVISeries(DISTANCE_OPTIONS.maximum.distance),
   });
 
   useEffect(() => {
@@ -253,9 +240,9 @@ const PhotocellSimulation = () => {
 
   const regenerateVICurves = () => {
     setVISeries({
-      minimum: generateVISeries(DISTANCE_OPTIONS.minimum.distance),
-      medium: generateVISeries(DISTANCE_OPTIONS.medium.distance),
-      maximum: generateVISeries(DISTANCE_OPTIONS.maximum.distance),
+      minimum: createEmptyVISeries(DISTANCE_OPTIONS.minimum.distance),
+      medium: createEmptyVISeries(DISTANCE_OPTIONS.medium.distance),
+      maximum: createEmptyVISeries(DISTANCE_OPTIONS.maximum.distance),
     });
   };
 
@@ -263,6 +250,38 @@ const PhotocellSimulation = () => {
     setIlluminationDistance(20);
     setIlluminationTable([]);
     regenerateVICurves();
+  };
+
+  const addVIDataPoint = () => {
+    setVISeries(prev => {
+      const activeSeries = prev[selectedDistanceKey];
+      const nextReading: VIReading = {
+        loadResistance: liveLoadResistance,
+        voltage: liveVoltage,
+        current: liveCurrent,
+      };
+
+      const existingIndex = activeSeries.readings.findIndex(
+        reading => Math.abs(reading.loadResistance - liveLoadResistance) < 1
+      );
+
+      const updatedReadings =
+        existingIndex >= 0
+          ? activeSeries.readings.map((reading, index) =>
+              index === existingIndex ? nextReading : reading
+            )
+          : [...activeSeries.readings, nextReading];
+
+      return {
+        ...prev,
+        [selectedDistanceKey]: {
+          ...activeSeries,
+          intensity: activeIntensity,
+          stoppingVoltage: activeStoppingVoltage,
+          readings: updatedReadings.sort((a, b) => a.voltage - b.voltage),
+        },
+      };
+    });
   };
 
   const exportData = () => {
@@ -334,14 +353,15 @@ const PhotocellSimulation = () => {
 
   const liveGraphData = useMemo(() => {
     const series = viSeries[selectedDistanceKey];
-    const filtered = series.readings.filter(reading => reading.voltage <= liveVoltage);
     const currentPoint = {
       voltage: liveVoltage,
       current: liveCurrent,
     };
 
-    const hasSameVoltage = filtered.some(point => point.voltage === liveVoltage);
-    const merged = hasSameVoltage ? filtered : [...filtered, currentPoint];
+    const hasSameVoltage = series.readings.some(
+      point => Math.abs(point.loadResistance - liveLoadResistance) < 1
+    );
+    const merged = hasSameVoltage ? series.readings : [...series.readings, currentPoint];
     return merged.sort((a, b) => a.voltage - b.voltage);
   }, [liveCurrent, liveVoltage, selectedDistanceKey, viSeries]);
 
@@ -496,6 +516,7 @@ const PhotocellSimulation = () => {
                 <div className="rounded-md bg-white p-2">Voltage: {liveVoltage} V</div>
                 <div className="rounded-md bg-white p-2">Current: {liveCurrent} uA</div>
               </div>
+              <Button onClick={addVIDataPoint}>Add V-I Data Point</Button>
             </div>
           </div>
 
@@ -537,8 +558,8 @@ const PhotocellSimulation = () => {
           </div>
 
           <div className="mt-3 rounded-md border-l-4 border-lab-blue bg-blue-50 p-3 text-sm text-gray-700">
-            The live I-V graph updates instantly as you vary the load at the selected fixed distance.
-            Current stays nearly constant first and then falls rapidly after the knee voltage.
+            The live I-V graph follows the current load slider, and `Add V-I Data Point` stores the
+            measured voltage and current into the selected distance table.
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -563,13 +584,21 @@ const PhotocellSimulation = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {series.readings.map(reading => (
-                          <tr key={`${key}-${reading.loadResistance}`} className="border-t">
-                            <td className="py-1 pr-2">{reading.loadResistance}</td>
-                            <td className="py-1 pr-2">{reading.voltage}</td>
-                            <td className="py-1">{reading.current}</td>
+                        {series.readings.length > 0 ? (
+                          series.readings.map(reading => (
+                            <tr key={`${key}-${reading.loadResistance}`} className="border-t">
+                              <td className="py-1 pr-2">{reading.loadResistance}</td>
+                              <td className="py-1 pr-2">{reading.voltage}</td>
+                              <td className="py-1">{reading.current}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} className="py-3 text-center text-gray-500">
+                              Add V-I data points for this distance.
+                            </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
