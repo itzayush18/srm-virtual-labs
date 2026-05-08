@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import {
   LineChart,
@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
-import PhotocellScene from './photocell/PhotocellScene';
 
 type IlluminationPoint = {
   id: number;
@@ -106,12 +105,125 @@ const generateVISeries = (distance: number): VIDistanceSeries => {
   };
 };
 
+const LampPhotocellVisualization = ({
+  distance,
+  intensity,
+  voltage,
+  current,
+}: {
+  distance: number;
+  intensity: number;
+  voltage: number;
+  current: number;
+}) => {
+  const beamOpacity = clamp(0.22 + intensity / 120, 0.25, 0.95);
+  const beamWidth = clamp(10 + intensity / 6, 18, 34);
+  const photocellGlow = clamp(0.2 + intensity / 110, 0.25, 0.9);
+  const distancePercent = ((distance - 10) / 40) * 100;
+  const lampLeft = 12;
+  const photocellLeft = 48 + distancePercent * 0.34;
+  const gapWidth = Math.max(photocellLeft - lampLeft - 10, 12);
+
+  return (
+    <div className="relative h-full overflow-hidden rounded-md bg-[radial-gradient(circle_at_top,_#163257_0%,_#09111f_45%,_#030712_100%)] text-white">
+      <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),transparent)]" />
+
+      <div className="absolute left-5 top-5 rounded-full border border-cyan-300/30 bg-slate-900/70 px-3 py-2 text-xs shadow-lg backdrop-blur">
+        <div className="font-semibold text-cyan-200">Light Meter</div>
+        <div>Intensity: {intensity}%</div>
+        <div>Voltage: {voltage} V</div>
+        <div>Current: {current} uA</div>
+      </div>
+
+      <div className="absolute bottom-5 left-6 right-6 h-2 rounded-full bg-slate-700/70">
+        <div className="absolute -top-6 left-0 right-0 flex justify-between text-[10px] text-slate-300">
+          <span>0 cm</span>
+          <span>10 cm</span>
+          <span>20 cm</span>
+          <span>30 cm</span>
+          <span>40 cm</span>
+          <span>50 cm</span>
+        </div>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className="absolute -top-1 h-4 w-[2px] bg-slate-300"
+            style={{ left: `${index * 20}%` }}
+          />
+        ))}
+      </div>
+
+      <div
+        className="absolute bottom-20 h-16 w-16 rounded-full border-4 border-amber-200 bg-[radial-gradient(circle,_#fff4a3_0%,_#ffd34d_45%,_#f59e0b_72%,_#7c2d12_100%)] shadow-[0_0_40px_rgba(251,191,36,0.85)]"
+        style={{ left: `${lampLeft}%` }}
+      />
+      <div
+        className="absolute bottom-23 h-12 rounded-r-[40px] rounded-l-[12px] bg-slate-500 shadow-lg"
+        style={{ left: `${lampLeft + 8}%`, width: '11%' }}
+      />
+      <div className="absolute bottom-16 text-xs text-amber-200" style={{ left: `${lampLeft}%` }}>
+        Lamp
+      </div>
+
+      <div
+        className="absolute bottom-[6.15rem] rounded-full blur-2xl"
+        style={{
+          left: `${lampLeft + 8}%`,
+          width: `${gapWidth}%`,
+          height: `${beamWidth}px`,
+          opacity: beamOpacity,
+          background:
+            'linear-gradient(90deg, rgba(255,220,120,0.95) 0%, rgba(255,234,161,0.65) 50%, rgba(125,211,252,0.22) 100%)',
+        }}
+      />
+
+      <div
+        className="absolute bottom-20 h-24 w-12 rounded-t-lg rounded-b-sm border border-cyan-200/40 bg-slate-700 shadow-xl"
+        style={{ left: `${photocellLeft}%` }}
+      >
+        <div
+          className="absolute inset-x-1 top-1 h-12 rounded-md bg-cyan-300/80"
+          style={{ boxShadow: `0 0 24px rgba(103, 232, 249, ${photocellGlow})` }}
+        />
+        <div className="absolute -bottom-7 left-1/2 h-7 w-[3px] -translate-x-1/2 bg-slate-400" />
+      </div>
+      <div className="absolute bottom-12 text-xs text-cyan-100" style={{ left: `${photocellLeft - 1}%` }}>
+        Photocell
+      </div>
+
+      <div
+        className="absolute bottom-28 border-t border-dashed border-cyan-200/60"
+        style={{ left: `${lampLeft + 14}%`, width: `${gapWidth - 4}%` }}
+      />
+      <div
+        className="absolute bottom-30 rounded bg-slate-900/70 px-2 py-1 text-[11px] text-cyan-100"
+        style={{ left: `${lampLeft + gapWidth / 2}%`, transform: 'translateX(-50%)' }}
+      >
+        Distance: {distance} cm
+      </div>
+
+      <div className="absolute right-5 top-5 rounded-xl border border-emerald-300/30 bg-slate-900/70 p-3 shadow-lg backdrop-blur">
+        <div className="mb-2 text-xs font-semibold text-emerald-200">Voltmeter / Response Meter</div>
+        <div className="h-3 w-36 overflow-hidden rounded-full bg-slate-700">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,#22c55e,#eab308,#f97316)]"
+            style={{ width: `${clamp(intensity, 0, 100)}%` }}
+          />
+        </div>
+        <div className="mt-2 text-[11px] text-slate-200">Light response: {intensity}%</div>
+      </div>
+    </div>
+  );
+};
+
 const PhotocellSimulation = () => {
   const [illuminationDistance, setIlluminationDistance] = useState(20);
   const [illuminationVoltage, setIlluminationVoltage] = useState(0);
   const [illuminationCurrent, setIlluminationCurrent] = useState(0);
   const [illuminationIntensity, setIlluminationIntensity] = useState(0);
   const [illuminationTable, setIlluminationTable] = useState<IlluminationPoint[]>([]);
+  const [selectedDistanceKey, setSelectedDistanceKey] = useState<VIDistanceKey>('minimum');
+  const [liveLoadResistance, setLiveLoadResistance] = useState(100);
 
   const [viSeries, setVISeries] = useState<Record<VIDistanceKey, VIDistanceSeries>>({
     minimum: generateVISeries(DISTANCE_OPTIONS.minimum.distance),
@@ -214,6 +326,25 @@ const PhotocellSimulation = () => {
     });
   }, [viSeries]);
 
+  const activeDistance = DISTANCE_OPTIONS[selectedDistanceKey];
+  const activeIntensity = calculateRelativeIntensity(activeDistance.distance);
+  const activeStoppingVoltage = round(3.4 + 2.2 * (activeIntensity / 100), 2);
+  const liveVoltage = round((liveLoadResistance / 330) * 8, 2);
+  const liveCurrent = calculateVICurrent(liveVoltage, activeIntensity, activeStoppingVoltage);
+
+  const liveGraphData = useMemo(() => {
+    const series = viSeries[selectedDistanceKey];
+    const filtered = series.readings.filter(reading => reading.voltage <= liveVoltage);
+    const currentPoint = {
+      voltage: liveVoltage,
+      current: liveCurrent,
+    };
+
+    const hasSameVoltage = filtered.some(point => point.voltage === liveVoltage);
+    const merged = hasSameVoltage ? filtered : [...filtered, currentPoint];
+    return merged.sort((a, b) => a.voltage - b.voltage);
+  }, [liveCurrent, liveVoltage, selectedDistanceKey, viSeries]);
+
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div className="space-y-6">
@@ -307,17 +438,12 @@ const PhotocellSimulation = () => {
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Photocell 3D Visualization</h3>
 
           <div className="h-80 rounded-md border bg-gray-100">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center">Loading 3D scene...</div>
-              }
-            >
-              <PhotocellScene
-                wavelength={550}
-                intensity={illuminationIntensity}
-                current={illuminationCurrent}
-              />
-            </Suspense>
+            <LampPhotocellVisualization
+              distance={illuminationDistance}
+              intensity={illuminationIntensity}
+              voltage={illuminationVoltage}
+              current={illuminationCurrent}
+            />
           </div>
         </div>
 
@@ -334,9 +460,48 @@ const PhotocellSimulation = () => {
             </Button>
           </div>
 
+          <div className="mb-5 grid gap-4 rounded-md bg-gray-50 p-4 lg:grid-cols-2">
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Distance Level for Live I-V Graph</label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(DISTANCE_OPTIONS) as VIDistanceKey[]).map(key => (
+                  <Button
+                    key={key}
+                    type="button"
+                    variant={selectedDistanceKey === key ? 'default' : 'outline'}
+                    onClick={() => setSelectedDistanceKey(key)}
+                  >
+                    {DISTANCE_OPTIONS[key].label}
+                  </Button>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500">
+                Fixed distance: {activeDistance.distance} cm | Relative intensity: {activeIntensity}%
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Load Resistance (kOhm)</label>
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={10}
+                  max={330}
+                  step={1}
+                  value={[liveLoadResistance]}
+                  onValueChange={values => setLiveLoadResistance(values[0])}
+                />
+                <span className="min-w-[62px] text-right text-sm">{liveLoadResistance}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-md bg-white p-2">Voltage: {liveVoltage} V</div>
+                <div className="rounded-md bg-white p-2">Current: {liveCurrent} uA</div>
+              </div>
+            </div>
+          </div>
+
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={graphData}>
+              <LineChart data={liveGraphData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="voltage"
@@ -354,30 +519,26 @@ const PhotocellSimulation = () => {
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="minimum"
-                  name="Minimum Distance"
-                  stroke="#0f766e"
+                  dataKey="current"
+                  name={`${activeDistance.label} Live Curve`}
+                  stroke={
+                    selectedDistanceKey === 'minimum'
+                      ? '#0f766e'
+                      : selectedDistanceKey === 'medium'
+                        ? '#2563eb'
+                        : '#dc2626'
+                  }
                   strokeWidth={2}
                   dot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="medium"
-                  name="Medium Distance"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="maximum"
-                  name="Maximum Distance"
-                  stroke="#dc2626"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
+                  activeDot={{ r: 7 }}
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="mt-3 rounded-md border-l-4 border-lab-blue bg-blue-50 p-3 text-sm text-gray-700">
+            The live I-V graph updates instantly as you vary the load at the selected fixed distance.
+            Current stays nearly constant first and then falls rapidly after the knee voltage.
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
