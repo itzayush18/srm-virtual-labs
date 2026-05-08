@@ -58,6 +58,27 @@ const xraySources = {
 
 const formatPeakLabel = (peak: Pick<Peak, 'h' | 'k' | 'l'>) => `(${peak.h}${peak.k}${peak.l})`;
 
+const calculateLatticeParameterFromPeak = (
+  peak: Pick<Peak, 'h' | 'k' | 'l' | 'twoTheta'>,
+  wavelength: number
+) => {
+  const thetaRadians = (peak.twoTheta * Math.PI) / 360;
+  const denominator = 2 * Math.sin(thetaRadians);
+
+  if (denominator <= 0) {
+    return 0;
+  }
+
+  const dSpacing = wavelength / denominator;
+  const gSquared = peak.h * peak.h + peak.k * peak.k + peak.l * peak.l;
+
+  if (gSquared === 0) {
+    return 0;
+  }
+
+  return dSpacing * Math.sqrt(gSquared);
+};
+
 const calculateMultiplicity = (h: number, k: number, l: number) => {
   const nonZero = [h, k, l].filter(value => value !== 0).length;
 
@@ -100,7 +121,6 @@ const getDiamondIntensityFactor = (h: number, k: number, l: number) => {
     return 0;
   }
 
-  // A simple educational weighting to separate strong/weak allowed peaks.
   return allOdd ? 64 : 32;
 };
 
@@ -139,7 +159,6 @@ const buildDiffractionData = (crystalType: CrystalType, wavelength: number) => {
 
         const lorentzLikeWeight = 1 / Math.max(Math.sin(theta) * Math.sin(2 * theta), 0.08);
         const rawIntensity = structureFactor * multiplicity * lorentzLikeWeight;
-        const latticeParameter = dSpacing * Math.sqrt(gSquared);
 
         peaks.push({
           id: `${h}${k}${l}`,
@@ -151,7 +170,7 @@ const buildDiffractionData = (crystalType: CrystalType, wavelength: number) => {
           theta: (theta * 180) / Math.PI,
           intensity: rawIntensity,
           multiplicity,
-          latticeParameter,
+          latticeParameter: 0,
         });
       }
     }
@@ -168,28 +187,31 @@ const buildDiffractionData = (crystalType: CrystalType, wavelength: number) => {
     }
   }
 
-  const normalized = Array.from(mergedPeaks.values())
-    .sort((a, b) => a.twoTheta - b.twoTheta)
-    .map(peak => ({
-      ...peak,
-      intensity: peak.intensity,
-    }));
-
+  const normalized = Array.from(mergedPeaks.values()).sort((a, b) => a.twoTheta - b.twoTheta);
   const maxIntensity = Math.max(...normalized.map(peak => peak.intensity), 1);
 
-  return normalized.map(peak => ({
-    ...peak,
-    dSpacing: Number(peak.dSpacing.toFixed(4)),
-    twoTheta: Number(peak.twoTheta.toFixed(2)),
-    theta: Number(peak.theta.toFixed(2)),
-    intensity: Number(((peak.intensity / maxIntensity) * 100).toFixed(1)),
-    latticeParameter: Number(peak.latticeParameter.toFixed(4)),
-  }));
+  return normalized.map(peak => {
+    const roundedPeak = {
+      ...peak,
+      dSpacing: Number(peak.dSpacing.toFixed(4)),
+      twoTheta: Number(peak.twoTheta.toFixed(2)),
+      theta: Number(peak.theta.toFixed(2)),
+      intensity: Number(((peak.intensity / maxIntensity) * 100).toFixed(1)),
+      latticeParameter: 0,
+    };
+
+    return {
+      ...roundedPeak,
+      latticeParameter: Number(
+        calculateLatticeParameterFromPeak(roundedPeak, wavelength).toFixed(4)
+      ),
+    };
+  });
 };
 
 const XRayDiffractionSimulation = () => {
   const [crystalType, setCrystalType] = useState<CrystalType>('nacl');
-  const [source, setSource] = useState<keyof typeof xraySources>('Cu Kα');
+  const [source, setSource] = useState<keyof typeof xraySources>('Cu K-alpha');
 
   const wavelength = xraySources[source];
 
@@ -203,7 +225,9 @@ const XRayDiffractionSimulation = () => {
   const selectedPeak =
     diffractionData.find(peak => peak.id === selectedPeakId) ?? diffractionData[0] ?? null;
 
-  const selectedLatticeParameter = selectedPeak?.latticeParameter ?? 0;
+  const selectedLatticeParameter = selectedPeak
+    ? calculateLatticeParameterFromPeak(selectedPeak, wavelength)
+    : 0;
   const actualLatticeConstant = crystalConfig[crystalType].latticeConstant;
   const percentError =
     selectedPeak && actualLatticeConstant > 0
@@ -296,14 +320,17 @@ const XRayDiffractionSimulation = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">X-ray Source</label>
-              <Select value={source} onValueChange={value => setSource(value as keyof typeof xraySources)}>
+              <Select
+                value={source}
+                onValueChange={value => setSource(value as keyof typeof xraySources)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select X-ray source" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(xraySources).map(([name, lambda]) => (
                     <SelectItem key={name} value={name}>
-                      {name} ({lambda} Å)
+                      {name} ({lambda} A)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -312,7 +339,7 @@ const XRayDiffractionSimulation = () => {
 
             <div className="rounded-lg bg-slate-50 p-3">
               <div className="text-xs uppercase tracking-wide text-slate-500">Reference Values</div>
-              <div className="mt-2 text-sm text-slate-700">Wavelength: {wavelength} Å</div>
+              <div className="mt-2 text-sm text-slate-700">Wavelength: {wavelength} A</div>
               <div className="text-sm text-slate-700">
                 Actual lattice parameter: {actualLatticeConstant} A
               </div>
