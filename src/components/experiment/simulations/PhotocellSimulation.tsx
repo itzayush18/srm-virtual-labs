@@ -211,6 +211,7 @@ const PhotocellSimulation = () => {
   const [illuminationTable, setIlluminationTable] = useState<IlluminationPoint[]>([]);
   const [selectedDistanceKey, setSelectedDistanceKey] = useState<VIDistanceKey>('minimum');
   const [liveLoadResistance, setLiveLoadResistance] = useState(100);
+  const [visualizationMode, setVisualizationMode] = useState<'illumination' | 'vi'>('illumination');
 
   const [viSeries, setVISeries] = useState<Record<VIDistanceKey, VIDistanceSeries>>({
     minimum: createEmptyVISeries(DISTANCE_OPTIONS.minimum.distance),
@@ -350,6 +351,12 @@ const PhotocellSimulation = () => {
   const activeStoppingVoltage = round(3.4 + 2.2 * (activeIntensity / 100), 2);
   const liveVoltage = round((liveLoadResistance / 330) * 8, 2);
   const liveCurrent = calculateVICurrent(liveVoltage, activeIntensity, activeStoppingVoltage);
+  const visualDistance =
+    visualizationMode === 'vi' ? activeDistance.distance : illuminationDistance;
+  const visualIntensity =
+    visualizationMode === 'vi' ? activeIntensity : illuminationIntensity;
+  const visualVoltage = visualizationMode === 'vi' ? liveVoltage : illuminationVoltage;
+  const visualCurrent = visualizationMode === 'vi' ? liveCurrent : illuminationCurrent;
 
   const liveGraphData = useMemo(() => {
     const series = viSeries[selectedDistanceKey];
@@ -455,14 +462,37 @@ const PhotocellSimulation = () => {
 
       <div className="space-y-6">
         <div className="data-panel">
-          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Photocell 3D Visualization</h3>
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-lab-blue">Photocell 3D Visualization</h3>
+              <p className="text-sm text-gray-500">
+                Switch between illumination distance and V-I selected distance for the live view.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={visualizationMode === 'illumination' ? 'default' : 'outline'}
+                onClick={() => setVisualizationMode('illumination')}
+              >
+                Illumination View
+              </Button>
+              <Button
+                type="button"
+                variant={visualizationMode === 'vi' ? 'default' : 'outline'}
+                onClick={() => setVisualizationMode('vi')}
+              >
+                V-I View
+              </Button>
+            </div>
+          </div>
 
           <div className="h-80 rounded-md border bg-gray-100">
             <LampPhotocellVisualization
-              distance={illuminationDistance}
-              intensity={illuminationIntensity}
-              voltage={illuminationVoltage}
-              current={illuminationCurrent}
+              distance={visualDistance}
+              intensity={visualIntensity}
+              voltage={visualVoltage}
+              current={visualCurrent}
             />
           </div>
         </div>
@@ -489,7 +519,10 @@ const PhotocellSimulation = () => {
                     key={key}
                     type="button"
                     variant={selectedDistanceKey === key ? 'default' : 'outline'}
-                    onClick={() => setSelectedDistanceKey(key)}
+                    onClick={() => {
+                      setSelectedDistanceKey(key);
+                      setVisualizationMode('vi');
+                    }}
                   >
                     {DISTANCE_OPTIONS[key].label}
                   </Button>
