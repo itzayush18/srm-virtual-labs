@@ -29,6 +29,7 @@ interface LampOption {
 const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
 const BASE_CURRENT_MA = [36, 36, 35.8, 35.5, 35.1, 34, 23, 6, 1.2] as const;
 const BASE_VOLTAGE_V = [0.91, 1.36, 2.01, 2.27, 2.58, 2.83, 2.95, 3.0, 3.02] as const;
+const EFFECTIVE_LAMP_RADIUS_CM = 6;
 
 const LAMP_OPTIONS: LampOption[] = [
   { label: '75 W Lamp', value: 75 },
@@ -163,8 +164,12 @@ const SolarCellSimulation = () => {
   const areaCm2 = widthCm * heightCm;
   const areaM2 = areaCm2 / 10000;
   const distanceM = distanceCm / 100;
+  const correctionDistanceM = EFFECTIVE_LAMP_RADIUS_CM / 100;
   const irradiance = lampPower / (4 * Math.PI * distanceM * distanceM);
+  const correctedIrradiance =
+    lampPower / (4 * Math.PI * (distanceM * distanceM + correctionDistanceM * correctionDistanceM));
   const incidentPower = irradiance * areaM2;
+  const correctedIncidentPower = correctedIrradiance * areaM2;
 
   const lampScale = lampPower / 100;
   const areaScale = areaCm2 / 48;
@@ -285,6 +290,14 @@ const SolarCellSimulation = () => {
   }, [incidentPower, maxPower]);
 
   const displayEfficiency = clamp(efficiency, 0, 100);
+  const correctedEfficiency = useMemo(() => {
+    if (correctedIncidentPower <= 0) {
+      return 0;
+    }
+
+    return (maxPower / correctedIncidentPower) * 100;
+  }, [correctedIncidentPower, maxPower]);
+  const displayCorrectedEfficiency = clamp(correctedEfficiency, 0, 100);
 
   const exportData = useCallback(() => {
     if (curveData.length === 0) {
@@ -302,7 +315,8 @@ const SolarCellSimulation = () => {
         'Area (cm^2)',
         'Open Circuit Voltage (V)',
         'Short Circuit Current (A)',
-        'Efficiency (%)',
+        'Efficiency Point Source (%)',
+        'Efficiency Corrected Source (%)',
       ],
       ...curveData.map(point => [
         point.load,
@@ -315,6 +329,7 @@ const SolarCellSimulation = () => {
         Number(estimatedOpenCircuitVoltage.toFixed(3)),
         Number(estimatedShortCircuitCurrent.toFixed(3)),
         Number(displayEfficiency.toFixed(2)),
+        Number(displayCorrectedEfficiency.toFixed(2)),
       ]),
     ];
 
@@ -328,7 +343,7 @@ const SolarCellSimulation = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [areaCm2, curveData, distanceCm, displayEfficiency, estimatedOpenCircuitVoltage, estimatedShortCircuitCurrent, lampPower]);
+  }, [areaCm2, curveData, distanceCm, displayCorrectedEfficiency, displayEfficiency, estimatedOpenCircuitVoltage, estimatedShortCircuitCurrent, lampPower]);
 
   const resetExperiment = useCallback(() => {
     setLampPower(100);
@@ -496,7 +511,7 @@ const SolarCellSimulation = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <div>
-                <div className="text-sm text-slate-500">Incident Power</div>
+                <div className="text-sm text-slate-500">Incident Power (Point Source)</div>
                 <div className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(incidentPower, 3)} W</div>
               </div>
               <div>
@@ -504,8 +519,27 @@ const SolarCellSimulation = () => {
                 <div className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(maxPower, 3)} W</div>
               </div>
               <div>
-                <div className="text-sm text-slate-500">Efficiency Formula</div>
-                <div className="mt-1 text-lg font-semibold text-slate-900">Pmax / (A x Io) x 100</div>
+                <div className="text-sm text-slate-500">Corrected Incident Power</div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(correctedIncidentPower, 3)} W</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-sky-50 p-4 shadow-sm">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-sm text-slate-600">Point-Source Efficiency</div>
+                <div className="mt-1 text-2xl font-semibold text-sky-900">{formatNumber(displayEfficiency)} %</div>
+                <div className="mt-1 text-xs text-slate-600">
+                  Uses Io = P / (4 x pi x D^2)
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-600">Corrected Lamp-Source Efficiency</div>
+                <div className="mt-1 text-2xl font-semibold text-sky-900">{formatNumber(displayCorrectedEfficiency)} %</div>
+                <div className="mt-1 text-xs text-slate-600">
+                  Uses Io = P / (4 x pi x (D^2 + D0^2)), where D0 = {EFFECTIVE_LAMP_RADIUS_CM} cm
+                </div>
               </div>
             </div>
           </div>
