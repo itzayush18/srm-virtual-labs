@@ -6,7 +6,6 @@ import {
   Legend,
   Line,
   LineChart,
-  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,7 +17,6 @@ interface CurvePoint {
   voltage: number;
   current: number;
   power: number;
-  tangentCurrent: number | null;
 }
 
 interface LampOption {
@@ -64,12 +62,12 @@ const LoadKnob = ({
         className="w-full accent-slate-700"
         max={max}
         min={min}
-        step={0.5}
+        step={1}
         type="range"
         value={value}
         onChange={event => onChange(Number(event.target.value))}
       />
-      <div className="text-sm font-medium text-slate-700">{formatNumber(value, 1)} ohm</div>
+      <div className="text-sm font-medium text-slate-700">{formatNumber(value, 0)} ohm</div>
     </div>
   );
 };
@@ -79,15 +77,16 @@ const SolarCellVisual = ({
   lampPower,
   widthCm,
   heightCm,
-  load,
 }: {
   distanceCm: number;
   lampPower: number;
   widthCm: number;
   heightCm: number;
-  load: number;
 }) => {
-  const x = 140 + ((distanceCm - 10) / 15) * 210;
+  const x = 150 + ((distanceCm - 10) / 15) * 195;
+  const panelWidth = 44 + widthCm * 6;
+  const panelHeight = 38 + heightCm * 6;
+  const panelY = 165 - panelHeight / 2;
 
   return (
     <div className="h-full w-full bg-gradient-to-br from-amber-50 via-white to-sky-100">
@@ -104,45 +103,41 @@ const SolarCellVisual = ({
         </defs>
 
         <rect fill="#dbeafe" height="160" width="560" y="120" />
-        <rect fill="#64748b" height="90" rx="4" width="12" x="72" y="40" />
+        <rect fill="#64748b" height="92" rx="4" width="12" x="72" y="38" />
         <circle cx="78" cy="60" fill="#f59e0b" r="16" />
-        <circle cx="78" cy="60" fill="url(#lampGlow)" r="90" />
-        <text className="fill-slate-700 text-[12px]" x="32" y="28">
+        <circle cx="78" cy="60" fill="url(#lampGlow)" r="92" />
+        <text className="fill-slate-700 text-[12px]" x="30" y="28">
           Fixed lamp ({lampPower} W)
         </text>
 
-        <line stroke="#cbd5e1" strokeDasharray="6 6" strokeWidth="2" x1="92" x2={x + 10} y1="60" y2="128" />
-        <text className="fill-slate-700 text-[12px]" x={(92 + x + 10) / 2 - 28} y="82">
+        <line stroke="#cbd5e1" strokeDasharray="6 6" strokeWidth="2" x1="92" x2={x + panelWidth / 2} y1="60" y2={panelY + panelHeight / 2} />
+        <text className="fill-slate-700 text-[12px]" x={(92 + x + panelWidth / 2) / 2 - 24} y="82">
           {distanceCm} cm
         </text>
 
-        <g transform={`translate(${x}, 128)`}>
-          <rect fill="url(#panelFill)" height="94" rx="6" stroke="#0f172a" strokeWidth="2" width="72" x="0" y="0" />
-          <g opacity="0.35" stroke="#93c5fd" strokeWidth="1">
-            <line x1="12" x2="12" y1="8" y2="86" />
-            <line x1="24" x2="24" y1="8" y2="86" />
-            <line x1="36" x2="36" y1="8" y2="86" />
-            <line x1="48" x2="48" y1="8" y2="86" />
-            <line x1="60" x2="60" y1="8" y2="86" />
-            <line x1="6" x2="66" y1="22" y2="22" />
-            <line x1="6" x2="66" y1="44" y2="44" />
-            <line x1="6" x2="66" y1="66" y2="66" />
-          </g>
-          <text className="fill-white text-[11px]" x="6" y="114">
-            Cell {widthCm} x {heightCm} cm
-          </text>
-        </g>
-
-        <g transform="translate(430, 98)">
-          <rect fill="#e2e8f0" height="76" rx="8" stroke="#94a3b8" width="84" x="0" y="0" />
-          <path
-            d="M18 24 C 28 12, 42 12, 50 24 S 70 36, 18 52"
-            fill="none"
-            stroke="#475569"
-            strokeWidth="3"
+        <g transform={`translate(${x}, ${panelY})`}>
+          <rect
+            fill="url(#panelFill)"
+            height={panelHeight}
+            rx="6"
+            stroke="#0f172a"
+            strokeWidth="2"
+            width={panelWidth}
+            x="0"
+            y="0"
           />
-          <text className="fill-slate-700 text-[11px]" x="12" y="68">
-            Load {formatNumber(load, 1)} ohm
+          <g opacity="0.35" stroke="#93c5fd" strokeWidth="1">
+            <line x1={panelWidth * 0.17} x2={panelWidth * 0.17} y1="8" y2={panelHeight - 8} />
+            <line x1={panelWidth * 0.33} x2={panelWidth * 0.33} y1="8" y2={panelHeight - 8} />
+            <line x1={panelWidth * 0.5} x2={panelWidth * 0.5} y1="8" y2={panelHeight - 8} />
+            <line x1={panelWidth * 0.67} x2={panelWidth * 0.67} y1="8" y2={panelHeight - 8} />
+            <line x1={panelWidth * 0.83} x2={panelWidth * 0.83} y1="8" y2={panelHeight - 8} />
+            <line x1="6" x2={panelWidth - 6} y1={panelHeight * 0.25} y2={panelHeight * 0.25} />
+            <line x1="6" x2={panelWidth - 6} y1={panelHeight * 0.5} y2={panelHeight * 0.5} />
+            <line x1="6" x2={panelWidth - 6} y1={panelHeight * 0.75} y2={panelHeight * 0.75} />
+          </g>
+          <text className="fill-white text-[11px]" x="6" y={panelHeight + 18}>
+            Cell {widthCm} x {heightCm} cm
           </text>
         </g>
       </svg>
@@ -156,7 +151,7 @@ const SolarCellSimulation = () => {
   const [temperature, setTemperature] = useState(25);
   const [widthCm, setWidthCm] = useState(6);
   const [heightCm, setHeightCm] = useState(8);
-  const [selectedLoad, setSelectedLoad] = useState(15);
+  const [selectedLoad, setSelectedLoad] = useState(40);
   const [curveData, setCurveData] = useState<CurvePoint[]>([]);
 
   const areaCm2 = widthCm * heightCm;
@@ -181,17 +176,23 @@ const SolarCellSimulation = () => {
 
   const solveOperatingPoint = useCallback(
     (load: number) => {
-      if (load <= 0.05) {
-        return { voltage: 0, current: shortCircuitCurrent };
-      }
-
       let low = 0;
       let high = openCircuitVoltage;
-      const shape = 1.35;
+      const kneeVoltage = openCircuitVoltage * 0.76;
+      const tailSpan = Math.max(openCircuitVoltage - kneeVoltage, 0.001);
 
       for (let step = 0; step < 50; step += 1) {
         const mid = (low + high) / 2;
-        const cellCurrent = shortCircuitCurrent * Math.max(0, 1 - (mid / openCircuitVoltage) ** shape);
+        const normalizedVoltage = mid / openCircuitVoltage;
+        const tailProgress = clamp((mid - kneeVoltage) / tailSpan, 0, 1);
+        const plateauCurrent =
+          shortCircuitCurrent *
+          Math.max(0.93, 1 - 0.015 * normalizedVoltage - 0.01 * normalizedVoltage * normalizedVoltage);
+        const kneeDrop = Math.exp(-7.5 * tailProgress ** 2.35);
+        const cellCurrent =
+          mid <= kneeVoltage
+            ? plateauCurrent
+            : shortCircuitCurrent * 0.965 * kneeDrop * Math.max(0, 1 - 0.015 * tailProgress);
         const loadCurrent = mid / load;
 
         if (cellCurrent > loadCurrent) {
@@ -211,14 +212,12 @@ const SolarCellSimulation = () => {
 
   const generateCurves = useCallback(() => {
     const nextData: CurvePoint[] = [];
-    const maxLoad = 60;
-    const steps = 30;
-
-    let bestIndex = 0;
-    let bestPower = -1;
+    const minLoad = 10;
+    const maxLoad = 180;
+    const steps = 72;
 
     for (let index = 0; index <= steps; index += 1) {
-      const load = index === 0 ? 0.1 : (maxLoad / steps) * index;
+      const load = minLoad + ((maxLoad - minLoad) / steps) * index;
       const { voltage, current } = solveOperatingPoint(load);
       const power = voltage * current;
 
@@ -227,34 +226,11 @@ const SolarCellSimulation = () => {
         voltage: Number(voltage.toFixed(3)),
         current: Number(current.toFixed(3)),
         power: Number(power.toFixed(3)),
-        tangentCurrent: null,
       });
-
-      if (power > bestPower) {
-        bestPower = power;
-        bestIndex = nextData.length - 1;
-      }
     }
 
-    const mpp = nextData[bestIndex];
-    const previous = nextData[Math.max(0, bestIndex - 1)];
-    const next = nextData[Math.min(nextData.length - 1, bestIndex + 1)];
-    const slope =
-      next.voltage === previous.voltage
-        ? 0
-        : (next.current - previous.current) / (next.voltage - previous.voltage);
-
-    const tangentSpan = openCircuitVoltage * 0.22;
-
-    nextData.forEach(point => {
-      const xDistance = point.voltage - mpp.voltage;
-      if (Math.abs(xDistance) <= tangentSpan) {
-        point.tangentCurrent = Number((mpp.current + slope * xDistance).toFixed(3));
-      }
-    });
-
     setCurveData(nextData);
-  }, [openCircuitVoltage, solveOperatingPoint]);
+  }, [solveOperatingPoint]);
 
   useEffect(() => {
     generateCurves();
@@ -270,21 +246,15 @@ const SolarCellSimulation = () => {
     );
   }, [curveData, selectedLoad]);
 
-  const mppPoint = useMemo(() => {
-    if (curveData.length === 0) {
-      return null;
-    }
-
-    return curveData.reduce((best, point) => (point.power > best.power ? point : best), curveData[0]);
-  }, [curveData]);
+  const maxPower = useMemo(() => openCircuitVoltage * shortCircuitCurrent, [openCircuitVoltage, shortCircuitCurrent]);
 
   const efficiency = useMemo(() => {
-    if (!mppPoint || incidentPower <= 0) {
+    if (incidentPower <= 0) {
       return 0;
     }
 
-    return (mppPoint.power / incidentPower) * 100;
-  }, [incidentPower, mppPoint]);
+    return (maxPower / incidentPower) * 100;
+  }, [incidentPower, maxPower]);
 
   const exportData = useCallback(() => {
     if (curveData.length === 0) {
@@ -300,6 +270,8 @@ const SolarCellSimulation = () => {
         'Distance (cm)',
         'Lamp Power (W)',
         'Area (cm^2)',
+        'Open Circuit Voltage (V)',
+        'Short Circuit Current (A)',
         'Efficiency (%)',
       ],
       ...curveData.map(point => [
@@ -310,6 +282,8 @@ const SolarCellSimulation = () => {
         distanceCm,
         lampPower,
         areaCm2,
+        Number(openCircuitVoltage.toFixed(3)),
+        Number(shortCircuitCurrent.toFixed(3)),
         Number(efficiency.toFixed(2)),
       ]),
     ];
@@ -324,7 +298,7 @@ const SolarCellSimulation = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [areaCm2, curveData, distanceCm, efficiency, lampPower]);
+  }, [areaCm2, curveData, distanceCm, efficiency, lampPower, openCircuitVoltage, shortCircuitCurrent]);
 
   const resetExperiment = useCallback(() => {
     setLampPower(100);
@@ -332,7 +306,7 @@ const SolarCellSimulation = () => {
     setTemperature(25);
     setWidthCm(6);
     setHeightCm(8);
-    setSelectedLoad(15);
+    setSelectedLoad(40);
   }, []);
 
   return (
@@ -417,7 +391,7 @@ const SolarCellSimulation = () => {
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 text-sm font-medium text-slate-800">Load Adjustment Knob</div>
-            <LoadKnob max={60} min={0.5} value={selectedLoad} onChange={setSelectedLoad} />
+            <LoadKnob max={180} min={10} value={selectedLoad} onChange={setSelectedLoad} />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -440,7 +414,6 @@ const SolarCellSimulation = () => {
               distanceCm={distanceCm}
               heightCm={heightCm}
               lampPower={lampPower}
-              load={selectedLoad}
               widthCm={widthCm}
             />
           </div>
@@ -467,7 +440,7 @@ const SolarCellSimulation = () => {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-slate-500">Selected Load</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.load ?? selectedLoad, 1)} ohm</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.load ?? selectedLoad, 0)} ohm</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-slate-500">Voltage At Load</div>
@@ -478,13 +451,13 @@ const SolarCellSimulation = () => {
               <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.current ?? 0, 3)} A</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-slate-500">Pmax</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(mppPoint?.power ?? 0, 3)} W</div>
+              <div className="text-sm text-slate-500">Pmax = Voc x Isc</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(maxPower, 3)} W</div>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h4 className="mb-4 text-base font-semibold text-slate-900">I-V Curve with P-V Overlay and Tangent at Pmax</h4>
+            <h4 className="mb-4 text-base font-semibold text-slate-900">I-V Characteristics</h4>
             <div className="h-[340px]">
               <ResponsiveContainer height="100%" width="100%">
                 <LineChart data={curveData}>
@@ -495,75 +468,35 @@ const SolarCellSimulation = () => {
                     stroke="#64748b"
                   />
                   <YAxis
-                    yAxisId="current"
                     label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
-                  <YAxis
-                    orientation="right"
-                    stroke="#64748b"
-                    yAxisId="power"
-                    label={{ value: 'Power (W)', angle: 90, position: 'insideRight' }}
-                  />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Line dataKey="current" dot={false} name="Current" stroke="#0284c7" strokeWidth={3} type="monotone" yAxisId="current" />
-                  <Line dataKey="power" dot={false} name="Power" stroke="#7c3aed" strokeWidth={3} type="monotone" yAxisId="power" />
-                  <Line
-                    connectNulls
-                    dataKey="tangentCurrent"
-                    dot={false}
-                    name="Tangent at Pmax"
-                    stroke="#ef4444"
-                    strokeDasharray="6 6"
-                    strokeWidth={2}
-                    type="linear"
-                    yAxisId="current"
-                  />
-                  {mppPoint ? (
-                    <ReferenceDot
-                      fill="#111827"
-                      label={{ value: 'Pmax', position: 'top' }}
-                      r={5}
-                      x={mppPoint.voltage}
-                      y={mppPoint.current}
-                      yAxisId="current"
-                    />
-                  ) : null}
+                  <Line dataKey="current" dot={false} name="Current" stroke="#0284c7" strokeWidth={3} type="monotone" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h4 className="mb-4 text-base font-semibold text-slate-900">V-R and I-R Characteristics</h4>
+            <h4 className="mb-4 text-base font-semibold text-slate-900">V-R Characteristics</h4>
             <div className="h-[320px]">
               <ResponsiveContainer height="100%" width="100%">
                 <LineChart data={curveData}>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
                   <XAxis
-                    dataKey="load"
-                    label={{ value: 'Load Resistance (ohm)', position: 'insideBottom', offset: -4 }}
+                    dataKey="voltage"
+                    label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -4 }}
                     stroke="#64748b"
                   />
                   <YAxis
-                    yAxisId="voltage"
-                    label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Resistance (ohm)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
-                  />
-                  <YAxis
-                    orientation="right"
-                    stroke="#64748b"
-                    yAxisId="current"
-                    label={{ value: 'Current (A)', angle: 90, position: 'insideRight' }}
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Line dataKey="voltage" dot={false} name="Voltage vs Load" stroke="#f59e0b" strokeWidth={3} type="monotone" yAxisId="voltage" />
-                  <Line dataKey="current" dot={false} name="Current vs Load" stroke="#10b981" strokeWidth={3} type="monotone" yAxisId="current" />
-                  {selectedPoint ? (
-                    <ReferenceDot fill="#111827" r={5} x={selectedPoint.load} y={selectedPoint.voltage} yAxisId="voltage" />
-                  ) : null}
+                  <Line dataKey="load" dot={false} name="Resistance" stroke="#f59e0b" strokeWidth={3} type="monotone" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
