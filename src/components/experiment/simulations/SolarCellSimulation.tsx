@@ -24,6 +24,8 @@ interface LampOption {
   value: 75 | 100;
 }
 
+const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
+
 const LAMP_OPTIONS: LampOption[] = [
   { label: '75 W Lamp', value: 75 },
   { label: '100 W Lamp', value: 100 },
@@ -35,16 +37,13 @@ const formatNumber = (value: number, digits = 2) => value.toFixed(digits);
 
 const LoadKnob = ({
   value,
-  min,
-  max,
   onChange,
 }: {
   value: number;
-  min: number;
-  max: number;
   onChange: (next: number) => void;
 }) => {
-  const angle = -135 + ((value - min) / (max - min)) * 270;
+  const selectedIndex = LOAD_OPTIONS.findIndex(option => option === value);
+  const angle = -135 + (selectedIndex / (LOAD_OPTIONS.length - 1)) * 270;
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -60,14 +59,17 @@ const LoadKnob = ({
       <input
         aria-label="Load resistance knob"
         className="w-full accent-slate-700"
-        max={max}
-        min={min}
+        max={LOAD_OPTIONS.length - 1}
+        min={0}
         step={1}
         type="range"
-        value={value}
-        onChange={event => onChange(Number(event.target.value))}
+        value={Math.max(selectedIndex, 0)}
+        onChange={event => onChange(LOAD_OPTIONS[Number(event.target.value)])}
       />
       <div className="text-sm font-medium text-slate-700">{formatNumber(value, 0)} ohm</div>
+      <div className="text-center text-xs text-slate-500">
+        {LOAD_OPTIONS.join(', ')} ohm
+      </div>
     </div>
   );
 };
@@ -151,7 +153,7 @@ const SolarCellSimulation = () => {
   const [temperature, setTemperature] = useState(25);
   const [widthCm, setWidthCm] = useState(6);
   const [heightCm, setHeightCm] = useState(8);
-  const [selectedLoad, setSelectedLoad] = useState(40);
+  const [selectedLoad, setSelectedLoad] = useState<number>(47);
   const [curveData, setCurveData] = useState<CurvePoint[]>([]);
 
   const areaCm2 = widthCm * heightCm;
@@ -212,17 +214,12 @@ const SolarCellSimulation = () => {
 
   const generateCurves = useCallback(() => {
     const nextData: CurvePoint[] = [];
-    const minLoad = 10;
-    const maxLoad = 180;
-    const steps = 72;
-
-    for (let index = 0; index <= steps; index += 1) {
-      const load = minLoad + ((maxLoad - minLoad) / steps) * index;
+    for (const load of LOAD_OPTIONS) {
       const { voltage, current } = solveOperatingPoint(load);
       const power = voltage * current;
 
       nextData.push({
-        load: Number(load.toFixed(2)),
+        load,
         voltage: Number(voltage.toFixed(3)),
         current: Number(current.toFixed(3)),
         power: Number(power.toFixed(3)),
@@ -241,9 +238,7 @@ const SolarCellSimulation = () => {
       return null;
     }
 
-    return curveData.reduce((closest, point) =>
-      Math.abs(point.load - selectedLoad) < Math.abs(closest.load - selectedLoad) ? point : closest,
-    );
+    return curveData.find(point => point.load === selectedLoad) ?? curveData[0];
   }, [curveData, selectedLoad]);
 
   const maxPowerPoint = useMemo(() => {
@@ -316,7 +311,7 @@ const SolarCellSimulation = () => {
     setTemperature(25);
     setWidthCm(6);
     setHeightCm(8);
-    setSelectedLoad(40);
+    setSelectedLoad(47);
   }, []);
 
   return (
@@ -401,7 +396,7 @@ const SolarCellSimulation = () => {
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 text-sm font-medium text-slate-800">Load Adjustment Knob</div>
-            <LoadKnob max={180} min={10} value={selectedLoad} onChange={setSelectedLoad} />
+            <LoadKnob value={selectedLoad} onChange={setSelectedLoad} />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
