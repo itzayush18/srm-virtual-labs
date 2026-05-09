@@ -16,6 +16,7 @@ interface CurvePoint {
   load: number;
   voltage: number;
   current: number;
+  currentMilliAmp: number;
   power: number;
 }
 
@@ -162,66 +163,85 @@ const SolarCellSimulation = () => {
   const irradiance = lampPower / (4 * Math.PI * distanceM * distanceM);
   const incidentPower = irradiance * areaM2;
 
-  const temperatureFactor = clamp(1 - (temperature - 25) * 0.004, 0.75, 1.05);
-  const geometryFactor = clamp(areaCm2 / 48, 0.6, 1.8);
+  const lampScale = lampPower / 100;
+  const areaScale = areaCm2 / 48;
+  const distanceCurrentScale = (10 / distanceCm) ** 0.66;
+  const distanceVoltageScale = (10 / distanceCm) ** 0.18;
+  const currentTemperatureFactor = clamp(1 - (temperature - 25) * 0.0035, 0.82, 1.04);
+  const voltageTemperatureFactor = clamp(1 - (temperature - 25) * 0.0018, 0.9, 1.03);
 
-  const shortCircuitCurrent = useMemo(() => {
-    const baseCurrent = 0.048;
-    return baseCurrent * (irradiance / 350) * geometryFactor * temperatureFactor;
-  }, [geometryFactor, irradiance, temperatureFactor]);
+  const estimatedShortCircuitCurrent = useMemo(() => {
+    const baseShortCircuitCurrentMilliAmp = 38;
+    return (
+      (baseShortCircuitCurrentMilliAmp *
+        lampScale *
+        areaScale *
+        distanceCurrentScale *
+        currentTemperatureFactor) /
+      1000
+    );
+  }, [areaScale, currentTemperatureFactor, distanceCurrentScale, lampScale]);
 
-  const openCircuitVoltage = useMemo(() => {
-    const baseVoltage = 6.6;
-    const irradianceTerm = Math.log1p(irradiance / 180) / Math.log1p(1000 / 180);
-    return clamp(baseVoltage * (0.86 + 0.14 * irradianceTerm) * (1 - (temperature - 25) * 0.0022), 4.8, 8.2);
-  }, [irradiance, temperature]);
+  const estimatedOpenCircuitVoltage = useMemo(() => {
+    const baseOpenCircuitVoltage = 3.35;
+    return (
+      baseOpenCircuitVoltage *
+      Math.sqrt(lampScale) *
+      areaScale ** 0.08 *
+      distanceVoltageScale *
+      voltageTemperatureFactor
+    );
+  }, [areaScale, distanceVoltageScale, lampScale, voltageTemperatureFactor]);
 
   const solveOperatingPoint = useCallback(
     (load: number) => {
-      let low = 0;
-      let high = openCircuitVoltage;
-      const kneeVoltage = openCircuitVoltage * 0.76;
-      const tailSpan = Math.max(openCircuitVoltage - kneeVoltage, 0.001);
+      const baseCurrentMilliAmp =
+        load <= 82
+          ? 36 - (2 * (load - 10)) / 72
+          : 34 - (17 * (load - 82)) / 98;
 
-      for (let step = 0; step < 50; step += 1) {
-        const mid = (low + high) / 2;
-        const normalizedVoltage = mid / openCircuitVoltage;
-        const tailProgress = clamp((mid - kneeVoltage) / tailSpan, 0, 1);
-        const plateauCurrent =
-          shortCircuitCurrent *
-          Math.max(0.975, 1 - 0.006 * normalizedVoltage - 0.004 * normalizedVoltage * normalizedVoltage);
-        const kneeDrop = Math.exp(-11 * tailProgress ** 2.6);
-        const cellCurrent =
-          mid <= kneeVoltage
-            ? plateauCurrent
-            : shortCircuitCurrent * 0.985 * kneeDrop * Math.max(0, 1 - 0.008 * tailProgress);
-        const loadCurrent = mid / load;
+      const baseVoltage =
+        load <= 82
+          ? 0.91 + ((2.83 - 0.91) * (load - 10)) / 72
+          : 2.83 + ((3.1 - 2.83) * (load - 82)) / 98;
 
-        if (cellCurrent > loadCurrent) {
-          low = mid;
-        } else {
-          high = mid;
-        }
-      }
+      const currentMilliAmp =
+        baseCurrentMilliAmp * lampScale * areaScale * distanceCurrentScale * currentTemperatureFactor;
+      const voltage =
+        baseVoltage *
+        Math.sqrt(lampScale) *
+        areaScale ** 0.08 *
+        distanceVoltageScale *
+        voltageTemperatureFactor;
+      const current = currentMilliAmp / 1000;
 
-      const voltage = (low + high) / 2;
-      const current = voltage / load;
-
-      return { voltage, current };
+      return {
+        voltage,
+        current,
+        currentMilliAmp,
+      };
     },
-    [openCircuitVoltage, shortCircuitCurrent],
+    [
+      areaScale,
+      currentTemperatureFactor,
+      distanceCurrentScale,
+      distanceVoltageScale,
+      lampScale,
+      voltageTemperatureFactor,
+    ],
   );
 
   const generateCurves = useCallback(() => {
     const nextData: CurvePoint[] = [];
     for (const load of LOAD_OPTIONS) {
-      const { voltage, current } = solveOperatingPoint(load);
+      const { voltage, current, currentMilliAmp } = solveOperatingPoint(load);
       const power = voltage * current;
 
       nextData.push({
         load,
         voltage: Number(voltage.toFixed(3)),
         current: Number(current.toFixed(3)),
+        currentMilliAmp: Number(currentMilliAmp.toFixed(1)),
         power: Number(power.toFixed(3)),
       });
     }
@@ -287,8 +307,8 @@ const SolarCellSimulation = () => {
         distanceCm,
         lampPower,
         areaCm2,
-        Number(openCircuitVoltage.toFixed(3)),
-        Number(shortCircuitCurrent.toFixed(3)),
+        Number(estimatedOpenCircuitVoltage.toFixed(3)),
+        Number(estimatedShortCircuitCurrent.toFixed(3)),
         Number(displayEfficiency.toFixed(2)),
       ]),
     ];
@@ -303,7 +323,7 @@ const SolarCellSimulation = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [areaCm2, curveData, distanceCm, displayEfficiency, lampPower, openCircuitVoltage, shortCircuitCurrent]);
+  }, [areaCm2, curveData, distanceCm, displayEfficiency, estimatedOpenCircuitVoltage, estimatedShortCircuitCurrent, lampPower]);
 
   const resetExperiment = useCallback(() => {
     setLampPower(100);
@@ -425,20 +445,20 @@ const SolarCellSimulation = () => {
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Open-Circuit Voltage</div>
-              <div className="mt-1 text-2xl font-semibold text-sky-700">{formatNumber(openCircuitVoltage)} V</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Voltmeter Reading</div>
+              <div className="mt-1 text-2xl font-semibold text-sky-700">{formatNumber(selectedPoint?.voltage ?? 0)} V</div>
             </div>
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Short-Circuit Current</div>
-              <div className="mt-1 text-2xl font-semibold text-emerald-700">{formatNumber(shortCircuitCurrent, 3)} A</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Ammeter Reading</div>
+              <div className="mt-1 text-2xl font-semibold text-emerald-700">{formatNumber(selectedPoint?.currentMilliAmp ?? 0, 1)} mA</div>
             </div>
             <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Incident Power</div>
-              <div className="mt-1 text-2xl font-semibold text-amber-700">{formatNumber(incidentPower, 3)} W</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Estimated Voc</div>
+              <div className="mt-1 text-2xl font-semibold text-amber-700">{formatNumber(estimatedOpenCircuitVoltage)} V</div>
             </div>
             <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
-              <div className="text-xs uppercase tracking-wide text-slate-500">Efficiency At Pmax</div>
-              <div className="mt-1 text-2xl font-semibold text-violet-700">{formatNumber(displayEfficiency)} %</div>
+              <div className="text-xs uppercase tracking-wide text-slate-500">Estimated Isc</div>
+              <div className="mt-1 text-2xl font-semibold text-violet-700">{formatNumber(estimatedShortCircuitCurrent * 1000, 1)} mA</div>
             </div>
           </div>
 
@@ -453,11 +473,28 @@ const SolarCellSimulation = () => {
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="text-sm text-slate-500">Current At Load</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.current ?? 0, 3)} A</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.currentMilliAmp ?? 0, 1)} mA</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-slate-500">Pmax From V-I Points</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(maxPower, 3)} W</div>
+              <div className="text-sm text-slate-500">Efficiency At Pmax</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(displayEfficiency)} %</div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <div>
+                <div className="text-sm text-slate-500">Incident Power</div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(incidentPower, 3)} W</div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-500">Pmax From V-I Points</div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(maxPower, 3)} W</div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-500">Efficiency Formula</div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">Pmax / (A x Io) x 100</div>
+              </div>
             </div>
           </div>
 
@@ -475,10 +512,10 @@ const SolarCellSimulation = () => {
                     stroke="#64748b"
                   />
                   <YAxis
-                    dataKey="current"
+                    dataKey="currentMilliAmp"
                     name="Current"
                     type="number"
-                    label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Current (mA)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
@@ -549,7 +586,7 @@ const SolarCellSimulation = () => {
                   <tr className="text-left text-slate-600">
                     <th className="px-4 py-3 font-medium">Load (ohm)</th>
                     <th className="px-4 py-3 font-medium">Voltage (V)</th>
-                    <th className="px-4 py-3 font-medium">Current (A)</th>
+                    <th className="px-4 py-3 font-medium">Current (mA)</th>
                     <th className="px-4 py-3 font-medium">Power (W)</th>
                   </tr>
                 </thead>
@@ -561,7 +598,7 @@ const SolarCellSimulation = () => {
                       <tr key={point.load} className={isSelected ? 'bg-amber-50' : 'bg-white'}>
                         <td className="px-4 py-2 text-slate-800">{formatNumber(point.load, 2)}</td>
                         <td className="px-4 py-2 text-slate-800">{formatNumber(point.voltage, 3)}</td>
-                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.current, 3)}</td>
+                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.currentMilliAmp, 1)}</td>
                         <td className="px-4 py-2 text-slate-800">{formatNumber(point.power, 3)}</td>
                       </tr>
                     );
