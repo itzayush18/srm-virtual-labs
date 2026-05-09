@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import {
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
+  ReferenceDot,
   ResponsiveContainer,
-  Scatter,
-  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
@@ -26,6 +27,8 @@ interface LampOption {
 }
 
 const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
+const BASE_CURRENT_MA = [36, 35.8, 35.4, 35.1, 34.7, 34, 30, 21, 17] as const;
+const BASE_VOLTAGE_V = [0.91, 1.42, 2.08, 2.34, 2.63, 2.83, 2.95, 3.04, 3.08] as const;
 
 const LAMP_OPTIONS: LampOption[] = [
   { label: '75 W Lamp', value: 75 },
@@ -166,7 +169,7 @@ const SolarCellSimulation = () => {
   const lampScale = lampPower / 100;
   const areaScale = areaCm2 / 48;
   const distanceCurrentScale = (10 / distanceCm) ** 0.66;
-  const distanceVoltageScale = (10 / distanceCm) ** 0.18;
+  const distanceVoltageScale = (10 / distanceCm) ** 1.45;
   const currentTemperatureFactor = clamp(1 - (temperature - 25) * 0.0035, 0.82, 1.04);
   const voltageTemperatureFactor = clamp(1 - (temperature - 25) * 0.0018, 0.9, 1.03);
 
@@ -195,15 +198,9 @@ const SolarCellSimulation = () => {
 
   const solveOperatingPoint = useCallback(
     (load: number) => {
-      const baseCurrentMilliAmp =
-        load <= 82
-          ? 36 - (2 * (load - 10)) / 72
-          : 34 - (17 * (load - 82)) / 98;
-
-      const baseVoltage =
-        load <= 82
-          ? 0.91 + ((2.83 - 0.91) * (load - 10)) / 72
-          : 2.83 + ((3.1 - 2.83) * (load - 82)) / 98;
+      const loadIndex = LOAD_OPTIONS.findIndex(option => option === load);
+      const baseCurrentMilliAmp = BASE_CURRENT_MA[Math.max(loadIndex, 0)];
+      const baseVoltage = BASE_VOLTAGE_V[Math.max(loadIndex, 0)];
 
       const currentMilliAmp =
         baseCurrentMilliAmp * lampScale * areaScale * distanceCurrentScale * currentTemperatureFactor;
@@ -481,6 +478,13 @@ const SolarCellSimulation = () => {
             </div>
           </div>
 
+          <div className="rounded-2xl border border-slate-200 bg-amber-50 p-4 shadow-sm">
+            <div className="text-sm text-slate-600">Selected Reading</div>
+            <div className="mt-1 text-base font-semibold text-slate-900">
+              Load {formatNumber(selectedPoint?.load ?? selectedLoad, 0)} ohm, Voltage {formatNumber(selectedPoint?.voltage ?? 0)} V, Current {formatNumber(selectedPoint?.currentMilliAmp ?? 0, 1)} mA
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <div>
@@ -502,42 +506,49 @@ const SolarCellSimulation = () => {
             <h4 className="mb-4 text-base font-semibold text-slate-900">I-V Characteristics</h4>
             <div className="h-[340px]">
               <ResponsiveContainer height="100%" width="100%">
-                <ScatterChart>
+                <LineChart data={curveData}>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
                   <XAxis
                     dataKey="voltage"
-                    name="Voltage"
-                    type="number"
                     label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -4 }}
                     stroke="#64748b"
                   />
                   <YAxis
-                    dataKey="currentMilliAmp"
-                    name="Current"
-                    type="number"
                     label={{ value: 'Current (mA)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Scatter data={curveData} fill="#0284c7" line name="V-I Points" shape="circle" />
+                  <Line
+                    dataKey="currentMilliAmp"
+                    dot={{ r: 4, fill: '#0284c7', strokeWidth: 0 }}
+                    activeDot={{ r: 6 }}
+                    name="V-I Points"
+                    stroke="#0284c7"
+                    strokeWidth={3}
+                    type="monotone"
+                  />
                   {selectedPoint ? (
-                    <Scatter
-                      data={[selectedPoint]}
+                    <ReferenceDot
                       fill="#f97316"
-                      name="Selected Load Point"
-                      shape="star"
+                      ifOverflow="visible"
+                      label={{ value: 'Selected', position: 'top', fill: '#c2410c' }}
+                      r={6}
+                      x={selectedPoint.voltage}
+                      y={selectedPoint.currentMilliAmp}
                     />
                   ) : null}
                   {maxPowerPoint ? (
-                    <Scatter
-                      data={[maxPowerPoint]}
+                    <ReferenceDot
                       fill="#dc2626"
-                      name="Pmax Point"
-                      shape="diamond"
+                      ifOverflow="visible"
+                      label={{ value: 'Pmax', position: 'top', fill: '#991b1b' }}
+                      r={6}
+                      x={maxPowerPoint.voltage}
+                      y={maxPowerPoint.currentMilliAmp}
                     />
                   ) : null}
-                </ScatterChart>
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -546,34 +557,39 @@ const SolarCellSimulation = () => {
             <h4 className="mb-4 text-base font-semibold text-slate-900">V-R Characteristics</h4>
             <div className="h-[320px]">
               <ResponsiveContainer height="100%" width="100%">
-                <ScatterChart>
+                <LineChart data={curveData}>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
                   <XAxis
                     dataKey="voltage"
-                    name="Voltage"
-                    type="number"
                     label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -4 }}
                     stroke="#64748b"
                   />
                   <YAxis
-                    dataKey="load"
-                    name="Resistance"
-                    type="number"
                     label={{ value: 'Resistance (ohm)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Scatter data={curveData} fill="#f59e0b" line name="V-R Points" shape="circle" />
+                  <Line
+                    dataKey="load"
+                    dot={{ r: 4, fill: '#f59e0b', strokeWidth: 0 }}
+                    activeDot={{ r: 6 }}
+                    name="V-R Points"
+                    stroke="#f59e0b"
+                    strokeWidth={3}
+                    type="monotone"
+                  />
                   {selectedPoint ? (
-                    <Scatter
-                      data={[selectedPoint]}
+                    <ReferenceDot
                       fill="#0f172a"
-                      name="Selected Resistance"
-                      shape="star"
+                      ifOverflow="visible"
+                      label={{ value: 'Selected', position: 'top', fill: '#0f172a' }}
+                      r={6}
+                      x={selectedPoint.voltage}
+                      y={selectedPoint.load}
                     />
                   ) : null}
-                </ScatterChart>
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
