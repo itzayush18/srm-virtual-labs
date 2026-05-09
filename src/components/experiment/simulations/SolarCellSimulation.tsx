@@ -672,3 +672,4 @@ const SolarCellSimulation = () => {
 };
 
 export default SolarCellSimulation;
+
