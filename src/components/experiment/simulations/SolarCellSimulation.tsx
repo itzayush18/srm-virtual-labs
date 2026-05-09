@@ -27,8 +27,8 @@ interface LampOption {
 }
 
 const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
-const BASE_CURRENT_MA = [36, 35.9, 35.6, 35.3, 34.9, 34, 28, 9.5, 4.2] as const;
-const BASE_VOLTAGE_V = [0.91, 1.38, 2.02, 2.28, 2.58, 2.83, 2.96, 3.01, 3.03] as const;
+const BASE_CURRENT_MA = [36, 36, 35.8, 35.5, 35.1, 34, 23, 6, 1.2] as const;
+const BASE_VOLTAGE_V = [0.91, 1.36, 2.01, 2.27, 2.58, 2.83, 2.95, 3.0, 3.02] as const;
 
 const LAMP_OPTIONS: LampOption[] = [
   { label: '75 W Lamp', value: 75 },
@@ -170,7 +170,7 @@ const SolarCellSimulation = () => {
   const areaScale = areaCm2 / 48;
   const distanceRatio = 10 / distanceCm;
   const distanceCurrentScale = distanceRatio ** 0.66;
-  const distanceVoltageScale = distanceRatio ** 1.5;
+  const distanceVoltageScale = 0.82 + 0.18 * distanceRatio ** 1.85;
   const currentTemperatureFactor = clamp(1 - (temperature - 25) * 0.0035, 0.82, 1.04);
   const voltageTemperatureFactor = clamp(1 - (temperature - 25) * 0.0018, 0.9, 1.03);
 
@@ -196,15 +196,21 @@ const SolarCellSimulation = () => {
   const solveOperatingPoint = useCallback(
     (load: number) => {
       const loadIndex = LOAD_OPTIONS.findIndex(option => option === load);
+      const normalizedIndex = Math.max(loadIndex, 0) / (LOAD_OPTIONS.length - 1);
+      const kneeWeight = clamp((normalizedIndex - 0.62) / 0.38, 0, 1);
       const baseCurrentMilliAmp = BASE_CURRENT_MA[Math.max(loadIndex, 0)];
       const baseVoltage = BASE_VOLTAGE_V[Math.max(loadIndex, 0)];
+      const distanceKneeFactor = 1 - (1 - distanceRatio ** 0.9) * kneeWeight * 0.88;
+      const nearDistanceBoost = 1 + (distanceRatio - 1) * kneeWeight * 0.12;
 
       const currentMilliAmp =
         baseCurrentMilliAmp *
         lampScale *
         areaScale *
         distanceCurrentScale *
-        currentTemperatureFactor;
+        currentTemperatureFactor *
+        distanceKneeFactor *
+        nearDistanceBoost;
       const voltage =
         baseVoltage *
         Math.sqrt(lampScale) *
@@ -223,6 +229,7 @@ const SolarCellSimulation = () => {
       areaScale,
       currentTemperatureFactor,
       distanceCurrentScale,
+      distanceRatio,
       distanceVoltageScale,
       lampScale,
       voltageTemperatureFactor,
