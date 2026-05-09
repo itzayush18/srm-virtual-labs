@@ -264,6 +264,8 @@ const SolarCellSimulation = () => {
     return (maxPower / incidentPower) * 100;
   }, [incidentPower, maxPower]);
 
+  const displayEfficiency = clamp(efficiency, 0, 100);
+
   const exportData = useCallback(() => {
     if (curveData.length === 0) {
       return;
@@ -292,7 +294,7 @@ const SolarCellSimulation = () => {
         areaCm2,
         Number(openCircuitVoltage.toFixed(3)),
         Number(shortCircuitCurrent.toFixed(3)),
-        Number(efficiency.toFixed(2)),
+        Number(displayEfficiency.toFixed(2)),
       ]),
     ];
 
@@ -306,7 +308,7 @@ const SolarCellSimulation = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [areaCm2, curveData, distanceCm, efficiency, lampPower, openCircuitVoltage, shortCircuitCurrent]);
+  }, [areaCm2, curveData, distanceCm, displayEfficiency, lampPower, openCircuitVoltage, shortCircuitCurrent]);
 
   const resetExperiment = useCallback(() => {
     setLampPower(100);
@@ -441,7 +443,7 @@ const SolarCellSimulation = () => {
             </div>
             <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
               <div className="text-xs uppercase tracking-wide text-slate-500">Efficiency At Pmax</div>
-              <div className="mt-1 text-2xl font-semibold text-violet-700">{formatNumber(efficiency)} %</div>
+              <div className="mt-1 text-2xl font-semibold text-violet-700">{formatNumber(displayEfficiency)} %</div>
             </div>
           </div>
 
@@ -487,6 +489,14 @@ const SolarCellSimulation = () => {
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
                   <Scatter data={curveData} fill="#0284c7" line name="V-I Points" shape="circle" />
+                  {selectedPoint ? (
+                    <Scatter
+                      data={[selectedPoint]}
+                      fill="#f97316"
+                      name="Selected Load Point"
+                      shape="star"
+                    />
+                  ) : null}
                   {maxPowerPoint ? (
                     <Scatter
                       data={[maxPowerPoint]}
@@ -523,8 +533,46 @@ const SolarCellSimulation = () => {
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
                   <Scatter data={curveData} fill="#f59e0b" line name="V-R Points" shape="circle" />
+                  {selectedPoint ? (
+                    <Scatter
+                      data={[selectedPoint]}
+                      fill="#0f172a"
+                      name="Selected Resistance"
+                      shape="star"
+                    />
+                  ) : null}
                 </ScatterChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h4 className="mb-4 text-base font-semibold text-slate-900">Load, Voltage and Current Table</h4>
+            <div className="max-h-[320px] overflow-auto rounded-xl border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="sticky top-0 bg-slate-50">
+                  <tr className="text-left text-slate-600">
+                    <th className="px-4 py-3 font-medium">Load (ohm)</th>
+                    <th className="px-4 py-3 font-medium">Voltage (V)</th>
+                    <th className="px-4 py-3 font-medium">Current (A)</th>
+                    <th className="px-4 py-3 font-medium">Power (W)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {curveData.map(point => {
+                    const isSelected = selectedPoint?.load === point.load;
+
+                    return (
+                      <tr key={point.load} className={isSelected ? 'bg-amber-50' : 'bg-white'}>
+                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.load, 2)}</td>
+                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.voltage, 3)}</td>
+                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.current, 3)}</td>
+                        <td className="px-4 py-2 text-slate-800">{formatNumber(point.power, 3)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
