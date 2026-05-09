@@ -27,8 +27,8 @@ interface LampOption {
 }
 
 const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
-const BASE_CURRENT_MA = [36, 35.8, 35.4, 35.1, 34.7, 34, 30, 21, 17] as const;
-const BASE_VOLTAGE_V = [0.91, 1.42, 2.08, 2.34, 2.63, 2.83, 2.95, 3.04, 3.08] as const;
+const BASE_CURRENT_MA = [36, 35.9, 35.6, 35.3, 34.9, 34, 28, 9.5, 4.2] as const;
+const BASE_VOLTAGE_V = [0.91, 1.38, 2.02, 2.28, 2.58, 2.83, 2.96, 3.01, 3.03] as const;
 
 const LAMP_OPTIONS: LampOption[] = [
   { label: '75 W Lamp', value: 75 },
@@ -168,19 +168,16 @@ const SolarCellSimulation = () => {
 
   const lampScale = lampPower / 100;
   const areaScale = areaCm2 / 48;
-  const distanceCurrentScale = (10 / distanceCm) ** 0.66;
-  const distanceVoltageScale = (10 / distanceCm) ** 1.45;
+  const distanceRatio = 10 / distanceCm;
+  const distanceCurrentScale = distanceRatio ** 0.66;
+  const distanceVoltageScale = distanceRatio ** 1.5;
   const currentTemperatureFactor = clamp(1 - (temperature - 25) * 0.0035, 0.82, 1.04);
   const voltageTemperatureFactor = clamp(1 - (temperature - 25) * 0.0018, 0.9, 1.03);
 
   const estimatedShortCircuitCurrent = useMemo(() => {
     const baseShortCircuitCurrentMilliAmp = 38;
     return (
-      (baseShortCircuitCurrentMilliAmp *
-        lampScale *
-        areaScale *
-        distanceCurrentScale *
-        currentTemperatureFactor) /
+      (baseShortCircuitCurrentMilliAmp * lampScale * areaScale * distanceCurrentScale * currentTemperatureFactor) /
       1000
     );
   }, [areaScale, currentTemperatureFactor, distanceCurrentScale, lampScale]);
@@ -203,7 +200,11 @@ const SolarCellSimulation = () => {
       const baseVoltage = BASE_VOLTAGE_V[Math.max(loadIndex, 0)];
 
       const currentMilliAmp =
-        baseCurrentMilliAmp * lampScale * areaScale * distanceCurrentScale * currentTemperatureFactor;
+        baseCurrentMilliAmp *
+        lampScale *
+        areaScale *
+        distanceCurrentScale *
+        currentTemperatureFactor;
       const voltage =
         baseVoltage *
         Math.sqrt(lampScale) *
