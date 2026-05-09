@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import {
   CartesianGrid,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
@@ -164,14 +164,14 @@ const SolarCellSimulation = () => {
   const geometryFactor = clamp(areaCm2 / 48, 0.6, 1.8);
 
   const shortCircuitCurrent = useMemo(() => {
-    const baseCurrent = 2.6;
+    const baseCurrent = 0.048;
     return baseCurrent * (irradiance / 350) * geometryFactor * temperatureFactor;
   }, [geometryFactor, irradiance, temperatureFactor]);
 
   const openCircuitVoltage = useMemo(() => {
-    const baseVoltage = 21;
+    const baseVoltage = 6.6;
     const irradianceTerm = Math.log1p(irradiance / 180) / Math.log1p(1000 / 180);
-    return clamp(baseVoltage * (0.78 + 0.28 * irradianceTerm) * (1 - (temperature - 25) * 0.0022), 8, 24);
+    return clamp(baseVoltage * (0.86 + 0.14 * irradianceTerm) * (1 - (temperature - 25) * 0.0022), 4.8, 8.2);
   }, [irradiance, temperature]);
 
   const solveOperatingPoint = useCallback(
@@ -187,12 +187,12 @@ const SolarCellSimulation = () => {
         const tailProgress = clamp((mid - kneeVoltage) / tailSpan, 0, 1);
         const plateauCurrent =
           shortCircuitCurrent *
-          Math.max(0.93, 1 - 0.015 * normalizedVoltage - 0.01 * normalizedVoltage * normalizedVoltage);
-        const kneeDrop = Math.exp(-7.5 * tailProgress ** 2.35);
+          Math.max(0.975, 1 - 0.006 * normalizedVoltage - 0.004 * normalizedVoltage * normalizedVoltage);
+        const kneeDrop = Math.exp(-11 * tailProgress ** 2.6);
         const cellCurrent =
           mid <= kneeVoltage
             ? plateauCurrent
-            : shortCircuitCurrent * 0.965 * kneeDrop * Math.max(0, 1 - 0.015 * tailProgress);
+            : shortCircuitCurrent * 0.985 * kneeDrop * Math.max(0, 1 - 0.008 * tailProgress);
         const loadCurrent = mid / load;
 
         if (cellCurrent > loadCurrent) {
@@ -246,7 +246,15 @@ const SolarCellSimulation = () => {
     );
   }, [curveData, selectedLoad]);
 
-  const maxPower = useMemo(() => openCircuitVoltage * shortCircuitCurrent, [openCircuitVoltage, shortCircuitCurrent]);
+  const maxPowerPoint = useMemo(() => {
+    if (curveData.length === 0) {
+      return null;
+    }
+
+    return curveData.reduce((best, point) => (point.power > best.power ? point : best), curveData[0]);
+  }, [curveData]);
+
+  const maxPower = maxPowerPoint?.power ?? 0;
 
   const efficiency = useMemo(() => {
     if (incidentPower <= 0) {
@@ -451,7 +459,7 @@ const SolarCellSimulation = () => {
               <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(selectedPoint?.current ?? 0, 3)} A</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-sm text-slate-500">Pmax = Voc x Isc</div>
+              <div className="text-sm text-slate-500">Pmax From V-I Points</div>
               <div className="mt-1 text-xl font-semibold text-slate-900">{formatNumber(maxPower, 3)} W</div>
             </div>
           </div>
@@ -460,21 +468,34 @@ const SolarCellSimulation = () => {
             <h4 className="mb-4 text-base font-semibold text-slate-900">I-V Characteristics</h4>
             <div className="h-[340px]">
               <ResponsiveContainer height="100%" width="100%">
-                <LineChart data={curveData}>
+                <ScatterChart>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
                   <XAxis
                     dataKey="voltage"
+                    name="Voltage"
+                    type="number"
                     label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -4 }}
                     stroke="#64748b"
                   />
                   <YAxis
+                    dataKey="current"
+                    name="Current"
+                    type="number"
                     label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Line dataKey="current" dot={false} name="Current" stroke="#0284c7" strokeWidth={3} type="monotone" />
-                </LineChart>
+                  <Scatter data={curveData} fill="#0284c7" line name="V-I Points" shape="circle" />
+                  {maxPowerPoint ? (
+                    <Scatter
+                      data={[maxPowerPoint]}
+                      fill="#dc2626"
+                      name="Pmax Point"
+                      shape="diamond"
+                    />
+                  ) : null}
+                </ScatterChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -483,21 +504,26 @@ const SolarCellSimulation = () => {
             <h4 className="mb-4 text-base font-semibold text-slate-900">V-R Characteristics</h4>
             <div className="h-[320px]">
               <ResponsiveContainer height="100%" width="100%">
-                <LineChart data={curveData}>
+                <ScatterChart>
                   <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
                   <XAxis
                     dataKey="voltage"
+                    name="Voltage"
+                    type="number"
                     label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -4 }}
                     stroke="#64748b"
                   />
                   <YAxis
+                    dataKey="load"
+                    name="Resistance"
+                    type="number"
                     label={{ value: 'Resistance (ohm)', angle: -90, position: 'insideLeft' }}
                     stroke="#64748b"
                   />
                   <Tooltip formatter={(value: number) => formatNumber(Number(value), 3)} />
                   <Legend />
-                  <Line dataKey="load" dot={false} name="Resistance" stroke="#f59e0b" strokeWidth={3} type="monotone" />
-                </LineChart>
+                  <Scatter data={curveData} fill="#f59e0b" line name="V-R Points" shape="circle" />
+                </ScatterChart>
               </ResponsiveContainer>
             </div>
           </div>
