@@ -27,8 +27,8 @@ interface LampOption {
 }
 
 const LOAD_OPTIONS = [10, 22, 47, 56, 68, 82, 100, 160, 180] as const;
-const BASE_CURRENT_MA = [36, 36, 35.8, 35.5, 35.1, 34, 23, 6, 1.2] as const;
-const BASE_VOLTAGE_V = [0.91, 1.36, 2.01, 2.27, 2.58, 2.83, 2.95, 3.0, 3.02] as const;
+const BASE_CURRENT_MA = [36, 36, 35.8, 35.5, 35.1, 34, 16, 1.8, 0.15] as const;
+const BASE_VOLTAGE_V = [0.91, 1.36, 2.01, 2.27, 2.58, 2.83, 2.97, 3.01, 3.02] as const;
 const EFFECTIVE_LAMP_RADIUS_CM = 6;
 
 const LAMP_OPTIONS: LampOption[] = [
@@ -568,7 +568,7 @@ const SolarCellSimulation = () => {
                     name="V-I Points"
                     stroke="#0284c7"
                     strokeWidth={3}
-                    type="monotone"
+                    type="linear"
                   />
                   {selectedPoint ? (
                     <ReferenceDot
