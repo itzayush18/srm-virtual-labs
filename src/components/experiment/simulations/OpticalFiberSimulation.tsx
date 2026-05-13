@@ -8,6 +8,12 @@ const CORE_REFRACTIVE_INDEX = 1.48;
 const CLADDING_REFRACTIVE_INDEX = 1.46;
 const LENGTH_DIFFERENCE_M = 4;
 const ATTENUATION_BASE_DB_PER_KM = 160;
+const MAX_NA_READINGS = 5;
+
+const createNaReadings = () => ({
+  cable1m: [],
+  cable5m: [],
+});
 
 const OpticalFiberLab = () => {
   const [activeExperiment, setActiveExperiment] = useState('attenuation');
@@ -20,11 +26,13 @@ const OpticalFiberLab = () => {
   });
   const [naCableLength, setNaCableLength] = useState(1);
   const [naDistance, setNaDistance] = useState(40);
+  const [naReadings, setNaReadings] = useState(createNaReadings());
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
 
   const powerBand = laserPower <= 50 ? 'low' : 'high';
   const powerBandLabel = powerBand === 'low' ? 'Low' : 'High';
+  const naCableKey = naCableLength === 1 ? 'cable1m' : 'cable5m';
 
   const getBandInputFactor = (band) => (band === 'low' ? 0.82 : 1.18);
 
@@ -34,14 +42,12 @@ const OpticalFiberLab = () => {
     return ATTENUATION_BASE_DB_PER_KM + powerTerm + lengthTerm;
   };
 
-  // The source power is unknown, so we simulate only the output measured by the power meter.
   const calculateMeterOutput = (band, length) => {
     const sliderFactor = 0.5 + laserPower / 100;
     const launchPower = 1.25 * getBandInputFactor(band) * sliderFactor;
     const lossDbPerKm = getAttenuationCoefficient(band, length);
     const distanceKm = length / 1000;
-    const measuredPower = launchPower * Math.pow(10, (-lossDbPerKm * distanceKm) / 10);
-    return measuredPower;
+    return launchPower * Math.pow(10, (-lossDbPerKm * distanceKm) / 10);
   };
 
   const currentMeterReading = isLaserOn ? calculateMeterOutput(powerBand, cableLength) : 0;
@@ -62,15 +68,35 @@ const OpticalFiberLab = () => {
   const calculateSpotWidth = (length, distance) => {
     const baseAngleDeg = length === 1 ? 16 : 12.5;
     const effectiveAngleRad = (baseAngleDeg * Math.PI) / 180;
-    const width = 2 * distance * Math.tan(effectiveAngleRad);
-    return width;
+    return 2 * distance * Math.tan(effectiveAngleRad);
   };
 
-  const naLaserPower = 100;
-  const spotWidth = calculateSpotWidth(naCableLength, naDistance);
-  const numericalAperture = spotWidth / Math.sqrt(4 * naDistance * naDistance + spotWidth * spotWidth);
-  const acceptanceHalfAngleDeg = (Math.asin(Math.min(numericalAperture, 1)) * 180) / Math.PI;
-  const acceptanceConeDeg = acceptanceHalfAngleDeg * 2;
+  const calculateNaReading = (length, distance) => {
+    const width = calculateSpotWidth(length, distance);
+    const na = width / Math.sqrt(4 * distance * distance + width * width);
+    const halfAngleDeg = (Math.asin(Math.min(na, 1)) * 180) / Math.PI;
+    const coneAngleDeg = halfAngleDeg * 2;
+
+    return {
+      distance: Number(distance.toFixed(1)),
+      width: Number(width.toFixed(2)),
+      na: Number(na.toFixed(4)),
+      acceptanceAngle: Number(coneAngleDeg.toFixed(2)),
+    };
+  };
+
+  const currentNaReading = calculateNaReading(naCableLength, naDistance);
+
+  const getAverage = (items, key) => {
+    if (!items.length) return null;
+    const total = items.reduce((sum, item) => sum + item[key], 0);
+    return total / items.length;
+  };
+
+  const averageNa1m = getAverage(naReadings.cable1m, 'na');
+  const averageNa5m = getAverage(naReadings.cable5m, 'na');
+  const averageAngle1m = getAverage(naReadings.cable1m, 'acceptanceAngle');
+  const averageAngle5m = getAverage(naReadings.cable5m, 'acceptanceAngle');
 
   const recordMeasurement = () => {
     if (!isLaserOn) return;
@@ -86,11 +112,38 @@ const OpticalFiberLab = () => {
     }));
   };
 
-  const clearMeasurements = () => {
+  const recordNaReading = () => {
+    if (!isLaserOn) return;
+
+    setNaReadings((prev) => {
+      const nextReadings = [...prev[naCableKey]];
+      const reading = {
+        index: nextReadings.length + 1,
+        ...currentNaReading,
+      };
+
+      if (nextReadings.length < MAX_NA_READINGS) {
+        nextReadings.push(reading);
+      } else {
+        nextReadings[nextReadings.length - 1] = reading;
+      }
+
+      return {
+        ...prev,
+        [naCableKey]: nextReadings,
+      };
+    });
+  };
+
+  const clearAttenuationMeasurements = () => {
     setMeasurements({
       low: { cable1m: null, cable5m: null },
       high: { cable1m: null, cable5m: null },
     });
+  };
+
+  const clearNaMeasurements = () => {
+    setNaReadings(createNaReadings());
   };
 
   const exportData = () => {
@@ -107,14 +160,30 @@ const OpticalFiberLab = () => {
       ['Pf', 'Power output with 5 meter cable'],
       ['L', '4 meter'],
       [''],
-      ['Numerical Aperture Experiment'],
-      ['Cable length (m)', naCableLength],
-      ['Screen distance L (mm)', naDistance.toFixed(2)],
-      ['Spot width W (mm)', spotWidth.toFixed(2)],
-      ['NA', numericalAperture.toFixed(4)],
-      ['Acceptance half-angle (deg)', acceptanceHalfAngleDeg.toFixed(2)],
-      ['Full cone angle (deg)', acceptanceConeDeg.toFixed(2)],
+      ['Numerical Aperture Experiment - 1 meter cable'],
+      ['Reading', 'Distance L (mm)', 'Beam diameter W (mm)', 'NA', 'Acceptance angle (deg)'],
+      ...naReadings.cable1m.map((reading) => [
+        reading.index,
+        reading.distance.toFixed(1),
+        reading.width.toFixed(2),
+        reading.na.toFixed(4),
+        reading.acceptanceAngle.toFixed(2),
+      ]),
+      ['Average', '-', '-', averageNa1m !== null ? averageNa1m.toFixed(4) : '-', averageAngle1m !== null ? averageAngle1m.toFixed(2) : '-'],
+      [''],
+      ['Numerical Aperture Experiment - 5 meter cable'],
+      ['Reading', 'Distance L (mm)', 'Beam diameter W (mm)', 'NA', 'Acceptance angle (deg)'],
+      ...naReadings.cable5m.map((reading) => [
+        reading.index,
+        reading.distance.toFixed(1),
+        reading.width.toFixed(2),
+        reading.na.toFixed(4),
+        reading.acceptanceAngle.toFixed(2),
+      ]),
+      ['Average', '-', '-', averageNa5m !== null ? averageNa5m.toFixed(4) : '-', averageAngle5m !== null ? averageAngle5m.toFixed(2) : '-'],
+      [''],
       ['Formula', 'NA = W / sqrt(4L^2 + W^2)'],
+      ['Acceptance angle', '2 x sin^-1(NA)'],
     ];
 
     const csvData = rows.map((row) => row.join(',')).join('\n');
@@ -250,10 +319,10 @@ const OpticalFiberLab = () => {
       } else {
         const fiberTipX = 120;
         const centerY = height / 2;
-        const screenX = Math.min(width - 100, fiberTipX + 140 + naDistance * 7);
-        const coneHalfHeight = Math.max(20, Math.min(100, spotWidth * 1.7));
-        const activeIntensity = isLaserOn ? naLaserPower / 100 : 0.18;
-        const thetaRad = Math.asin(Math.min(numericalAperture, 1));
+        const screenX = Math.min(width - 90, fiberTipX + 120 + naDistance * 7);
+        const coneHalfHeight = Math.max(18, Math.min(105, currentNaReading.width * 1.55));
+        const activeIntensity = isLaserOn ? 1 : 0.18;
+        const halfAngleRad = ((currentNaReading.acceptanceAngle / 2) * Math.PI) / 180;
 
         ctx.fillStyle = 'rgba(146, 197, 255, 0.18)';
         ctx.fillRect(35, centerY - 42, 85, 84);
@@ -261,7 +330,7 @@ const OpticalFiberLab = () => {
         ctx.fillRect(50, centerY - 22, 70, 44);
         drawText('Fiber', 62, centerY - 54, '#e0f2fe', 'bold 13px Arial');
 
-        ctx.strokeStyle = `rgba(248, 113, 113, ${0.75 * activeIntensity})`;
+        ctx.strokeStyle = `rgba(248, 113, 113, ${0.78 * activeIntensity})`;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(fiberTipX, centerY);
@@ -281,6 +350,14 @@ const OpticalFiberLab = () => {
         ctx.closePath();
         ctx.fill();
 
+        const beamSpotGradient = ctx.createRadialGradient(screenX, centerY, 6, screenX, centerY, coneHalfHeight);
+        beamSpotGradient.addColorStop(0, 'rgba(254, 202, 202, 0.85)');
+        beamSpotGradient.addColorStop(1, 'rgba(248, 113, 113, 0.16)');
+        ctx.fillStyle = beamSpotGradient;
+        ctx.beginPath();
+        ctx.ellipse(screenX, centerY, 18, coneHalfHeight, 0, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.strokeStyle = '#e5e7eb';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -292,16 +369,16 @@ const OpticalFiberLab = () => {
         ctx.strokeStyle = '#fbbf24';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(fiberTipX, centerY + coneHalfHeight + 40);
-        ctx.lineTo(screenX, centerY + coneHalfHeight + 40);
+        ctx.moveTo(fiberTipX, centerY + coneHalfHeight + 42);
+        ctx.lineTo(screenX, centerY + coneHalfHeight + 42);
         ctx.stroke();
-        drawText(`L = ${naDistance.toFixed(1)} mm`, (fiberTipX + screenX) / 2 - 26, centerY + coneHalfHeight + 58, '#fde68a');
+        drawText(`L = ${naDistance.toFixed(1)} mm`, (fiberTipX + screenX) / 2 - 26, centerY + coneHalfHeight + 60, '#fde68a');
 
         ctx.beginPath();
         ctx.moveTo(screenX + 28, centerY - coneHalfHeight);
         ctx.lineTo(screenX + 28, centerY + coneHalfHeight);
         ctx.stroke();
-        drawText(`W = ${spotWidth.toFixed(1)} mm`, screenX + 36, centerY + 4, '#fde68a');
+        drawText(`W = ${currentNaReading.width.toFixed(2)} mm`, screenX + 36, centerY + 4, '#fde68a');
 
         if (isLaserOn && Math.random() < 0.7) {
           particles.push(createNaParticle());
@@ -329,13 +406,13 @@ const OpticalFiberLab = () => {
         ctx.strokeStyle = '#93c5fd';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(fiberTipX, centerY, 50, -thetaRad, thetaRad);
+        ctx.arc(fiberTipX, centerY, 50, -halfAngleRad, halfAngleRad);
         ctx.stroke();
 
         drawText('Numerical Aperture Setup', 24, 28, '#f8fafc', 'bold 18px Arial');
-        drawText(`Maximum source level`, width - 220, 28);
-        drawText(`${naCableLength} m cable`, width - 220, 50);
-        drawText(`NA = ${numericalAperture.toFixed(4)}`, width - 220, 72);
+        drawText(`${naCableLength} m cable`, width - 210, 28);
+        drawText(`NA = ${currentNaReading.na.toFixed(4)}`, width - 210, 50);
+        drawText(`Acceptance angle = ${currentNaReading.acceptanceAngle.toFixed(2)} deg`, width - 210, 72);
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -352,13 +429,14 @@ const OpticalFiberLab = () => {
     activeExperiment,
     cableLength,
     currentMeterReading,
+    currentNaReading.acceptanceAngle,
+    currentNaReading.na,
+    currentNaReading.width,
     isLaserOn,
     laserPower,
     naCableLength,
     naDistance,
-    numericalAperture,
     powerBand,
-    spotWidth,
   ]);
 
   return (
@@ -491,18 +569,27 @@ const OpticalFiberLab = () => {
 
                   <div className="grid grid-cols-1 gap-3">
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Spot diameter</div>
-                      <div className="mt-1 text-2xl font-bold text-amber-700">{spotWidth.toFixed(2)} mm</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">Current beam diameter W</div>
+                      <div className="mt-1 text-2xl font-bold text-amber-700">{currentNaReading.width.toFixed(2)} mm</div>
                     </div>
                     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Numerical aperture</div>
-                      <div className="mt-1 text-2xl font-bold text-sky-700">{numericalAperture.toFixed(4)}</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">Current NA</div>
+                      <div className="mt-1 text-2xl font-bold text-sky-700">{currentNaReading.na.toFixed(4)}</div>
                     </div>
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Acceptance cone angle</div>
-                      <div className="mt-1 text-xl font-bold text-emerald-700">{acceptanceConeDeg.toFixed(2)} deg</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">Current acceptance angle</div>
+                      <div className="mt-1 text-xl font-bold text-emerald-700">{currentNaReading.acceptanceAngle.toFixed(2)} deg</div>
                     </div>
                   </div>
+
+                  <Button
+                    onClick={recordNaReading}
+                    disabled={!isLaserOn}
+                    className="w-full bg-amber-600 hover:bg-amber-700"
+                  >
+                    <Activity className="mr-2 h-4 w-4" />
+                    Record Reading {Math.min(naReadings[naCableKey].length + 1, MAX_NA_READINGS)} / {MAX_NA_READINGS}
+                  </Button>
                 </>
               )}
             </div>
@@ -528,7 +615,7 @@ const OpticalFiberLab = () => {
                     <Button onClick={exportData} variant="outline" size="sm">
                       Export CSV
                     </Button>
-                    <Button onClick={clearMeasurements} variant="outline" size="sm">
+                    <Button onClick={clearAttenuationMeasurements} variant="outline" size="sm">
                       Clear All
                     </Button>
                   </div>
@@ -584,31 +671,97 @@ const OpticalFiberLab = () => {
               </div>
             ) : (
               <div className="rounded-3xl bg-white p-6 shadow-xl">
-                <div className="mb-4 text-xl font-bold text-slate-800">Numerical Aperture Results</div>
-                <div className="grid gap-4 md:grid-cols-4">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="text-sm text-slate-500">Cable</div>
-                    <div className="mt-2 text-2xl font-bold text-amber-700">{naCableLength} m</div>
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <h2 className="text-xl font-bold text-slate-800">Numerical Aperture Readings</h2>
+                  <div className="flex gap-2">
+                    <Button onClick={exportData} variant="outline" size="sm">
+                      Export CSV
+                    </Button>
+                    <Button onClick={clearNaMeasurements} variant="outline" size="sm">
+                      Clear All
+                    </Button>
                   </div>
-                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                    <div className="text-sm text-slate-500">Screen distance</div>
-                    <div className="mt-2 text-2xl font-bold text-blue-700">{naDistance.toFixed(1)} mm</div>
+                </div>
+
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="border px-3 py-3 text-left" colSpan="5">1 meter cable</th>
+                        </tr>
+                        <tr>
+                          <th className="border px-3 py-2 text-left">No.</th>
+                          <th className="border px-3 py-2 text-left">L (mm)</th>
+                          <th className="border px-3 py-2 text-left">W (mm)</th>
+                          <th className="border px-3 py-2 text-left">NA</th>
+                          <th className="border px-3 py-2 text-left">Angle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: MAX_NA_READINGS }).map((_, index) => {
+                          const reading = naReadings.cable1m[index];
+                          return (
+                            <tr key={`cable1m-${index}`} className="hover:bg-slate-50">
+                              <td className="border px-3 py-2">{index + 1}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.distance.toFixed(1)}` : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.width.toFixed(2)}` : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? reading.na.toFixed(4) : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.acceptanceAngle.toFixed(2)} deg` : '-'}</td>
+                            </tr>
+                          );
+                        })}
+                        <tr className="bg-sky-50 font-semibold">
+                          <td className="border px-3 py-2" colSpan="3">Average</td>
+                          <td className="border px-3 py-2">{averageNa1m !== null ? averageNa1m.toFixed(4) : '-'}</td>
+                          <td className="border px-3 py-2">{averageAngle1m !== null ? `${averageAngle1m.toFixed(2)} deg` : '-'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                    <div className="text-sm text-slate-500">NA</div>
-                    <div className="mt-2 text-2xl font-bold text-sky-700">{numericalAperture.toFixed(4)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="text-sm text-slate-500">Acceptance angle</div>
-                    <div className="mt-2 text-2xl font-bold text-emerald-700">{acceptanceConeDeg.toFixed(2)} deg</div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="border px-3 py-3 text-left" colSpan="5">5 meter cable</th>
+                        </tr>
+                        <tr>
+                          <th className="border px-3 py-2 text-left">No.</th>
+                          <th className="border px-3 py-2 text-left">L (mm)</th>
+                          <th className="border px-3 py-2 text-left">W (mm)</th>
+                          <th className="border px-3 py-2 text-left">NA</th>
+                          <th className="border px-3 py-2 text-left">Angle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: MAX_NA_READINGS }).map((_, index) => {
+                          const reading = naReadings.cable5m[index];
+                          return (
+                            <tr key={`cable5m-${index}`} className="hover:bg-slate-50">
+                              <td className="border px-3 py-2">{index + 1}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.distance.toFixed(1)}` : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.width.toFixed(2)}` : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? reading.na.toFixed(4) : '-'}</td>
+                              <td className="border px-3 py-2">{reading ? `${reading.acceptanceAngle.toFixed(2)} deg` : '-'}</td>
+                            </tr>
+                          );
+                        })}
+                        <tr className="bg-emerald-50 font-semibold">
+                          <td className="border px-3 py-2" colSpan="3">Average</td>
+                          <td className="border px-3 py-2">{averageNa5m !== null ? averageNa5m.toFixed(4) : '-'}</td>
+                          <td className="border px-3 py-2">{averageAngle5m !== null ? `${averageAngle5m.toFixed(2)} deg` : '-'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                   <div className="font-semibold">Formula used</div>
                   <div className="mt-1">NA = W / sqrt(4L^2 + W^2)</div>
-                  <div className="mt-1">Acceptance half-angle = sin^-1(NA)</div>
-                  <div className="mt-1">Full acceptance cone = 2 x acceptance half-angle</div>
+                  <div className="mt-1">Acceptance angle = 2 x sin^-1(NA)</div>
+                  <div className="mt-1">Record five distances for 1 meter cable and five distances for 5 meter cable.</div>
                 </div>
               </div>
             )}
