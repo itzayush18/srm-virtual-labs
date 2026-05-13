@@ -34,6 +34,10 @@ const MU0 = 4 * Math.PI * 1e-7;
 const SOLENOID_L = 0.1;
 const E_CHARGE = 1.602176634e-19;
 
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
 function toSup(n) {
   return String(n)
     .split('')
@@ -74,7 +78,7 @@ function calcB(coilI, coilN) {
 }
 
 function calcHallCoefficient(material) {
-  const sign = material.type === 'n' ? 1 : -1;
+  const sign = material.type === 'n' ? -1 : 1;
   return sign / (E_CHARGE * material.carrierDensity);
 }
 
@@ -86,6 +90,7 @@ function calcMaterialState(material, temperatureK) {
   const tempRatio = temperatureK / 300;
   const carrierDensity = material.baseCarrierDensity * Math.pow(tempRatio, material.densityTempExponent);
   const mobility = material.baseMobility * Math.pow(tempRatio, material.mobilityTempExponent);
+
   return {
     carrierDensity,
     mobility,
@@ -99,12 +104,17 @@ function fmtDensityWithAltUnit(v) {
   return `${fmtSci(perCm3, 'cm⁻³')} (${fmtSci(v, 'm⁻³')})`;
 }
 
+function seededRnd(seed) {
+  const x = Math.sin(seed * 17.23 + 3.1) * 43758.5453123;
+  return x - Math.floor(x);
+}
+
 function SliderRow({ label, id, min, max, step, value, onChange, display }) {
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '92px minmax(0, 1fr) 68px',
+        gridTemplateColumns: '96px minmax(0, 1fr) 72px',
         alignItems: 'center',
         gap: 8,
         marginTop: 6,
@@ -191,196 +201,254 @@ function SourceCard({ color, title, subtitle, children }) {
   );
 }
 
-function HallViz({ mat, B, Vh }) {
+function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
   const isN = mat.type === 'n';
-  const hasField = B > 0.001;
-  const accumTop = (isN && Vh > 0) || (!isN && Vh < 0);
+  const carrierColor = isN ? '#1E63A7' : '#D86A2F';
+  const carrierSign = isN ? 'e−' : 'h+';
+  const chargePolarity = Vh >= 0 ? '+' : '−';
+  const oppositePolarity = Vh >= 0 ? '−' : '+';
+  const strongField = Math.abs(B) > 0.002;
 
-  function seededRnd(seed) {
-    const x = Math.sin(seed + 1) * 43758.5453123;
-    return x - Math.floor(x);
-  }
+  const depth = 18 + ((thickness - 0.1) / 4.9) * 42;
+  const frontX = 136;
+  const frontY = 112;
+  const width = 170;
+  const height = 92;
+  const dx = depth;
+  const dy = -depth * 0.55;
 
-  const edgeCarriers = Array.from({ length: 10 }, (_, i) => {
-    const px = 182 + seededRnd(i * 7) * 130;
-    const py = accumTop ? 86 + seededRnd(i * 3) * 10 : 122 + seededRnd(i * 5) * 10;
-    return { px, py };
-  });
+  const topFace = `${frontX},${frontY} ${frontX + width},${frontY} ${frontX + width + dx},${frontY + dy} ${frontX + dx},${frontY + dy}`;
+  const sideFace = `${frontX + width},${frontY} ${frontX + width + dx},${frontY + dy} ${frontX + width + dx},${frontY + height + dy} ${frontX + width},${frontY + height}`;
 
-  const bulkCarriers = Array.from({ length: 8 }, (_, i) => ({
-    px: 185 + seededRnd(i * 11) * 125,
-    py: 97 + seededRnd(i * 13) * 20,
+  const currentArrowCount = clamp(Math.round(2 + I_mA / 7), 2, 8);
+  const fieldArrowCount = clamp(Math.round(2 + (coilI * coilN) / 1800), 2, 8);
+  const flowingCarrierCount = clamp(Math.round(8 + I_mA / 2.5), 8, 28);
+  const buildupCount = clamp(Math.round(4 + Math.abs(Vh) * 1.5), 4, 18);
+  const topChargeDominant = Vh > 0;
+
+  const flowingCarriers = Array.from({ length: flowingCarrierCount }, (_, i) => ({
+    x: frontX + 14 + seededRnd(i + 1) * (width - 28),
+    y: frontY + 16 + seededRnd(i + 11) * (height - 32),
+    dur: (1.6 + seededRnd(i + 31) * 1.3).toFixed(2),
+    delay: (-seededRnd(i + 47) * 2.4).toFixed(2),
   }));
 
-  const carrierColor = isN ? '#185fa5' : '#D85A30';
-  const carrierSign = isN ? '−' : '+';
-  const deficitSign = isN ? '+' : '−';
-  const deficitColor = isN ? '#D85A30' : '#185fa5';
-  const oppEdgeY = accumTop ? 129 : 85;
+  const buildupCharges = Array.from({ length: buildupCount }, (_, i) => ({
+    x: frontX + 18 + seededRnd(i + 71) * (width - 32),
+    yTop: frontY + 6 + seededRnd(i + 83) * 12,
+    yBottom: frontY + height - 6 - seededRnd(i + 97) * 12,
+  }));
 
   return (
-    <svg width="100%" viewBox="0 0 430 218" style={{ display: 'block' }}>
+    <svg width="100%" viewBox="0 0 520 320" style={{ display: 'block', background: 'transparent' }}>
       <defs>
-        <marker id="arrI" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#D05538" strokeWidth="1.5" strokeLinecap="round" />
+        <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#E7F1FB" />
+          <stop offset="100%" stopColor="#D7E7F7" />
+        </linearGradient>
+        <linearGradient id="topFaceFill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#F4F8FC" />
+          <stop offset="100%" stopColor="#DCEAF8" />
+        </linearGradient>
+        <linearGradient id="sideFaceFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#CFE0F0" />
+          <stop offset="100%" stopColor="#BDD2E6" />
+        </linearGradient>
+        <marker id="arrowCurrent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#D86A2F" strokeWidth="1.5" strokeLinecap="round" />
         </marker>
-        <marker id="arrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#185fa5" strokeWidth="1.5" strokeLinecap="round" />
+        <marker id="arrowField" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#156F59" strokeWidth="1.5" strokeLinecap="round" />
         </marker>
-        <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke={carrierColor} strokeWidth="1.5" strokeLinecap="round" />
-        </marker>
+        <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
 
-      <rect x="6" y="38" width="60" height="40" rx="5" fill="none" stroke="#D05538" strokeWidth="1" />
-      <text fontSize="8" fontWeight="600" fill="#D05538" x="36" y="54" textAnchor="middle">
-        DC Src 1
+      <rect x="26" y="28" width="94" height="52" rx="8" fill="none" stroke="#B85030" strokeWidth="1.2" />
+      <text x="73" y="48" fontSize="10" fontWeight="700" textAnchor="middle" fill="#B85030">
+        DC Source 1
       </text>
-      <text fontSize="7" fill="#D05538" x="36" y="66" textAnchor="middle">
+      <text x="73" y="64" fontSize="9" textAnchor="middle" fill="#B85030">
         Electromagnet
       </text>
-      <line x1="66" y1="57" x2="124" y2="57" stroke="#D05538" strokeWidth="1" strokeDasharray="3 2" />
+      <line x1="120" y1="54" x2="183" y2="54" stroke="#B85030" strokeWidth="1.2" strokeDasharray="4 3" />
 
-      <rect x="6" y="90" width="60" height="40" rx="5" fill="none" stroke="#185fa5" strokeWidth="1" />
-      <text fontSize="8" fontWeight="600" fill="#185fa5" x="36" y="106" textAnchor="middle">
-        DC Src 2
+      <rect x="26" y="104" width="94" height="52" rx="8" fill="none" stroke="#1E63A7" strokeWidth="1.2" />
+      <text x="73" y="124" fontSize="10" fontWeight="700" textAnchor="middle" fill="#1E63A7">
+        DC Source 2
       </text>
-      <text fontSize="7" fill="#185fa5" x="36" y="118" textAnchor="middle">
+      <text x="73" y="140" fontSize="9" textAnchor="middle" fill="#1E63A7">
         Sample bias
       </text>
-      <line x1="66" y1="107" x2="118" y2="107" stroke="#D05538" strokeWidth="1.5" markerEnd="url(#arrI)" />
+      <line x1="120" y1="130" x2={frontX - 14} y2="130" stroke="#D86A2F" strokeWidth="1.7" markerEnd="url(#arrowCurrent)" />
 
-      <rect x="124" y="38" width="162" height="18" rx="4" fill="none" stroke="#185fa5" strokeWidth="1" strokeDasharray="4 2" />
-      <text fontSize="7" fill="#185fa5" x="205" y="50" textAnchor="middle">
+      <rect x="186" y="38" width="170" height="22" rx="6" fill="none" stroke="#156F59" strokeWidth="1.2" strokeDasharray="5 3" />
+      <text x="271" y="53" fontSize="9" fontWeight="700" textAnchor="middle" fill="#156F59">
         N pole
       </text>
 
-      {hasField
-        ? [0, 1, 2, 3, 4].map((i) => (
-            <line
-              key={i}
-              x1={148 + i * 32}
-              y1={56}
-              x2={148 + i * 32}
-              y2={72}
-              stroke="#185fa5"
-              strokeWidth={1}
-              opacity={0.55}
-              markerEnd="url(#arrB)"
-            />
-          ))
-        : (
-          <text fontSize="7" fill="#185fa5" opacity={0.4} x="205" y="66" textAnchor="middle">
-            No magnetic deflection
-          </text>
-        )}
-
-      <text fontSize="9" fontWeight="600" fill="#185fa5" x="199" y="69" textAnchor="middle">
-        {mat.name} sample ({mat.type}-type)
+      <rect x="186" y="232" width="170" height="22" rx="6" fill="none" stroke="#156F59" strokeWidth="1.2" strokeDasharray="5 3" />
+      <text x="271" y="247" fontSize="9" fontWeight="700" textAnchor="middle" fill="#156F59">
+        S pole
       </text>
 
-      <rect x="118" y="74" width="162" height="66" rx="7" fill="#E6F1FB" stroke="#185fa5" strokeWidth={1.4} />
+      {Array.from({ length: fieldArrowCount }, (_, i) => {
+        const x = 204 + i * (134 / Math.max(fieldArrowCount - 1, 1));
+        return (
+          <g key={`field-${i}`} opacity={0.35 + i / (fieldArrowCount * 1.8)}>
+            <line x1={x} y1="60" x2={x} y2="110" stroke="#156F59" strokeWidth="1.4" markerEnd="url(#arrowField)" />
+            <line x1={x} y1="204" x2={x} y2="232" stroke="#156F59" strokeWidth="1.2" markerEnd="url(#arrowField)" />
+          </g>
+        );
+      })}
 
-      {bulkCarriers.map((c, i) => (
-        <g key={i}>
-          <circle cx={c.px} cy={c.py} r={3.2} fill={carrierColor} opacity={hasField ? 0.3 : 0.7} />
-          <text
-            fontSize="7"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="white"
-            opacity={hasField ? 0.55 : 1}
-            x={c.px}
-            y={c.py}
-          >
-            {carrierSign}
+      <polygon points={topFace} fill="url(#topFaceFill)" stroke="#6E94BA" strokeWidth="1" />
+      <polygon points={sideFace} fill="url(#sideFaceFill)" stroke="#6E94BA" strokeWidth="1" />
+      <rect x={frontX} y={frontY} width={width} height={height} rx="10" fill="url(#frontFace)" stroke="#185FA5" strokeWidth="1.8" />
+
+      <line x1={frontX} y1={frontY} x2={frontX + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
+      <line x1={frontX + width} y1={frontY} x2={frontX + width + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
+      <line x1={frontX + width} y1={frontY + height} x2={frontX + width + dx} y2={frontY + height + dy} stroke="#6E94BA" strokeWidth="1" />
+
+      <text x={frontX + 2} y={frontY - 14} fontSize="11" fontWeight="700" fill="#345A7C">
+        {mat.name} plate ({mat.type}-type)
+      </text>
+      <text x={frontX + width + dx - 8} y={frontY + height + dy + 18} fontSize="10" textAnchor="end" fill="#5C6F80">
+        Thickness = {thickness.toFixed(1)} mm
+      </text>
+
+      {Array.from({ length: currentArrowCount }, (_, i) => {
+        const y = frontY + 14 + i * ((height - 28) / Math.max(currentArrowCount - 1, 1));
+        return (
+          <line
+            key={`current-${i}`}
+            x1={frontX + 10}
+            y1={y}
+            x2={frontX + width - 12}
+            y2={y}
+            stroke="#D86A2F"
+            strokeWidth="1.3"
+            opacity="0.55"
+            markerEnd="url(#arrowCurrent)"
+          />
+        );
+      })}
+
+      {flowingCarriers.map((p, i) => (
+        <g key={`carrier-${i}`} filter="url(#softGlow)">
+          <circle cx={p.x} cy={p.y} r="3.4" fill={carrierColor}>
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              from="-24 0"
+              to="24 0"
+              dur={`${p.dur}s`}
+              begin={`${p.delay}s`}
+              repeatCount="indefinite"
+            />
+          </circle>
+          <text x={p.x} y={p.y + 0.5} fontSize="5.8" textAnchor="middle" dominantBaseline="middle" fill="#fff">
+            {isN ? '−' : '+'}
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              from="-24 0"
+              to="24 0"
+              dur={`${p.dur}s`}
+              begin={`${p.delay}s`}
+              repeatCount="indefinite"
+            />
           </text>
         </g>
       ))}
 
-      {hasField
-        ? edgeCarriers.map((c, i) => (
-            <g key={i}>
-              <circle cx={c.px} cy={c.py} r={3.5} fill={carrierColor} opacity={0.9} />
-              <text fontSize="8" textAnchor="middle" dominantBaseline="central" fill="white" x={c.px} y={c.py}>
-                {carrierSign}
-              </text>
-            </g>
-          ))
-        : null}
-
-      {hasField
-        ? [0, 1, 2, 3].map((i) => (
+      {strongField &&
+        buildupCharges.map((p, i) => (
+          <g key={`buildup-${i}`}>
+            <circle
+              cx={p.x}
+              cy={topChargeDominant ? p.yTop : p.yBottom}
+              r="4.2"
+              fill={carrierColor}
+              opacity="0.95"
+            />
             <text
-              key={i}
-              fontSize="9"
+              x={p.x}
+              y={(topChargeDominant ? p.yTop : p.yBottom) + 0.5}
+              fontSize="7"
               textAnchor="middle"
-              dominantBaseline="central"
-              fill={deficitColor}
-              opacity={0.6}
-              x={152 + i * 36}
-              y={oppEdgeY}
+              dominantBaseline="middle"
+              fill="#fff"
             >
-              {deficitSign}
+              {isN ? '−' : '+'}
             </text>
-          ))
-        : null}
+            <text
+              x={p.x}
+              y={topChargeDominant ? p.yBottom : p.yTop}
+              fontSize="8"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={isN ? '#D86A2F' : '#1E63A7'}
+              opacity="0.72"
+            >
+              {isN ? '+' : '−'}
+            </text>
+          </g>
+        ))}
 
-      {hasField
-        ? [0, 1, 2].map((i) => {
-            const px = 160 + i * 40;
-            return (
-              <line
-                key={i}
-                x1={px}
-                y1={100}
-                x2={px}
-                y2={accumTop ? 84 : 128}
-                stroke={carrierColor}
-                strokeWidth={1.2}
-                opacity={0.45}
-                markerEnd="url(#arrC)"
-              />
-            );
-          })
-        : null}
+      {strongField &&
+        Array.from({ length: 4 }, (_, i) => {
+          const x = frontX + 30 + i * 36;
+          return (
+            <line
+              key={`lorentz-${i}`}
+              x1={x}
+              y1={frontY + height / 2}
+              x2={x + 10}
+              y2={topChargeDominant ? frontY + 18 : frontY + height - 18}
+              stroke={carrierColor}
+              strokeWidth="1.2"
+              opacity="0.45"
+              markerEnd="url(#arrowField)"
+            />
+          );
+        })}
 
-      <line x1={118} y1="107" x2="74" y2="107" stroke="#D05538" strokeWidth="1" opacity="0.3" />
-      <line x1="280" y1="107" x2="330" y2="107" stroke="#D05538" strokeWidth="1.5" markerEnd="url(#arrI)" />
+      <line x1={frontX + width + dx + 12} y1={frontY + 10} x2="412" y2="92" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
+      <line x1={frontX + width + dx + 12} y1={frontY + height - 10} x2="412" y2="168" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
 
-      <rect x="124" y="140" width="162" height="18" rx="4" fill="none" stroke="#185fa5" strokeWidth="1" strokeDasharray="4 2" />
-      <text fontSize="7" fill="#185fa5" x="205" y="152" textAnchor="middle">
-        S pole
+      <rect x="412" y="102" width="82" height="56" rx="8" fill="none" stroke="#0E7A61" strokeWidth="1.2" />
+      <text x="453" y="122" fontSize="10" fontWeight="700" textAnchor="middle" fill="#0E7A61">
+        Hall meter
       </text>
-
-      <line x1="205" y1="74" x2="205" y2="55" stroke="#0F6E56" strokeWidth="1" strokeDasharray="3 2" />
-      <line x1="205" y1="140" x2="205" y2="158" stroke="#0F6E56" strokeWidth="1" strokeDasharray="3 2" />
-      <circle cx="205" cy="55" r="3" fill="#0F6E56" />
-      <circle cx="205" cy="158" r="3" fill="#0F6E56" />
-
-      <line x1="205" y1="55" x2="370" y2="55" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
-      <line x1="205" y1="158" x2="370" y2="158" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
-
-      <rect x="340" y="90" width="80" height="32" rx="5" fill="none" stroke="#0F6E56" strokeWidth="1" />
-      <text fontSize="8" fontWeight="600" fill="#0F6E56" x="380" y="104" textAnchor="middle">
-        Voltmeter
-      </text>
-      <text fontSize="9" fontWeight="600" fill="#0F6E56" x="380" y="117" textAnchor="middle">
+      <text x="453" y="141" fontSize="11" fontWeight="700" textAnchor="middle" fill="#0E7A61">
         {fmtVh(Vh)}
       </text>
-      <line x1="370" y1="90" x2="370" y2="55" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
-      <line x1="370" y1="122" x2="370" y2="158" stroke="#0F6E56" strokeWidth="0.8" strokeDasharray="3 2" />
 
-      {hasField ? (
-        <>
-          <text fontSize="7" fill={carrierColor} x="286" y={accumTop ? 82 : 136} textAnchor="start">
-            Accumulated {carrierSign} charge
-          </text>
-          <text fontSize="7" fill={deficitColor} x="286" y={accumTop ? 134 : 84} textAnchor="start">
-            Opposite edge: {deficitSign} deficit
-          </text>
-        </>
-      ) : null}
+      <text x="404" y="52" fontSize="10" fill="#156F59">
+        B = {B.toFixed(4)} T
+      </text>
+      <text x="404" y="68" fontSize="10" fill="#B85030">
+        Coil: {coilI.toFixed(1)} A, {coilN} turns
+      </text>
+      <text x="404" y="194" fontSize="10" fill="#D86A2F">
+        Sample current = {I_mA} mA
+      </text>
+      <text x="404" y="210" fontSize="10" fill={carrierColor}>
+        Mobile carriers: {carrierSign}
+      </text>
+
+      <rect x="26" y="266" width="468" height="34" rx="10" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" strokeWidth="0.8" />
+      <text x="42" y="287" fontSize="10" fill="var(--color-text-secondary)">
+        {strongField
+          ? `Lorentz force pushes ${isN ? 'electrons' : 'holes'} toward the ${topChargeDominant ? 'top' : 'bottom'} edge, creating Hall voltage ${chargePolarity} on that side and ${oppositePolarity} on the opposite edge.`
+          : 'Increase the electromagnet current or turns to make the magnetic deflection and Hall charge separation easier to see.'}
+      </text>
     </svg>
   );
 }
@@ -395,7 +463,7 @@ function HallChart({ data }) {
     const draw = () => {
       const dpr = window.devicePixelRatio || 1;
       const W = canvas.offsetWidth || 320;
-      const H = 180;
+      const H = 190;
       canvas.width = W * dpr;
       canvas.height = H * dpr;
       canvas.style.height = `${H}px`;
@@ -419,7 +487,7 @@ function HallChart({ data }) {
         return;
       }
 
-      const pad = { l: 56, r: 16, t: 12, b: 34 };
+      const pad = { l: 56, r: 18, t: 12, b: 34 };
       const xs = data.map((p) => p.x);
       const ys = data.map((p) => p.y);
       const xmin = Math.min(...xs);
@@ -457,23 +525,20 @@ function HallChart({ data }) {
       ctx.fillText('Hall voltage VH (mV)', 0, 0);
       ctx.restore();
 
-      ctx.strokeStyle = '#185fa5';
+      ctx.strokeStyle = '#185FA5';
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.beginPath();
       data.forEach((p, i) => {
-        if (i === 0) {
-          ctx.moveTo(toX(p.x), toY(p.y));
-        } else {
-          ctx.lineTo(toX(p.x), toY(p.y));
-        }
+        if (i === 0) ctx.moveTo(toX(p.x), toY(p.y));
+        else ctx.lineTo(toX(p.x), toY(p.y));
       });
       ctx.stroke();
 
       data.forEach((p) => {
         ctx.beginPath();
         ctx.arc(toX(p.x), toY(p.y), 4, 0, 2 * Math.PI);
-        ctx.fillStyle = '#185fa5';
+        ctx.fillStyle = '#185FA5';
         ctx.fill();
       });
     };
@@ -609,7 +674,7 @@ const HallCoefficientSimulation = () => {
           </select>
         </div>
 
-        <SourceCard color="#D05538" title="DC Source 1 - Electromagnet coil">
+        <SourceCard color="#D05538" title="DC Source 1 - Electromagnet coil" subtitle="This source changes the magnetic field B through the semiconductor plate.">
           <SliderRow
             label="Coil current"
             id="coilI"
@@ -649,7 +714,7 @@ const HallCoefficientSimulation = () => {
           </div>
         </SourceCard>
 
-        <SourceCard color="#185fa5" title="DC Source 2 - Semiconductor bias">
+        <SourceCard color="#185FA5" title="DC Source 2 - Semiconductor bias" subtitle="This source sets the sample current and changes the density of visible carrier flow.">
           <SliderRow
             label="Sample current"
             id="sampleI"
@@ -685,7 +750,7 @@ const HallCoefficientSimulation = () => {
         <div>
           <div style={sectionLabel}>Measurements</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <MetricCard label="Hall voltage" value={fmtVh(Vh)} sub="Live voltmeter reading" />
+            <MetricCard label="Hall voltage" value={fmtVh(Vh)} sub="Live voltmeter reading across the transverse faces" />
             <MetricCard
               label="Carrier type"
               value={mat.type === 'n' ? 'n-type' : 'p-type'}
@@ -694,7 +759,7 @@ const HallCoefficientSimulation = () => {
             <MetricCard
               label="Hall coeff. RH"
               value={fmtSci(measuredRh, 'm³/C')}
-              sub="Derived from VH x t / (I x B); varies with temperature through carrier density"
+              sub="Calculated from VH x t / (I x B)"
             />
             <MetricCard
               label="Carrier density"
@@ -763,7 +828,15 @@ const HallCoefficientSimulation = () => {
             overflow: 'hidden',
           }}
         >
-          <HallViz mat={mat} B={B} Vh={Vh} />
+          <HallPlate3D
+            mat={mat}
+            B={B}
+            Vh={Vh}
+            thickness={thickness}
+            I_mA={I_mA}
+            coilI={coilI}
+            coilN={coilN}
+          />
         </div>
 
         <div
