@@ -204,16 +204,14 @@ function SourceCard({ color, title, subtitle, children }) {
 function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
   const isN = mat.type === 'n';
   const carrierColor = isN ? '#1E63A7' : '#D86A2F';
-  const carrierSign = isN ? 'e−' : 'h+';
-  const chargePolarity = Vh >= 0 ? '+' : '−';
-  const oppositePolarity = Vh >= 0 ? '−' : '+';
+  const carrierSign = isN ? 'e-' : 'h+';
   const strongField = Math.abs(B) > 0.002;
 
   const depth = 18 + ((thickness - 0.1) / 4.9) * 42;
-  const frontX = 136;
+  const frontX = 160;
   const frontY = 112;
-  const width = 170;
-  const height = 92;
+  const width = 156;
+  const height = 90;
   const dx = depth;
   const dy = -depth * 0.55;
 
@@ -221,7 +219,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
   const sideFace = `${frontX + width},${frontY} ${frontX + width + dx},${frontY + dy} ${frontX + width + dx},${frontY + height + dy} ${frontX + width},${frontY + height}`;
 
   const currentArrowCount = clamp(Math.round(2 + I_mA / 7), 2, 8);
-  const fieldArrowCount = clamp(Math.round(2 + (coilI * coilN) / 1800), 2, 8);
+  const fieldArrowCount = clamp(Math.round(3 + (coilI * coilN) / 2400), 3, 8);
   const flowingCarrierCount = clamp(Math.round(8 + I_mA / 2.5), 8, 28);
   const buildupCount = clamp(Math.round(4 + Math.abs(Vh) * 1.5), 4, 18);
   const topChargeDominant = Vh > 0;
@@ -240,8 +238,24 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
   }));
 
   return (
-    <svg width="100%" viewBox="0 0 520 320" style={{ display: 'block', background: 'transparent' }}>
+    <svg width="100%" viewBox="0 0 520 330" style={{ display: 'block', background: 'transparent' }}>
       <defs>
+        <linearGradient id="bgGlow" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#F9FBFF" />
+          <stop offset="100%" stopColor="#EEF5FB" />
+        </linearGradient>
+        <linearGradient id="supplyBodyWarm" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#FBFCFE" />
+          <stop offset="100%" stopColor="#E8EEF4" />
+        </linearGradient>
+        <linearGradient id="supplyBodyCool" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#FDFEFF" />
+          <stop offset="100%" stopColor="#E5EEF8" />
+        </linearGradient>
+        <linearGradient id="meterScreen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#13241B" />
+          <stop offset="100%" stopColor="#1C3327" />
+        </linearGradient>
         <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#E7F1FB" />
           <stop offset="100%" stopColor="#D7E7F7" />
@@ -267,45 +281,86 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <filter id="shadow" x="-20%" y="-20%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#6B8099" floodOpacity="0.18" />
+        </filter>
       </defs>
 
-      <rect x="26" y="28" width="94" height="52" rx="8" fill="none" stroke="#B85030" strokeWidth="1.2" />
-      <text x="73" y="48" fontSize="10" fontWeight="700" textAnchor="middle" fill="#B85030">
-        DC Source 1
-      </text>
-      <text x="73" y="64" fontSize="9" textAnchor="middle" fill="#B85030">
-        Electromagnet
-      </text>
-      <line x1="120" y1="54" x2="183" y2="54" stroke="#B85030" strokeWidth="1.2" strokeDasharray="4 3" />
+      <rect x="12" y="12" width="496" height="306" rx="18" fill="url(#bgGlow)" />
 
-      <rect x="26" y="104" width="94" height="52" rx="8" fill="none" stroke="#1E63A7" strokeWidth="1.2" />
-      <text x="73" y="124" fontSize="10" fontWeight="700" textAnchor="middle" fill="#1E63A7">
-        DC Source 2
-      </text>
-      <text x="73" y="140" fontSize="9" textAnchor="middle" fill="#1E63A7">
-        Sample bias
-      </text>
-      <line x1="120" y1="130" x2={frontX - 14} y2="130" stroke="#D86A2F" strokeWidth="1.7" markerEnd="url(#arrowCurrent)" />
-
-      <rect x="186" y="38" width="170" height="22" rx="6" fill="none" stroke="#156F59" strokeWidth="1.2" strokeDasharray="5 3" />
-      <text x="271" y="53" fontSize="9" fontWeight="700" textAnchor="middle" fill="#156F59">
-        N pole
+      <g filter="url(#shadow)">
+        <rect x="22" y="36" width="92" height="62" rx="10" fill="url(#supplyBodyWarm)" stroke="#B85030" strokeWidth="1.1" />
+        <rect x="30" y="46" width="44" height="18" rx="4" fill="#1F2933" />
+        <text x="52" y="58" fontSize="9" fontWeight="700" textAnchor="middle" fill="#FF7D55">
+          {coilI.toFixed(1)} A
+        </text>
+        <circle cx="88" cy="54" r="7" fill="#D86A2F" opacity="0.9" />
+        <circle cx="88" cy="54" r="2.4" fill="#fff" />
+        <circle cx="48" cy="83" r="4" fill="#C33A2A" />
+        <circle cx="68" cy="83" r="4" fill="#4F5660" />
+      </g>
+      <text x="68" y="111" fontSize="10" fontWeight="700" textAnchor="middle" fill="#B85030">
+        DC supply for electromagnet
       </text>
 
-      <rect x="186" y="232" width="170" height="22" rx="6" fill="none" stroke="#156F59" strokeWidth="1.2" strokeDasharray="5 3" />
-      <text x="271" y="247" fontSize="9" fontWeight="700" textAnchor="middle" fill="#156F59">
-        S pole
+      <g filter="url(#shadow)">
+        <rect x="24" y="182" width="90" height="60" rx="10" fill="url(#supplyBodyCool)" stroke="#1E63A7" strokeWidth="1.1" />
+        <rect x="32" y="192" width="40" height="16" rx="4" fill="#182534" />
+        <text x="52" y="203" fontSize="8.5" fontWeight="700" textAnchor="middle" fill="#85E1FF">
+          {I_mA} mA
+        </text>
+        <circle cx="87" cy="199" r="8" fill="#1E63A7" opacity="0.95" />
+        <circle cx="87" cy="199" r="2.4" fill="#fff" />
+        <circle cx="48" cy="226" r="4" fill="#C33A2A" />
+        <circle cx="68" cy="226" r="4" fill="#4F5660" />
+      </g>
+      <text x="69" y="255" fontSize="10" fontWeight="700" textAnchor="middle" fill="#1E63A7">
+        DC supply for sample
+      </text>
+
+      <line x1="114" y1="66" x2="138" y2="66" stroke="#B85030" strokeWidth="1.4" />
+      <line x1="114" y1="208" x2={frontX - 18} y2="208" stroke="#D86A2F" strokeWidth="1.8" markerEnd="url(#arrowCurrent)" />
+
+      <g filter="url(#shadow)">
+        <rect x="130" y="42" width="216" height="24" rx="8" fill="#D8EBDD" stroke="#156F59" strokeWidth="1.2" />
+        <rect x="130" y="234" width="216" height="24" rx="8" fill="#D8EBDD" stroke="#156F59" strokeWidth="1.2" />
+        <text x="146" y="58" fontSize="10" fontWeight="700" fill="#156F59">
+          N pole
+        </text>
+        <text x="146" y="250" fontSize="10" fontWeight="700" fill="#156F59">
+          S pole
+        </text>
+      </g>
+
+      <g filter="url(#shadow)">
+        <rect x="348" y="72" width="54" height="150" rx="14" fill="#D67A43" stroke="#9A4F24" strokeWidth="1.5" />
+        {Array.from({ length: 8 }, (_, i) => {
+          const y = 84 + i * 16;
+          return <ellipse key={`coil-${i}`} cx="375" cy={y} rx="21" ry="6.5" fill="none" stroke="#8B3F1D" strokeWidth="2.4" />;
+        })}
+      </g>
+      <text x="375" y="241" fontSize="10" fontWeight="700" textAnchor="middle" fill="#9A4F24">
+        Electromagnet coil
       </text>
 
       {Array.from({ length: fieldArrowCount }, (_, i) => {
-        const x = 204 + i * (134 / Math.max(fieldArrowCount - 1, 1));
+        const x = 175 + i * (128 / Math.max(fieldArrowCount - 1, 1));
+        const sweep = 18 + i * 2;
         return (
-          <g key={`field-${i}`} opacity={0.35 + i / (fieldArrowCount * 1.8)}>
-            <line x1={x} y1="60" x2={x} y2="110" stroke="#156F59" strokeWidth="1.4" markerEnd="url(#arrowField)" />
-            <line x1={x} y1="204" x2={x} y2="232" stroke="#156F59" strokeWidth="1.2" markerEnd="url(#arrowField)" />
+          <g key={`field-${i}`} opacity={0.45 + i / (fieldArrowCount * 1.6)}>
+            <path
+              d={`M ${x} 66 C ${x - sweep} 94, ${x - sweep} 138, ${x} 166 C ${x + sweep} 194, ${x + sweep} 216, ${x} 234`}
+              fill="none"
+              stroke="#156F59"
+              strokeWidth="1.8"
+              markerEnd="url(#arrowField)"
+            />
           </g>
         );
       })}
+      <text x="364" y="60" fontSize="10" fill="#156F59">
+        Magnetic field rays (N to S)
+      </text>
 
       <polygon points={topFace} fill="url(#topFaceFill)" stroke="#6E94BA" strokeWidth="1" />
       <polygon points={sideFace} fill="url(#sideFaceFill)" stroke="#6E94BA" strokeWidth="1" />
@@ -315,11 +370,14 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
       <line x1={frontX + width} y1={frontY} x2={frontX + width + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
       <line x1={frontX + width} y1={frontY + height} x2={frontX + width + dx} y2={frontY + height + dy} stroke="#6E94BA" strokeWidth="1" />
 
-      <text x={frontX + 2} y={frontY - 14} fontSize="11" fontWeight="700" fill="#345A7C">
+      <text x={frontX + 10} y={frontY - 16} fontSize="11" fontWeight="700" fill="#345A7C">
         {mat.name} plate ({mat.type}-type)
       </text>
-      <text x={frontX + width + dx - 8} y={frontY + height + dy + 18} fontSize="10" textAnchor="end" fill="#5C6F80">
+      <text x={frontX + width + dx - 2} y={frontY + height + dy + 20} fontSize="10" textAnchor="end" fill="#5C6F80">
         Thickness = {thickness.toFixed(1)} mm
+      </text>
+      <text x={frontX + 10} y={frontY + height + 18} fontSize="10" fill="#5C6F80">
+        Current enters from left and flows through the plate
       </text>
 
       {Array.from({ length: currentArrowCount }, (_, i) => {
@@ -353,7 +411,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
             />
           </circle>
           <text x={p.x} y={p.y + 0.5} fontSize="5.8" textAnchor="middle" dominantBaseline="middle" fill="#fff">
-            {isN ? '−' : '+'}
+            {isN ? '-' : '+'}
             <animateTransform
               attributeName="transform"
               type="translate"
@@ -370,13 +428,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
       {strongField &&
         buildupCharges.map((p, i) => (
           <g key={`buildup-${i}`}>
-            <circle
-              cx={p.x}
-              cy={topChargeDominant ? p.yTop : p.yBottom}
-              r="4.2"
-              fill={carrierColor}
-              opacity="0.95"
-            />
+            <circle cx={p.x} cy={topChargeDominant ? p.yTop : p.yBottom} r="4.2" fill={carrierColor} opacity="0.95" />
             <text
               x={p.x}
               y={(topChargeDominant ? p.yTop : p.yBottom) + 0.5}
@@ -385,7 +437,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
               dominantBaseline="middle"
               fill="#fff"
             >
-              {isN ? '−' : '+'}
+              {isN ? '-' : '+'}
             </text>
             <text
               x={p.x}
@@ -396,58 +448,62 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI, coilN }) {
               fill={isN ? '#D86A2F' : '#1E63A7'}
               opacity="0.72"
             >
-              {isN ? '+' : '−'}
+              {isN ? '+' : '-'}
             </text>
           </g>
         ))}
 
       {strongField &&
         Array.from({ length: 4 }, (_, i) => {
-          const x = frontX + 30 + i * 36;
+          const x = frontX + 28 + i * 34;
           return (
             <line
               key={`lorentz-${i}`}
               x1={x}
               y1={frontY + height / 2}
-              x2={x + 10}
+              x2={x + 8}
               y2={topChargeDominant ? frontY + 18 : frontY + height - 18}
               stroke={carrierColor}
               strokeWidth="1.2"
               opacity="0.45"
-              markerEnd="url(#arrowField)"
+              markerEnd="url(#arrowCurrent)"
             />
           );
         })}
 
-      <line x1={frontX + width + dx + 12} y1={frontY + 10} x2="412" y2="92" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
-      <line x1={frontX + width + dx + 12} y1={frontY + height - 10} x2="412" y2="168" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
+      <line x1={frontX + width + dx + 2} y1={frontY + 12} x2="417" y2="98" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
+      <line x1={frontX + width + dx + 2} y1={frontY + height - 12} x2="417" y2="174" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
 
-      <rect x="412" y="102" width="82" height="56" rx="8" fill="none" stroke="#0E7A61" strokeWidth="1.2" />
-      <text x="453" y="122" fontSize="10" fontWeight="700" textAnchor="middle" fill="#0E7A61">
-        Hall meter
-      </text>
-      <text x="453" y="141" fontSize="11" fontWeight="700" textAnchor="middle" fill="#0E7A61">
-        {fmtVh(Vh)}
-      </text>
+      <g filter="url(#shadow)">
+        <rect x="416" y="104" width="82" height="70" rx="10" fill="#ECF5F0" stroke="#0E7A61" strokeWidth="1.2" />
+        <rect x="426" y="116" width="62" height="22" rx="5" fill="url(#meterScreen)" />
+        <text x="457" y="131" fontSize="11" fontWeight="700" textAnchor="middle" fill="#9BFFCC">
+          {fmtVh(Vh)}
+        </text>
+        <text x="457" y="152" fontSize="10" fontWeight="700" textAnchor="middle" fill="#0E7A61">
+          Hall voltmeter
+        </text>
+      </g>
 
-      <text x="404" y="52" fontSize="10" fill="#156F59">
+      <text x="414" y="44" fontSize="10" fill="#156F59">
         B = {B.toFixed(4)} T
       </text>
-      <text x="404" y="68" fontSize="10" fill="#B85030">
+      <text x="414" y="60" fontSize="10" fill="#B85030">
         Coil: {coilI.toFixed(1)} A, {coilN} turns
       </text>
-      <text x="404" y="194" fontSize="10" fill="#D86A2F">
+      <text x="414" y="198" fontSize="10" fill="#D86A2F">
         Sample current = {I_mA} mA
       </text>
-      <text x="404" y="210" fontSize="10" fill={carrierColor}>
+      <text x="414" y="214" fontSize="10" fill={carrierColor}>
         Mobile carriers: {carrierSign}
       </text>
-
-      <rect x="26" y="266" width="468" height="34" rx="10" fill="var(--color-background-secondary)" stroke="var(--color-border-tertiary)" strokeWidth="0.8" />
-      <text x="42" y="287" fontSize="10" fill="var(--color-text-secondary)">
+      <text x="360" y="266" fontSize="10" fill={carrierColor}>
         {strongField
-          ? `Lorentz force pushes ${isN ? 'electrons' : 'holes'} toward the ${topChargeDominant ? 'top' : 'bottom'} edge, creating Hall voltage ${chargePolarity} on that side and ${oppositePolarity} on the opposite edge.`
-          : 'Increase the electromagnet current or turns to make the magnetic deflection and Hall charge separation easier to see.'}
+          ? `${isN ? 'Electrons' : 'Holes'} collect at the ${topChargeDominant ? 'top' : 'bottom'} edge`
+          : 'Increase magnetic field to see charge separation clearly'}
+      </text>
+      <text x="360" y="282" fontSize="10" fill="#5C6F80">
+        Opposite edge develops equal and opposite Hall polarity
       </text>
     </svg>
   );
@@ -674,7 +730,11 @@ const HallCoefficientSimulation = () => {
           </select>
         </div>
 
-        <SourceCard color="#D05538" title="DC Source 1 - Electromagnet coil" subtitle="This source changes the magnetic field B through the semiconductor plate.">
+        <SourceCard
+          color="#D05538"
+          title="DC Source 1 - Electromagnet coil"
+          subtitle="This source changes the magnetic field B through the semiconductor plate."
+        >
           <SliderRow
             label="Coil current"
             id="coilI"
@@ -714,7 +774,11 @@ const HallCoefficientSimulation = () => {
           </div>
         </SourceCard>
 
-        <SourceCard color="#185FA5" title="DC Source 2 - Semiconductor bias" subtitle="This source sets the sample current and changes the density of visible carrier flow.">
+        <SourceCard
+          color="#185FA5"
+          title="DC Source 2 - Semiconductor bias"
+          subtitle="This source sets the sample current and changes the density of visible carrier flow."
+        >
           <SliderRow
             label="Sample current"
             id="sampleI"
