@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import {
   Activity,
   Gauge,
@@ -21,28 +20,29 @@ const FIBER_TYPES = {
   singleMode: {
     label: 'Single-mode Fiber',
     shortLabel: 'SMF',
-    defaultCoreIndex: 1.46,
-    defaultCladdingIndex: 1.455,
-    intrinsicLossDbPerKm: 2.6,
-    connectorLossDb: 0.12,
-    bendSensitivity: 0.55,
-    launchEfficiency: 0.88,
+    coreIndex: 1.46,
+    claddingIndex: 1.455,
+    attenuationDbPerKm: 2.6,
+    launchEfficiency: 0.9,
     beamSpreadFactor: 0.72,
-    color: 'from-cyan-500 to-sky-600',
   },
-  multimodeStep: {
-    label: 'Multimode Step-index Fiber',
-    shortLabel: 'MM Step-index',
-    defaultCoreIndex: 1.48,
-    defaultCladdingIndex: 1.46,
-    intrinsicLossDbPerKm: 6.8,
-    connectorLossDb: 0.2,
-    bendSensitivity: 0.95,
+  multimode: {
+    label: 'Multimode Fiber',
+    shortLabel: 'MMF',
+    coreIndex: 1.48,
+    claddingIndex: 1.46,
+    attenuationDbPerKm: 6.8,
     launchEfficiency: 1.02,
     beamSpreadFactor: 1.12,
-    color: 'from-amber-500 to-orange-600',
   },
 };
+
+const POWER_OPTIONS = [
+  { value: 5, label: 'Low 1', band: 'low' },
+  { value: 10, label: 'Low 2', band: 'low' },
+  { value: 70, label: 'High 1', band: 'high' },
+  { value: 85, label: 'High 2', band: 'high' },
+];
 
 const createLengthValueMap = (initialValue = null) =>
   FIBER_LENGTH_OPTIONS.reduce((acc, length) => {
@@ -68,20 +68,14 @@ const createNaReadings = () =>
     return acc;
   }, {});
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-
 const formatReading = (value, digits = 4, suffix = '') =>
   value !== null && value !== undefined ? `${value.toFixed(digits)}${suffix}` : '-';
 
 const OpticalFiberLab = () => {
   const [activeExperiment, setActiveExperiment] = useState('attenuation');
   const [isLaserOn, setIsLaserOn] = useState(false);
-  const [laserPower, setLaserPower] = useState(35);
-  const [fiberType, setFiberType] = useState('multimodeStep');
-  const [coreIndex, setCoreIndex] = useState(FIBER_TYPES.multimodeStep.defaultCoreIndex);
-  const [claddingIndex, setCladdingIndex] = useState(FIBER_TYPES.multimodeStep.defaultCladdingIndex);
-  const [connectorPairs, setConnectorPairs] = useState(2);
-  const [bendCount, setBendCount] = useState(1);
+  const [laserPower, setLaserPower] = useState(5);
+  const [fiberType, setFiberType] = useState('multimode');
   const [cableLength, setCableLength] = useState(1);
   const [measurements, setMeasurements] = useState(createMeasurements());
   const [naCableLength, setNaCableLength] = useState(1);
@@ -91,48 +85,32 @@ const OpticalFiberLab = () => {
   const animationRef = useRef(null);
 
   const fiberConfig = FIBER_TYPES[fiberType];
-  const powerBand = laserPower <= 50 ? 'low' : 'high';
+  const coreIndex = fiberConfig.coreIndex;
+  const claddingIndex = fiberConfig.claddingIndex;
+  const selectedPowerOption = POWER_OPTIONS.find((option) => option.value === laserPower) ?? POWER_OPTIONS[0];
+  const powerBand = selectedPowerOption.band;
   const powerBandLabel = powerBand === 'low' ? 'Low' : 'High';
-
-  const maxAllowedCladding = Number((coreIndex - 0.001).toFixed(3));
-  const safeCladdingIndex = clamp(claddingIndex, 1.44, maxAllowedCladding);
+  const powerLabel = `${selectedPowerOption.label} (${laserPower}%)`;
 
   const theoreticalNa = Math.sqrt(
-    Math.max(coreIndex * coreIndex - safeCladdingIndex * safeCladdingIndex, 0)
+    Math.max(coreIndex * coreIndex - claddingIndex * claddingIndex, 0)
   );
   const acceptanceHalfAngleDeg = (Math.asin(Math.min(theoreticalNa, 0.9999)) * 180) / Math.PI;
   const acceptanceConeAngleDeg = acceptanceHalfAngleDeg * 2;
 
-  const applyFiberPreset = (nextFiberType) => {
-    const preset = FIBER_TYPES[nextFiberType];
-    setFiberType(nextFiberType);
-    setCoreIndex(preset.defaultCoreIndex);
-    setCladdingIndex(preset.defaultCladdingIndex);
-  };
-
   const getLaunchPowerMw = (band, selectedFiberType) => {
     const config = FIBER_TYPES[selectedFiberType];
-    const normalizedSlider = 0.45 + laserPower / 100;
-    const bandFactor = band === 'low' ? 0.82 : 1.18;
-    return 1.2 * normalizedSlider * bandFactor * config.launchEfficiency;
-  };
-
-  const getConnectorLossDb = (selectedFiberType) =>
-    FIBER_TYPES[selectedFiberType].connectorLossDb * connectorPairs;
-
-  const getBendLossDb = (length, selectedFiberType) => {
-    const config = FIBER_TYPES[selectedFiberType];
-    const lengthFactor = 0.18 + length / 120;
-    return bendCount * config.bendSensitivity * lengthFactor;
+    const powerFactor = laserPower / 100;
+    const bandBoost = band === 'low' ? 0.45 : 1;
+    return 1.8 * powerFactor * bandBoost * config.launchEfficiency;
   };
 
   const getTotalLossDb = (band, length, selectedFiberType) => {
     const config = FIBER_TYPES[selectedFiberType];
-    const intrinsicLoss = config.intrinsicLossDbPerKm * (length / 1000);
-    const connectorLoss = getConnectorLossDb(selectedFiberType);
-    const bendLoss = getBendLossDb(length, selectedFiberType);
-    const powerPenalty = band === 'high' ? 0.12 + length / 900 : 0.04 + length / 1500;
-    return intrinsicLoss + connectorLoss + bendLoss + powerPenalty;
+    const intrinsicLoss = config.attenuationDbPerKm * (length / 1000);
+    const couplingPenalty = selectedFiberType === 'singleMode' ? 0.08 : 0.18;
+    const powerPenalty = band === 'high' ? 0.14 : 0.08;
+    return intrinsicLoss + couplingPenalty + powerPenalty;
   };
 
   const calculateMeterOutput = (band, length, selectedFiberType) => {
@@ -173,7 +151,7 @@ const OpticalFiberLab = () => {
       acceptanceAngle: Number(acceptanceConeAngleDeg.toFixed(2)),
       cableLength: selectedCableLength,
       n1: Number(coreIndex.toFixed(3)),
-      n2: Number(safeCladdingIndex.toFixed(3)),
+      n2: Number(claddingIndex.toFixed(3)),
       fiberType: FIBER_TYPES[selectedFiberType].label,
     };
   };
@@ -240,10 +218,10 @@ const OpticalFiberLab = () => {
 
   const exportData = () => {
     const rows = [
-      ['Fiber Optics Virtual Lab - Advanced Version'],
+      ['Fiber Optics Virtual Lab - Revised Version'],
       [''],
       ['Attenuation Experiment'],
-      ['Fiber type', 'Power band', 'Cable length (m)', 'Output power (mW)', 'Attenuation from 1 m (dB/km)'],
+      ['Fiber type', 'Power band', 'Power level (%)', 'Cable length (m)', 'Output power (mW)', 'Attenuation from 1 m (dB/km)'],
     ];
 
     Object.keys(FIBER_TYPES).forEach((typeKey) => {
@@ -254,6 +232,7 @@ const OpticalFiberLab = () => {
           rows.push([
             FIBER_TYPES[typeKey].label,
             band === 'low' ? 'Low' : 'High',
+            band === 'low' ? '5% or 10%' : '70% or 85%',
             length,
             output !== null ? output.toFixed(4) : '-',
             attenuation !== null ? attenuation.toFixed(3) : length === 1 ? 'Reference' : 'Incomplete',
@@ -308,14 +287,10 @@ const OpticalFiberLab = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'fiber_optics_virtual_lab_advanced.csv';
+    link.download = 'fiber_optics_virtual_lab_revised.csv';
     link.click();
     URL.revokeObjectURL(url);
   };
-
-  useEffect(() => {
-    setCladdingIndex((prev) => clamp(prev, 1.44, Number((coreIndex - 0.001).toFixed(3))));
-  }, [coreIndex]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -332,13 +307,22 @@ const OpticalFiberLab = () => {
       ctx.fillText(text, x, y);
     };
 
-    const createAttenuationParticle = () => ({
-      x: 150,
-      y: height / 2 + (Math.random() - 0.5) * 20,
-      vx: 2.3 + Math.random() * 1.2,
-      vy: (Math.random() - 0.5) * 1.1,
-      radius: 2 + laserPower / 55,
-      alpha: 0.5 + laserPower / 200,
+    const createSingleModeParticle = () => ({
+      x: 160,
+      y: height / 2 + (Math.random() - 0.5) * 4,
+      vx: 3.2 + Math.random() * 0.8,
+      radius: 2.4,
+      alpha: 0.85,
+    });
+
+    const createMultimodeParticle = () => ({
+      x: 160,
+      progress: 0,
+      speed: 0.008 + Math.random() * 0.006,
+      amplitude: 8 + Math.random() * 10,
+      phase: Math.random() * Math.PI * 2,
+      radius: 2.8,
+      alpha: 0.82,
     });
 
     const createNaParticle = () => ({
@@ -431,53 +415,103 @@ const OpticalFiberLab = () => {
           ctx.fill();
         }
 
+        if (fiberType === 'singleMode') {
+          ctx.strokeStyle = 'rgba(255, 166, 166, 0.9)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(fiberStartX, centerY);
+          ctx.lineTo(fiberEndX, centerY);
+          ctx.stroke();
+        } else {
+          const rayOffsets = [-12, -5, 6, 13];
+          rayOffsets.forEach((offset, index) => {
+            ctx.strokeStyle = `rgba(255, 166, 166, ${0.55 + index * 0.08})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(fiberStartX, centerY + offset);
+
+            const step = (fiberEndX - fiberStartX) / 7;
+            for (let i = 1; i <= 7; i += 1) {
+              const x = fiberStartX + step * i;
+              const y = i % 2 === 0 ? centerY + offset : centerY - offset;
+              ctx.lineTo(x, y);
+            }
+
+            ctx.stroke();
+          });
+        }
+
         ctx.fillStyle = '#111827';
         ctx.fillRect(fiberEndX + 24, centerY - 58, 102, 116);
         ctx.fillStyle = '#22c55e';
         ctx.fillRect(fiberEndX + 38, centerY - 36, 72, 32);
-        drawText(`${currentMeterReading.toFixed(4)} mW`, fiberEndX + 44, centerY - 15, '#052e16', 'bold 12px Arial');
+        drawText(
+          `${currentMeterReading.toFixed(4)} mW`,
+          fiberEndX + 44,
+          centerY - 15,
+          '#052e16',
+          'bold 12px Arial'
+        );
         drawText('Power Meter', fiberEndX + 34, centerY + 28, '#e2e8f0', 'bold 13px Arial');
 
-        if (isLaserOn && Math.random() < 0.8) {
-          particles.push(createAttenuationParticle());
+        if (isLaserOn && Math.random() < 0.7) {
+          particles.push(
+            fiberType === 'singleMode' ? createSingleModeParticle() : createMultimodeParticle()
+          );
         }
 
-        particles = particles.filter((particle) => {
-          particle.x += particle.vx;
-          particle.y += particle.vy;
+        if (fiberType === 'singleMode') {
+          particles = particles.filter((particle) => {
+            particle.x += particle.vx;
+            const progress = (particle.x - fiberStartX) / (fiberEndX - fiberStartX);
+            const alpha = particle.alpha * Math.max(0.08, 1 - progress * (0.18 + cableLength / 170));
 
-          if (particle.y < centerY - coreHalfHeight + 2 || particle.y > centerY + coreHalfHeight - 2) {
-            particle.vy *= -1;
-          }
+            if (particle.x > fiberStartX && particle.x < fiberEndX && alpha > 0.03) {
+              const glow = ctx.createRadialGradient(
+                particle.x,
+                particle.y,
+                0,
+                particle.x,
+                particle.y,
+                particle.radius * 3.2
+              );
+              glow.addColorStop(0, `rgba(255, 120, 120, ${alpha})`);
+              glow.addColorStop(1, 'rgba(255, 120, 120, 0)');
+              ctx.fillStyle = glow;
+              ctx.beginPath();
+              ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
 
-          const progress = (particle.x - fiberStartX) / (fiberEndX - fiberStartX);
-          const alphaDecay = 0.22 + cableLength / 145;
-          const alpha = particle.alpha * Math.max(0.06, 1 - progress * alphaDecay);
+            return particle.x < fiberEndX + 24;
+          });
+        } else {
+          particles = particles.filter((particle) => {
+            particle.progress += particle.speed;
+            const x = fiberStartX + (fiberEndX - fiberStartX) * particle.progress;
+            const y =
+              centerY +
+              Math.sin(particle.progress * Math.PI * 8 + particle.phase) * particle.amplitude;
+            const alpha = particle.alpha * Math.max(0.08, 1 - particle.progress * (0.24 + cableLength / 150));
 
-          if (particle.x > fiberStartX && particle.x < fiberEndX && alpha > 0.03) {
-            const glow = ctx.createRadialGradient(
-              particle.x,
-              particle.y,
-              0,
-              particle.x,
-              particle.y,
-              particle.radius * 3.4
-            );
-            glow.addColorStop(0, `rgba(255, 104, 104, ${alpha})`);
-            glow.addColorStop(1, 'rgba(255, 104, 104, 0)');
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-            ctx.fill();
-          }
+            if (particle.progress < 1 && alpha > 0.03) {
+              const glow = ctx.createRadialGradient(x, y, 0, x, y, particle.radius * 3.6);
+              glow.addColorStop(0, `rgba(255, 164, 84, ${alpha})`);
+              glow.addColorStop(1, 'rgba(255, 164, 84, 0)');
+              ctx.fillStyle = glow;
+              ctx.beginPath();
+              ctx.arc(x, y, particle.radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
 
-          return particle.x < fiberEndX + 20;
-        });
+            return particle.progress < 1;
+          });
+        }
 
         drawText('Attenuation Setup', 24, 28, '#f8fafc', 'bold 18px Arial');
         drawText(`${fiberConfig.label} | ${cableLength} m cable`, 24, 50, '#cbd5e1', '13px Arial');
         drawText(
-          `Intrinsic + connector + bend loss model | n1 = ${coreIndex.toFixed(3)}, n2 = ${safeCladdingIndex.toFixed(3)}`,
+          `Power selection: ${powerLabel} | Low power = 5%, 10% | High power = 70%, 85%`,
           24,
           height - 28,
           '#cbd5e1',
@@ -517,7 +551,14 @@ const OpticalFiberLab = () => {
         ctx.closePath();
         ctx.fill();
 
-        const beamSpotGradient = ctx.createRadialGradient(screenX, centerY, 8, screenX, centerY, coneHalfHeight);
+        const beamSpotGradient = ctx.createRadialGradient(
+          screenX,
+          centerY,
+          8,
+          screenX,
+          centerY,
+          coneHalfHeight
+        );
         beamSpotGradient.addColorStop(0, 'rgba(255, 228, 228, 0.9)');
         beamSpotGradient.addColorStop(1, 'rgba(248, 113, 113, 0.14)');
         ctx.fillStyle = beamSpotGradient;
@@ -539,7 +580,12 @@ const OpticalFiberLab = () => {
         ctx.moveTo(fiberTipX, centerY + coneHalfHeight + 44);
         ctx.lineTo(screenX, centerY + coneHalfHeight + 44);
         ctx.stroke();
-        drawText(`L = ${naDistance.toFixed(1)} mm`, (fiberTipX + screenX) / 2 - 28, centerY + coneHalfHeight + 62, '#fde68a');
+        drawText(
+          `L = ${naDistance.toFixed(1)} mm`,
+          (fiberTipX + screenX) / 2 - 28,
+          centerY + coneHalfHeight + 62,
+          '#fde68a'
+        );
 
         ctx.beginPath();
         ctx.moveTo(screenX + 28, centerY - coneHalfHeight);
@@ -596,18 +642,18 @@ const OpticalFiberLab = () => {
     activeExperiment,
     acceptanceHalfAngleDeg,
     cableLength,
-    coreIndex,
     currentMeterReading,
     currentNaReading.acceptanceAngle,
     currentNaReading.na,
     currentNaReading.width,
     fiberConfig.label,
+    fiberType,
     isLaserOn,
     laserPower,
     naCableLength,
     naDistance,
     powerBand,
-    safeCladdingIndex,
+    powerLabel,
   ]);
 
   return (
@@ -625,7 +671,7 @@ const OpticalFiberLab = () => {
               </h1>
               <p className="mt-2 max-w-3xl text-slate-600">
                 A polished virtual lab for attenuation and numerical aperture experiments with
-                longer cable lengths, fiber-type comparison, and student graph exercises.
+                clear single-mode versus multimode propagation behavior.
               </p>
             </div>
 
@@ -640,13 +686,15 @@ const OpticalFiberLab = () => {
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Active Fiber
                 </div>
-                <div className="mt-1 text-sm font-bold text-emerald-700">{fiberConfig.shortLabel}</div>
+                <div className="mt-1 text-sm font-bold text-emerald-700">
+                  {fiberConfig.shortLabel}
+                </div>
               </div>
               <div className="rounded-2xl border border-violet-100 bg-violet-50/90 px-4 py-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Current NA
+                  Current Power
                 </div>
-                <div className="mt-1 text-lg font-bold text-violet-700">{theoreticalNa.toFixed(4)}</div>
+                <div className="mt-1 text-lg font-bold text-violet-700">{powerLabel}</div>
               </div>
             </div>
           </div>
@@ -707,7 +755,7 @@ const OpticalFiberLab = () => {
                   {Object.entries(FIBER_TYPES).map(([key, value]) => (
                     <Button
                       key={key}
-                      onClick={() => applyFiberPreset(key)}
+                      onClick={() => setFiberType(key)}
                       variant={fiberType === key ? 'default' : 'outline'}
                       className={fiberType === key ? 'bg-cyan-700 hover:bg-cyan-800' : ''}
                     >
@@ -718,37 +766,16 @@ const OpticalFiberLab = () => {
               </div>
 
               <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-                <div className="mb-3 text-sm font-semibold text-slate-700">Refractive Indices</div>
-
-                <div className="mb-4">
-                  <div className="mb-2 text-sm text-slate-700">
-                    Core refractive index n1: {coreIndex.toFixed(3)}
-                  </div>
-                  <Slider
-                    min={1.45}
-                    max={1.6}
-                    step={0.001}
-                    value={[coreIndex]}
-                    onValueChange={(value) => setCoreIndex(Number(value[0].toFixed(3)))}
-                  />
+                <div className="mb-3 text-sm font-semibold text-slate-700">
+                  Fixed Refractive Indices
                 </div>
-
-                <div>
-                  <div className="mb-2 text-sm text-slate-700">
-                    Cladding refractive index n2: {safeCladdingIndex.toFixed(3)}
+                <div className="rounded-2xl bg-white/85 p-3 text-sm text-slate-700">
+                  <div>Core refractive index n1: {coreIndex.toFixed(3)}</div>
+                  <div className="mt-1">Cladding refractive index n2: {claddingIndex.toFixed(3)}</div>
+                  <div className="mt-3">NA = sqrt(n1^2 - n2^2)</div>
+                  <div className="mt-1 font-semibold text-sky-700">
+                    NA = {theoreticalNa.toFixed(4)}
                   </div>
-                  <Slider
-                    min={1.44}
-                    max={Math.max(1.441, maxAllowedCladding)}
-                    step={0.001}
-                    value={[safeCladdingIndex]}
-                    onValueChange={(value) => setCladdingIndex(Number(value[0].toFixed(3)))}
-                  />
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-white/85 p-3 text-sm text-slate-700">
-                  <div>NA = sqrt(n1^2 - n2^2)</div>
-                  <div className="mt-1 font-semibold text-sky-700">NA = {theoreticalNa.toFixed(4)}</div>
                   <div className="mt-1 font-semibold text-emerald-700">
                     Acceptance angle = {acceptanceConeAngleDeg.toFixed(2)} deg
                   </div>
@@ -758,48 +785,31 @@ const OpticalFiberLab = () => {
               {activeExperiment === 'attenuation' ? (
                 <>
                   <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                    <div className="mb-2 text-sm font-semibold text-slate-700">
-                      Laser power: {laserPower}% ({powerBandLabel})
+                    <div className="mb-3 text-sm font-semibold text-slate-700">
+                      Laser Power Selection
                     </div>
-                    <Slider
-                      min={10}
-                      max={100}
-                      step={1}
-                      value={[laserPower]}
-                      onValueChange={(value) => setLaserPower(value[0])}
-                    />
-                  </div>
-
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="mb-3 text-sm font-semibold text-slate-700">Loss Parameters</div>
-
-                    <div className="mb-4">
-                      <div className="mb-2 text-sm text-slate-700">
-                        Connector pairs: {connectorPairs}
-                      </div>
-                      <Slider
-                        min={0}
-                        max={6}
-                        step={1}
-                        value={[connectorPairs]}
-                        onValueChange={(value) => setConnectorPairs(value[0])}
-                      />
+                    <div className="grid grid-cols-2 gap-2">
+                      {POWER_OPTIONS.map((option) => (
+                        <Button
+                          key={option.value}
+                          onClick={() => setLaserPower(option.value)}
+                          variant={laserPower === option.value ? 'default' : 'outline'}
+                          className={laserPower === option.value ? 'bg-sky-600 hover:bg-sky-700' : ''}
+                        >
+                          {option.label}: {option.value}%
+                        </Button>
+                      ))}
                     </div>
-
-                    <div>
-                      <div className="mb-2 text-sm text-slate-700">Number of bends: {bendCount}</div>
-                      <Slider
-                        min={0}
-                        max={6}
-                        step={1}
-                        value={[bendCount]}
-                        onValueChange={(value) => setBendCount(value[0])}
-                      />
+                    <div className="mt-3 rounded-xl bg-white/80 p-3 text-sm text-slate-700">
+                      <div>Low laser power: 5% and 10%</div>
+                      <div>High laser power: 70% and 85%</div>
                     </div>
                   </div>
 
                   <div>
-                    <div className="mb-2 text-sm font-semibold text-slate-700">Choose fiber cable length</div>
+                    <div className="mb-2 text-sm font-semibold text-slate-700">
+                      Choose fiber cable length
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       {FIBER_LENGTH_OPTIONS.map((length) => (
                         <Button
@@ -826,7 +836,9 @@ const OpticalFiberLab = () => {
               ) : (
                 <>
                   <div>
-                    <div className="mb-2 text-sm font-semibold text-slate-700">Choose fiber cable length</div>
+                    <div className="mb-2 text-sm font-semibold text-slate-700">
+                      Choose fiber cable length
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       {FIBER_LENGTH_OPTIONS.map((length) => (
                         <Button
@@ -845,26 +857,36 @@ const OpticalFiberLab = () => {
                     <div className="mb-2 text-sm font-semibold text-slate-700">
                       Screen distance from source: {naDistance.toFixed(1)} mm
                     </div>
-                    <Slider
-                      min={10}
-                      max={120}
-                      step={0.5}
-                      value={[naDistance]}
-                      onValueChange={(value) => setNaDistance(value[0])}
+                    <input
+                      type="range"
+                      min="10"
+                      max="120"
+                      step="0.5"
+                      value={naDistance}
+                      onChange={(event) => setNaDistance(Number(event.target.value))}
+                      className="w-full accent-blue-600"
                     />
                   </div>
 
                   <div className="grid gap-3">
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Current beam diameter W</div>
-                      <div className="mt-1 text-2xl font-bold text-amber-700">{currentNaReading.width.toFixed(2)} mm</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        Current beam diameter W
+                      </div>
+                      <div className="mt-1 text-2xl font-bold text-amber-700">
+                        {currentNaReading.width.toFixed(2)} mm
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
                       <div className="text-xs uppercase tracking-wide text-slate-500">Current NA</div>
-                      <div className="mt-1 text-2xl font-bold text-sky-700">{currentNaReading.na.toFixed(4)}</div>
+                      <div className="mt-1 text-2xl font-bold text-sky-700">
+                        {currentNaReading.na.toFixed(4)}
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Current acceptance angle</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        Current acceptance angle
+                      </div>
                       <div className="mt-1 text-xl font-bold text-emerald-700">
                         {currentNaReading.acceptanceAngle.toFixed(2)} deg
                       </div>
@@ -877,7 +899,8 @@ const OpticalFiberLab = () => {
                     className="w-full bg-amber-600 hover:bg-amber-700"
                   >
                     <Activity className="mr-2 h-4 w-4" />
-                    Record Reading {Math.min(currentNaReadingsList.length + 1, MAX_NA_READINGS)} / {MAX_NA_READINGS}
+                    Record Reading {Math.min(currentNaReadingsList.length + 1, MAX_NA_READINGS)} /{' '}
+                    {MAX_NA_READINGS}
                   </Button>
                 </>
               )}
@@ -934,7 +957,9 @@ const OpticalFiberLab = () => {
                           return (
                             <tr key={length} className="hover:bg-slate-50">
                               <td className="border px-4 py-3 font-semibold">{length} m</td>
-                              <td className="border px-4 py-3">{lowOutput !== null ? `${lowOutput.toFixed(4)} mW` : 'Not recorded'}</td>
+                              <td className="border px-4 py-3">
+                                {lowOutput !== null ? `${lowOutput.toFixed(4)} mW` : 'Not recorded'}
+                              </td>
                               <td className="border px-4 py-3 text-sky-700">
                                 {length === 1
                                   ? 'Reference'
@@ -942,7 +967,9 @@ const OpticalFiberLab = () => {
                                     ? `${lowAttenuation.toFixed(3)} dB/km`
                                     : 'Incomplete'}
                               </td>
-                              <td className="border px-4 py-3">{highOutput !== null ? `${highOutput.toFixed(4)} mW` : 'Not recorded'}</td>
+                              <td className="border px-4 py-3">
+                                {highOutput !== null ? `${highOutput.toFixed(4)} mW` : 'Not recorded'}
+                              </td>
                               <td className="border px-4 py-3 text-violet-700">
                                 {length === 1
                                   ? 'Reference'
@@ -960,26 +987,24 @@ const OpticalFiberLab = () => {
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Intrinsic loss
+                        Fiber type
                       </div>
                       <div className="mt-1 text-lg font-bold text-sky-700">
-                        {fiberConfig.intrinsicLossDbPerKm.toFixed(1)} dB/km
+                        {fiberConfig.label}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Connector loss
+                        Selected power
                       </div>
-                      <div className="mt-1 text-lg font-bold text-amber-700">
-                        {getConnectorLossDb(fiberType).toFixed(2)} dB
-                      </div>
+                      <div className="mt-1 text-lg font-bold text-amber-700">{powerLabel}</div>
                     </div>
                     <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Bend loss at {cableLength} m
+                        Fixed indices
                       </div>
                       <div className="mt-1 text-lg font-bold text-rose-700">
-                        {getBendLossDb(cableLength, fiberType).toFixed(2)} dB
+                        n1 {coreIndex.toFixed(3)} / n2 {claddingIndex.toFixed(3)}
                       </div>
                     </div>
                   </div>
@@ -993,12 +1018,18 @@ const OpticalFiberLab = () => {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                       <div className="font-semibold">Graph 1</div>
-                      <div className="mt-1">Plot output power (mW) on Y-axis and cable length (m) on X-axis.</div>
-                      <div className="mt-1">Use separate curves for low power and high power.</div>
+                      <div className="mt-1">
+                        Plot output power (mW) on Y-axis and cable length (m) on X-axis.
+                      </div>
+                      <div className="mt-1">
+                        Use separate curves for low power and high power.
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                       <div className="font-semibold">Graph 2</div>
-                      <div className="mt-1">Plot attenuation (dB/km) on Y-axis and cable length (m) on X-axis.</div>
+                      <div className="mt-1">
+                        Plot attenuation (dB/km) on Y-axis and cable length (m) on X-axis.
+                      </div>
                       <div className="mt-1">Take 1 meter cable as the reference reading.</div>
                     </div>
                   </div>
@@ -1052,9 +1083,13 @@ const OpticalFiberLab = () => {
                           );
                         })}
                         <tr className="bg-sky-50 font-semibold">
-                          <td className="border px-3 py-2" colSpan="5">Average</td>
+                          <td className="border px-3 py-2" colSpan="5">
+                            Average
+                          </td>
                           <td className="border px-3 py-2">{formatReading(currentAverageNa, 4)}</td>
-                          <td className="border px-3 py-2">{formatReading(currentAverageAngle, 2, ' deg')}</td>
+                          <td className="border px-3 py-2">
+                            {formatReading(currentAverageAngle, 2, ' deg')}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -1066,7 +1101,9 @@ const OpticalFiberLab = () => {
                         <tr>
                           <th className="border px-3 py-3 text-left">Fiber type</th>
                           {FIBER_LENGTH_OPTIONS.map((length) => (
-                            <th key={length} className="border px-3 py-3 text-left">{length} m</th>
+                            <th key={length} className="border px-3 py-3 text-left">
+                              {length} m
+                            </th>
                           ))}
                         </tr>
                       </thead>
@@ -1097,7 +1134,10 @@ const OpticalFiberLab = () => {
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                     <div className="font-semibold">NA Comparison Across Fiber Types</div>
                     <div className="mt-1">Plot numerical aperture on Y-axis and fiber type on X-axis.</div>
-                    <div className="mt-1">Students may also compare acceptance angle for single-mode and multimode step-index fiber.</div>
+                    <div className="mt-1">
+                      Students may also compare acceptance angle for single-mode and multimode
+                      fiber.
+                    </div>
                     <div className="mt-1">Formula used: NA = sqrt(n1^2 - n2^2)</div>
                   </div>
                 </div>
