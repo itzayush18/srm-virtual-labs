@@ -13,6 +13,7 @@ import {
 
 const WAVELENGTH_NM = 650;
 const FIBER_LENGTH_OPTIONS = [1, 5, 10, 20, 50, 100];
+const SCREEN_DISTANCE_OPTIONS = Array.from({ length: 23 }, (_, index) => 10 + index * 5);
 const MAX_NA_READINGS = 5;
 const REFERENCE_LENGTH_M = 1;
 
@@ -95,8 +96,9 @@ const OpticalFiberLab = () => {
   const theoreticalNa = Math.sqrt(
     Math.max(coreIndex * coreIndex - claddingIndex * claddingIndex, 0)
   );
-  const acceptanceHalfAngleDeg = (Math.asin(Math.min(theoreticalNa, 0.9999)) * 180) / Math.PI;
-  const acceptanceConeAngleDeg = acceptanceHalfAngleDeg * 2;
+  const theoreticalAcceptanceHalfAngleDeg =
+    (Math.asin(Math.min(theoreticalNa, 0.9999)) * 180) / Math.PI;
+  const theoreticalAcceptanceConeAngleDeg = theoreticalAcceptanceHalfAngleDeg * 2;
 
   const getLaunchPowerMw = (band, selectedFiberType) => {
     const config = FIBER_TYPES[selectedFiberType];
@@ -136,19 +138,34 @@ const OpticalFiberLab = () => {
     return ((10 * Math.log10(pi / pf)) / deltaLength) * 1000;
   };
 
-  const calculateSpotWidth = (distance, selectedFiberType) => {
+  const calculateSpotWidth = (distance, selectedFiberType, selectedCableLength) => {
     const config = FIBER_TYPES[selectedFiberType];
     const halfAngleRad = Math.asin(Math.min(theoreticalNa, 0.9999));
-    return 2 * distance * Math.tan(halfAngleRad) * config.beamSpreadFactor;
+    const cableLengthFactor =
+      selectedFiberType === 'singleMode'
+        ? 1 + selectedCableLength / 320
+        : 1 + selectedCableLength / 180;
+    const modeSpreadFactor =
+      selectedFiberType === 'singleMode' ? 0.78 : 1.18;
+    return (
+      2 *
+      distance *
+      Math.tan(halfAngleRad) *
+      config.beamSpreadFactor *
+      cableLengthFactor *
+      modeSpreadFactor
+    );
   };
 
   const calculateNaReading = (distance, selectedFiberType, selectedCableLength) => {
-    const width = calculateSpotWidth(distance, selectedFiberType);
+    const width = calculateSpotWidth(distance, selectedFiberType, selectedCableLength);
+    const na = width / Math.sqrt(distance * distance + width * width);
+    const acceptanceAngle = (2 * Math.asin(Math.min(na, 0.9999)) * 180) / Math.PI;
     return {
       distance: Number(distance.toFixed(1)),
       width: Number(width.toFixed(2)),
-      na: Number(theoreticalNa.toFixed(4)),
-      acceptanceAngle: Number(acceptanceConeAngleDeg.toFixed(2)),
+      na: Number(na.toFixed(4)),
+      acceptanceAngle: Number(acceptanceAngle.toFixed(2)),
       cableLength: selectedCableLength,
       n1: Number(coreIndex.toFixed(3)),
       n2: Number(claddingIndex.toFixed(3)),
@@ -276,7 +293,7 @@ const OpticalFiberLab = () => {
 
     rows.push(['']);
     rows.push(['Formulas']);
-    rows.push(['NA', 'sqrt(n1^2 - n2^2)']);
+    rows.push(['NA', 'W / sqrt(L^2 + W^2)']);
     rows.push(['Acceptance angle', '2 x sin^-1(NA)']);
     rows.push(['Graph 1', 'Plot output power vs cable length']);
     rows.push(['Graph 2', 'Plot attenuation vs cable length']);
@@ -523,7 +540,7 @@ const OpticalFiberLab = () => {
         const screenX = Math.min(width - 90, fiberTipX + 125 + naDistance * 5.4);
         const coneHalfHeight = Math.max(20, Math.min(108, currentNaReading.width * 1.2));
         const activeIntensity = isLaserOn ? 1 : 0.18;
-        const halfAngleRad = (acceptanceHalfAngleDeg * Math.PI) / 180;
+        const halfAngleRad = ((currentNaReading.acceptanceAngle / 2) * Math.PI) / 180;
 
         ctx.fillStyle = 'rgba(146, 197, 255, 0.16)';
         ctx.fillRect(40, centerY - 42, 86, 84);
@@ -531,25 +548,56 @@ const OpticalFiberLab = () => {
         ctx.fillRect(55, centerY - 21, 71, 42);
         drawText('Fiber', 68, centerY - 54, '#e0f2fe', 'bold 13px Arial');
 
-        ctx.strokeStyle = `rgba(248, 113, 113, ${0.75 * activeIntensity})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(fiberTipX, centerY);
-        ctx.lineTo(screenX, centerY - coneHalfHeight);
-        ctx.moveTo(fiberTipX, centerY);
-        ctx.lineTo(screenX, centerY + coneHalfHeight);
-        ctx.stroke();
+        if (fiberType === 'singleMode') {
+          ctx.strokeStyle = `rgba(248, 113, 113, ${0.8 * activeIntensity})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(fiberTipX, centerY);
+          ctx.lineTo(screenX, centerY - coneHalfHeight);
+          ctx.moveTo(fiberTipX, centerY);
+          ctx.lineTo(screenX, centerY + coneHalfHeight);
+          ctx.stroke();
 
-        const coneFill = ctx.createLinearGradient(fiberTipX, centerY, screenX, centerY);
-        coneFill.addColorStop(0, `rgba(248, 113, 113, ${0.34 * activeIntensity})`);
-        coneFill.addColorStop(1, 'rgba(248, 113, 113, 0.07)');
-        ctx.fillStyle = coneFill;
-        ctx.beginPath();
-        ctx.moveTo(fiberTipX, centerY);
-        ctx.lineTo(screenX, centerY - coneHalfHeight);
-        ctx.lineTo(screenX, centerY + coneHalfHeight);
-        ctx.closePath();
-        ctx.fill();
+          const coneFill = ctx.createLinearGradient(fiberTipX, centerY, screenX, centerY);
+          coneFill.addColorStop(0, `rgba(248, 113, 113, ${0.26 * activeIntensity})`);
+          coneFill.addColorStop(1, 'rgba(248, 113, 113, 0.05)');
+          ctx.fillStyle = coneFill;
+          ctx.beginPath();
+          ctx.moveTo(fiberTipX, centerY);
+          ctx.lineTo(screenX, centerY - coneHalfHeight);
+          ctx.lineTo(screenX, centerY + coneHalfHeight);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = `rgba(255, 210, 210, ${0.95 * activeIntensity})`;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(fiberTipX, centerY);
+          ctx.lineTo(screenX, centerY);
+          ctx.stroke();
+        } else {
+          const modeOffsets = [-0.95, -0.45, 0, 0.45, 0.95];
+
+          const coneFill = ctx.createLinearGradient(fiberTipX, centerY, screenX, centerY);
+          coneFill.addColorStop(0, `rgba(251, 146, 60, ${0.32 * activeIntensity})`);
+          coneFill.addColorStop(1, 'rgba(251, 146, 60, 0.06)');
+          ctx.fillStyle = coneFill;
+          ctx.beginPath();
+          ctx.moveTo(fiberTipX, centerY);
+          ctx.lineTo(screenX, centerY - coneHalfHeight);
+          ctx.lineTo(screenX, centerY + coneHalfHeight);
+          ctx.closePath();
+          ctx.fill();
+
+          modeOffsets.forEach((offset, index) => {
+            ctx.strokeStyle = `rgba(255, 196, 120, ${0.42 + index * 0.08})`;
+            ctx.lineWidth = index === 2 ? 1.8 : 1.2;
+            ctx.beginPath();
+            ctx.moveTo(fiberTipX, centerY);
+            ctx.lineTo(screenX, centerY + coneHalfHeight * offset);
+            ctx.stroke();
+          });
+        }
 
         const beamSpotGradient = ctx.createRadialGradient(
           screenX,
@@ -640,7 +688,6 @@ const OpticalFiberLab = () => {
     };
   }, [
     activeExperiment,
-    acceptanceHalfAngleDeg,
     cableLength,
     currentMeterReading,
     currentNaReading.acceptanceAngle,
@@ -765,7 +812,7 @@ const OpticalFiberLab = () => {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
                 <div className="mb-3 text-sm font-semibold text-slate-700">
                   Fixed Refractive Indices
                 </div>
@@ -777,7 +824,7 @@ const OpticalFiberLab = () => {
                     NA = {theoreticalNa.toFixed(4)}
                   </div>
                   <div className="mt-1 font-semibold text-emerald-700">
-                    Acceptance angle = {acceptanceConeAngleDeg.toFixed(2)} deg
+                    Acceptance angle = {theoreticalAcceptanceConeAngleDeg.toFixed(2)} deg
                   </div>
                 </div>
               </div>
@@ -857,15 +904,18 @@ const OpticalFiberLab = () => {
                     <div className="mb-2 text-sm font-semibold text-slate-700">
                       Screen distance from source: {naDistance.toFixed(1)} mm
                     </div>
-                    <input
-                      type="range"
-                      min="10"
-                      max="120"
-                      step="0.5"
-                      value={naDistance}
-                      onChange={(event) => setNaDistance(Number(event.target.value))}
-                      className="w-full accent-blue-600"
-                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      {SCREEN_DISTANCE_OPTIONS.map((distance) => (
+                        <Button
+                          key={distance}
+                          onClick={() => setNaDistance(distance)}
+                          variant={naDistance === distance ? 'default' : 'outline'}
+                          className={naDistance === distance ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                        >
+                          {distance} mm
+                        </Button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="grid gap-3">
@@ -1134,11 +1184,8 @@ const OpticalFiberLab = () => {
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                     <div className="font-semibold">NA Comparison Across Fiber Types</div>
                     <div className="mt-1">Plot numerical aperture on Y-axis and fiber type on X-axis.</div>
-                    <div className="mt-1">
-                      Students may also compare acceptance angle for single-mode and multimode
-                      fiber.
-                    </div>
-                    <div className="mt-1">Formula used: NA = sqrt(n1^2 - n2^2)</div>
+                    <div className="mt-1">Compare acceptance angle for single-mode and multimode fiber.</div>
+                    <div className="mt-1">Formula used: NA = W / sqrt(L^2 + W^2)</div>
                   </div>
                 </div>
               </>
