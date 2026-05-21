@@ -10,39 +10,10 @@ import {
   YAxis,
 } from 'recharts';
 
-type SweepPoint = {
-  sourceVoltage: number;
-  flux5: number;
-  flux10: number;
-  flux15: number;
-  carriers5: number;
-  carriers10: number;
-  carriers15: number;
-  resistance5: number;
-  resistance10: number;
-  resistance15: number;
-};
-
-type DistanceResistancePoint = {
-  distance: number;
-  resistance: number;
-};
-
-type LightSourceKey = 'lamp' | 'led' | 'sunlight' | 'red' | 'blue';
-
-type LightSourceConfig = {
-  label: string;
-  multiplier: number;
-  color: string;
-  glow: string;
-  beam: string;
-  description: string;
-};
-
 const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
 const DISTANCES = [5, 10, 15];
 
-const LIGHT_SOURCES: Record<LightSourceKey, LightSourceConfig> = {
+const LIGHT_SOURCES = {
   lamp: {
     label: 'Incandescent Lamp',
     multiplier: 1,
@@ -85,10 +56,9 @@ const LIGHT_SOURCES: Record<LightSourceKey, LightSourceConfig> = {
   },
 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const cardStyle: React.CSSProperties = {
+const cardStyle = {
   background: 'rgba(255, 255, 255, 0.92)',
   border: '1px solid #d6e0ee',
   borderRadius: 18,
@@ -97,7 +67,7 @@ const cardStyle: React.CSSProperties = {
   backdropFilter: 'blur(8px)',
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle = {
   display: 'block',
   fontSize: 14,
   fontWeight: 700,
@@ -105,7 +75,7 @@ const labelStyle: React.CSSProperties = {
   color: '#24324a',
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle = {
   width: '100%',
   padding: '10px 12px',
   border: '1px solid #cbd5e1',
@@ -114,30 +84,30 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const readOnlyStyle: React.CSSProperties = {
+const readOnlyStyle = {
   ...inputStyle,
   background: '#f8fafc',
 };
 
-const metricCardStyle: React.CSSProperties = {
+const metricCardStyle = {
   background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
   border: '1px solid #dbe6f4',
   borderRadius: 14,
   padding: 14,
 };
 
-const exerciseCardStyle: React.CSSProperties = {
+const exerciseCardStyle = {
   background: 'linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%)',
   border: '1px solid #d4e4f8',
   borderRadius: 14,
   padding: 16,
 };
 
-const App = () => {
+export default function App() {
   const [sourceVoltage, setSourceVoltage] = useState(7.5);
   const [distance, setDistance] = useState(10);
   const [biasVoltage, setBiasVoltage] = useState(5);
-  const [lightSource, setLightSource] = useState<LightSourceKey>('lamp');
+  const [lightSource, setLightSource] = useState('lamp');
 
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
@@ -151,31 +121,19 @@ const App = () => {
 
   const selectedLight = LIGHT_SOURCES[lightSource];
 
-  const computeLightFlux = (
-    lampVoltage: number,
-    ldrDistance: number,
-    sourceType: LightSourceKey
-  ) => {
+  const computeLightFlux = (lampVoltage, ldrDistance, sourceType) => {
     const voltageFactor = lampVoltage / 12.5;
     const distanceFactor = Math.pow(5 / ldrDistance, 2);
     const sourceFactor = LIGHT_SOURCES[sourceType].multiplier;
     return voltageFactor * distanceFactor * sourceFactor;
   };
 
-  const computeCarrierGeneration = (
-    lampVoltage: number,
-    ldrDistance: number,
-    sourceType: LightSourceKey
-  ) => {
+  const computeCarrierGeneration = (lampVoltage, ldrDistance, sourceType) => {
     const flux = computeLightFlux(lampVoltage, ldrDistance, sourceType);
     return flux * 100;
   };
 
-  const computeResistance = (
-    lampVoltage: number,
-    ldrDistance: number,
-    sourceType: LightSourceKey
-  ) => {
+  const computeResistance = (lampVoltage, ldrDistance, sourceType) => {
     const carriers = computeCarrierGeneration(lampVoltage, ldrDistance, sourceType);
     const normalizedCarriers = carriers / 100;
     const illuminatedResistance = darkResistance / (1 + 8 * normalizedCarriers);
@@ -204,7 +162,7 @@ const App = () => {
     return biasVoltage / resistance;
   }, [biasVoltage, resistance]);
 
-  const sweepData: SweepPoint[] = useMemo(
+  const sweepData = useMemo(
     () =>
       SOURCE_VOLTAGES.map((voltage) => ({
         sourceVoltage: voltage,
@@ -221,7 +179,7 @@ const App = () => {
     [darkResistance, lightSource]
   );
 
-  const distanceResistanceData: DistanceResistancePoint[] = useMemo(
+  const distanceResistanceData = useMemo(
     () =>
       DISTANCES.map((d) => ({
         distance: d,
@@ -266,7 +224,7 @@ const App = () => {
                 <label style={labelStyle}>Select Light Source</label>
                 <select
                   value={lightSource}
-                  onChange={(e) => setLightSource(e.target.value as LightSourceKey)}
+                  onChange={(e) => setLightSource(e.target.value)}
                   style={inputStyle}
                 >
                   {Object.entries(LIGHT_SOURCES).map(([key, config]) => (
@@ -724,7 +682,7 @@ const App = () => {
                     }}
                   />
                   <Tooltip
-                    formatter={(value: number | string) =>
+                    formatter={(value) =>
                       typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
                     }
                   />
@@ -828,6 +786,4 @@ const App = () => {
       </div>
     </div>
   );
-};
-
-export default App;
+}
