@@ -147,13 +147,23 @@ const OpticalFiberLab = () => {
         : 1 + selectedCableLength / 180;
     const modeSpreadFactor =
       selectedFiberType === 'singleMode' ? 0.78 : 1.18;
+    const distanceSpreadFactor =
+      selectedFiberType === 'singleMode'
+        ? 1 + distance / 420
+        : 1 + distance / 240;
+    const modeOffset =
+      selectedFiberType === 'singleMode'
+        ? 0.35 + selectedCableLength * 0.04
+        : 1.2 + selectedCableLength * 0.09;
     return (
-      2 *
-      distance *
-      Math.tan(halfAngleRad) *
-      config.beamSpreadFactor *
-      cableLengthFactor *
-      modeSpreadFactor
+      (2 *
+        distance *
+        Math.tan(halfAngleRad) *
+        config.beamSpreadFactor *
+        cableLengthFactor *
+        modeSpreadFactor *
+        distanceSpreadFactor) +
+      modeOffset
     );
   };
 
@@ -812,19 +822,19 @@ const OpticalFiberLab = () => {
                 </div>
               </div>
 
-                  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+              <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
                 <div className="mb-3 text-sm font-semibold text-slate-700">
                   Fixed Refractive Indices
                 </div>
                 <div className="rounded-2xl bg-white/85 p-3 text-sm text-slate-700">
                   <div>Core refractive index n1: {coreIndex.toFixed(3)}</div>
                   <div className="mt-1">Cladding refractive index n2: {claddingIndex.toFixed(3)}</div>
-                  <div className="mt-3">NA = sqrt(n1^2 - n2^2)</div>
+                  <div className="mt-3">Theoretical NA = sqrt(n1^2 - n2^2)</div>
                   <div className="mt-1 font-semibold text-sky-700">
-                    NA = {theoreticalNa.toFixed(4)}
+                    Theoretical NA = {theoreticalNa.toFixed(4)}
                   </div>
                   <div className="mt-1 font-semibold text-emerald-700">
-                    Acceptance angle = {theoreticalAcceptanceConeAngleDeg.toFixed(2)} deg
+                    Theoretical acceptance angle = {theoreticalAcceptanceConeAngleDeg.toFixed(2)} deg
                   </div>
                 </div>
               </div>
@@ -904,17 +914,18 @@ const OpticalFiberLab = () => {
                     <div className="mb-2 text-sm font-semibold text-slate-700">
                       Screen distance from source: {naDistance.toFixed(1)} mm
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {SCREEN_DISTANCE_OPTIONS.map((distance) => (
-                        <Button
-                          key={distance}
-                          onClick={() => setNaDistance(distance)}
-                          variant={naDistance === distance ? 'default' : 'outline'}
-                          className={naDistance === distance ? 'bg-blue-600 hover:bg-blue-700' : ''}
-                        >
-                          {distance} mm
-                        </Button>
-                      ))}
+                    <input
+                      type="range"
+                      min="10"
+                      max="120"
+                      step="5"
+                      value={naDistance}
+                      onChange={(event) => setNaDistance(Number(event.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <div className="mt-2 flex justify-between text-xs text-slate-500">
+                      <span>{SCREEN_DISTANCE_OPTIONS[0]} mm</span>
+                      <span>{SCREEN_DISTANCE_OPTIONS[SCREEN_DISTANCE_OPTIONS.length - 1]} mm</span>
                     </div>
                   </div>
 
@@ -928,14 +939,14 @@ const OpticalFiberLab = () => {
                       </div>
                     </div>
                     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                      <div className="text-xs uppercase tracking-wide text-slate-500">Current NA</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">Measured NA</div>
                       <div className="mt-1 text-2xl font-bold text-sky-700">
                         {currentNaReading.na.toFixed(4)}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                       <div className="text-xs uppercase tracking-wide text-slate-500">
-                        Current acceptance angle
+                        Measured acceptance angle
                       </div>
                       <div className="mt-1 text-xl font-bold text-emerald-700">
                         {currentNaReading.acceptanceAngle.toFixed(2)} deg
@@ -1181,12 +1192,12 @@ const OpticalFiberLab = () => {
                     <BarChart3 className="h-5 w-5 text-indigo-600" />
                     Student Graph Exercise
                   </h2>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    <div className="font-semibold">NA Comparison Across Fiber Types</div>
-                    <div className="mt-1">Plot numerical aperture on Y-axis and fiber type on X-axis.</div>
-                    <div className="mt-1">Compare acceptance angle for single-mode and multimode fiber.</div>
-                    <div className="mt-1">Formula used: NA = W / sqrt(L^2 + W^2)</div>
-                  </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <div className="font-semibold">NA Comparison Across Fiber Types</div>
+                      <div className="mt-1">Plot numerical aperture on Y-axis and fiber type on X-axis.</div>
+                      <div className="mt-1">Compare acceptance angle for single-mode and multimode fiber.</div>
+                      <div className="mt-1">Formula used: NA = W / sqrt(L^2 + W^2)</div>
+                    </div>
                 </div>
               </>
             )}
