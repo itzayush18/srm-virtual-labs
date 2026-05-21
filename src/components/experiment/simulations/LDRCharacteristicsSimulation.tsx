@@ -12,6 +12,9 @@ import {
 
 type SweepPoint = {
   sourceVoltage: number;
+  flux5: number;
+  flux10: number;
+  flux15: number;
   carriers5: number;
   carriers10: number;
   carriers15: number;
@@ -25,56 +28,60 @@ type DistanceResistancePoint = {
   resistance: number;
 };
 
-type LightSourceKey = 'led' | 'sunlight' | 'colored';
+type LightSourceKey = 'lamp' | 'led' | 'sunlight' | 'red' | 'blue';
 
 type LightSourceConfig = {
   label: string;
   multiplier: number;
+  color: string;
+  glow: string;
   beam: string;
-  bulb: string;
-  halo: string;
-  sceneTop: string;
-  sceneBottom: string;
-  note: string;
-  exerciseTitle: string;
+  description: string;
 };
 
 const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
 const DISTANCES = [5, 10, 15];
 
 const LIGHT_SOURCES: Record<LightSourceKey, LightSourceConfig> = {
-  led: {
-    label: 'LED',
+  lamp: {
+    label: 'Incandescent Lamp',
     multiplier: 1,
-    beam: 'rgba(59, 130, 246, 0.28)',
-    bulb: 'linear-gradient(135deg, #dbeafe 0%, #60a5fa 100%)',
-    halo: 'rgba(96, 165, 250, 0.55)',
-    sceneTop: '#eff6ff',
-    sceneBottom: '#dbeafe',
-    note: 'LED gives a focused, stable beam and is useful for repeatable measurements.',
-    exerciseTitle: 'LED calibration',
+    color: '#fbbf24',
+    glow: 'rgba(251, 191, 36, 0.55)',
+    beam: 'rgba(253, 224, 71, 0.24)',
+    description: 'Warm light with moderate photoresponse.',
+  },
+  led: {
+    label: 'White LED',
+    multiplier: 1.18,
+    color: '#e0f2fe',
+    glow: 'rgba(125, 211, 252, 0.55)',
+    beam: 'rgba(186, 230, 253, 0.24)',
+    description: 'Efficient source with strong illumination for the same voltage.',
   },
   sunlight: {
     label: 'Sunlight',
-    multiplier: 1.45,
-    beam: 'rgba(251, 191, 36, 0.24)',
-    bulb: 'linear-gradient(135deg, #fde68a 0%, #f59e0b 100%)',
-    halo: 'rgba(245, 158, 11, 0.58)',
-    sceneTop: '#fff7ed',
-    sceneBottom: '#ffedd5',
-    note: 'Sunlight produces the strongest photoresponse and lowers resistance the most.',
-    exerciseTitle: 'Sunlight sensitivity',
+    multiplier: 1.35,
+    color: '#fde68a',
+    glow: 'rgba(250, 204, 21, 0.6)',
+    beam: 'rgba(254, 240, 138, 0.28)',
+    description: 'Highest effective intensity and strongest carrier generation.',
   },
-  colored: {
-    label: 'Colored Light',
-    multiplier: 0.82,
-    beam: 'rgba(236, 72, 153, 0.24)',
-    bulb: 'linear-gradient(135deg, #fbcfe8 0%, #ec4899 100%)',
-    halo: 'rgba(236, 72, 153, 0.58)',
-    sceneTop: '#fdf2f8',
-    sceneBottom: '#fce7f3',
-    note: 'Colored light produces a weaker response, which helps students compare source quality.',
-    exerciseTitle: 'Color response comparison',
+  red: {
+    label: 'Red Light',
+    multiplier: 0.88,
+    color: '#f87171',
+    glow: 'rgba(248, 113, 113, 0.5)',
+    beam: 'rgba(252, 165, 165, 0.22)',
+    description: 'Lower response due to spectral dependence.',
+  },
+  blue: {
+    label: 'Blue Light',
+    multiplier: 1.08,
+    color: '#60a5fa',
+    glow: 'rgba(96, 165, 250, 0.5)',
+    beam: 'rgba(147, 197, 253, 0.22)',
+    description: 'Higher response than red light for the same source voltage.',
   },
 };
 
@@ -82,24 +89,18 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const cardStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #d7deea',
-  borderRadius: 16,
+  background: 'rgba(255, 255, 255, 0.92)',
+  border: '1px solid #d6e0ee',
+  borderRadius: 18,
   padding: 20,
-  boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)',
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  marginTop: 0,
-  marginBottom: 14,
-  color: '#1d4ed8',
-  fontSize: 22,
+  boxShadow: '0 14px 40px rgba(15, 23, 42, 0.08)',
+  backdropFilter: 'blur(8px)',
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 700,
   marginBottom: 8,
   color: '#24324a',
 };
@@ -119,23 +120,27 @@ const readOnlyStyle: React.CSSProperties = {
 };
 
 const metricCardStyle: React.CSSProperties = {
-  border: '1px solid #d7deea',
-  borderRadius: 12,
+  background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
+  border: '1px solid #dbe6f4',
+  borderRadius: 14,
   padding: 14,
-  background: '#f8fbff',
 };
 
-const chartMargin = { top: 12, right: 18, bottom: 28, left: 28 };
+const exerciseCardStyle: React.CSSProperties = {
+  background: 'linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%)',
+  border: '1px solid #d4e4f8',
+  borderRadius: 14,
+  padding: 16,
+};
 
 const App = () => {
   const [sourceVoltage, setSourceVoltage] = useState(7.5);
   const [distance, setDistance] = useState(10);
   const [biasVoltage, setBiasVoltage] = useState(5);
-  const [lightSource, setLightSource] = useState<LightSourceKey>('led');
+  const [lightSource, setLightSource] = useState<LightSourceKey>('lamp');
+
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
-
-  const sourceConfig = LIGHT_SOURCES[lightSource];
 
   const darkResistance = useMemo(() => {
     if (darkAmmeterReading <= 0) {
@@ -144,29 +149,34 @@ const App = () => {
     return darkVoltmeterReading / darkAmmeterReading;
   }, [darkVoltmeterReading, darkAmmeterReading]);
 
+  const selectedLight = LIGHT_SOURCES[lightSource];
+
   const computeLightFlux = (
     lampVoltage: number,
     ldrDistance: number,
-    selectedLightSource: LightSourceKey
+    sourceType: LightSourceKey
   ) => {
     const voltageFactor = lampVoltage / 12.5;
     const distanceFactor = Math.pow(5 / ldrDistance, 2);
-    const sourceFactor = LIGHT_SOURCES[selectedLightSource].multiplier;
+    const sourceFactor = LIGHT_SOURCES[sourceType].multiplier;
     return voltageFactor * distanceFactor * sourceFactor;
   };
 
   const computeCarrierGeneration = (
     lampVoltage: number,
     ldrDistance: number,
-    selectedLightSource: LightSourceKey
-  ) => computeLightFlux(lampVoltage, ldrDistance, selectedLightSource) * 100;
+    sourceType: LightSourceKey
+  ) => {
+    const flux = computeLightFlux(lampVoltage, ldrDistance, sourceType);
+    return flux * 100;
+  };
 
   const computeResistance = (
     lampVoltage: number,
     ldrDistance: number,
-    selectedLightSource: LightSourceKey
+    sourceType: LightSourceKey
   ) => {
-    const carriers = computeCarrierGeneration(lampVoltage, ldrDistance, selectedLightSource);
+    const carriers = computeCarrierGeneration(lampVoltage, ldrDistance, sourceType);
     const normalizedCarriers = carriers / 100;
     const illuminatedResistance = darkResistance / (1 + 8 * normalizedCarriers);
     return clamp(illuminatedResistance, 0.5, darkResistance);
@@ -198,6 +208,9 @@ const App = () => {
     () =>
       SOURCE_VOLTAGES.map((voltage) => ({
         sourceVoltage: voltage,
+        flux5: Number(computeLightFlux(voltage, 5, lightSource).toFixed(3)),
+        flux10: Number(computeLightFlux(voltage, 10, lightSource).toFixed(3)),
+        flux15: Number(computeLightFlux(voltage, 15, lightSource).toFixed(3)),
         carriers5: Number(computeCarrierGeneration(voltage, 5, lightSource).toFixed(2)),
         carriers10: Number(computeCarrierGeneration(voltage, 10, lightSource).toFixed(2)),
         carriers15: Number(computeCarrierGeneration(voltage, 15, lightSource).toFixed(2)),
@@ -217,62 +230,54 @@ const App = () => {
     [sourceVoltage, darkResistance, lightSource]
   );
 
-  const exercises = useMemo(
-    () => [
-      {
-        title: `${sourceConfig.exerciseTitle} exercise 1`,
-        description: `Keep the light source as ${sourceConfig.label}. Record resistance at 5 cm, 10 cm, and 15 cm for source voltages 5 V, 7.5 V, and 10 V. Identify at which voltage the resistance changes most sharply with distance.`,
-      },
-      {
-        title: `${sourceConfig.exerciseTitle} exercise 2`,
-        description: `Fix the distance at ${distance} cm and vary the source voltage from 2.5 V to 12.5 V. Compare carrier generation and measured current for ${sourceConfig.label}, then explain how the source type changes photoresponse.`,
-      },
-    ],
-    [distance, sourceConfig]
-  );
-
   return (
     <div
       style={{
         minHeight: '100vh',
         background:
-          'radial-gradient(circle at top, rgba(191, 219, 254, 0.55), transparent 30%), linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%)',
+          'radial-gradient(circle at top left, #dbeafe 0%, #eff6ff 30%, #eef4fb 58%, #e2ecf8 100%)',
         padding: 24,
-        fontFamily: '"Segoe UI", Arial, sans-serif',
+        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
         color: '#1e293b',
       }}
     >
       <div style={{ maxWidth: 1440, margin: '0 auto' }}>
-        <h1 style={{ marginTop: 0, marginBottom: 8, fontSize: 32 }}>LDR Characteristics Simulation</h1>
-        <p style={{ marginTop: 0, marginBottom: 24, color: '#475569', lineHeight: 1.6, maxWidth: 980 }}>
-          Explore how source voltage, distance, and light-source type affect photon flux, carrier
-          generation, resistance, and measured current in an LDR-based virtual experiment.
+        <h1 style={{ marginTop: 0, marginBottom: 8, fontSize: 32, color: '#0f172a' }}>
+          LDR Characteristics Simulation
+        </h1>
+        <p style={{ marginTop: 0, marginBottom: 24, color: '#475569', lineHeight: 1.7 }}>
+          Study how source voltage, light-source type, and distance affect photon flux, carrier
+          generation, resistance, and measured current of an LDR.
         </p>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(520px, 1.05fr) minmax(420px, 0.95fr)',
+            gridTemplateColumns: 'minmax(420px, 1.05fr) minmax(460px, 1fr)',
             gap: 24,
             alignItems: 'start',
-            marginBottom: 24,
           }}
         >
           <div style={{ display: 'grid', gap: 24 }}>
             <section style={cardStyle}>
-              <h2 style={sectionTitleStyle}>Control Panel</h2>
+              <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>Control Panel</h2>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}>Light Source Type</label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={labelStyle}>Select Light Source</label>
                 <select
                   value={lightSource}
                   onChange={(e) => setLightSource(e.target.value as LightSourceKey)}
                   style={inputStyle}
                 >
-                  <option value="led">LED</option>
-                  <option value="sunlight">Sunlight</option>
-                  <option value="colored">Colored Light</option>
+                  {Object.entries(LIGHT_SOURCES).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.label}
+                    </option>
+                  ))}
                 </select>
+                <p style={{ margin: '8px 0 0', fontSize: 13, color: '#64748b' }}>
+                  {selectedLight.description}
+                </p>
               </div>
 
               <div style={{ marginBottom: 20 }}>
@@ -302,7 +307,9 @@ const App = () => {
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}>Bias Voltage for Measurement: {biasVoltage.toFixed(1)} V</label>
+                <label style={labelStyle}>
+                  Bias Voltage for Measurement: {biasVoltage.toFixed(1)} V
+                </label>
                 <input
                   type="range"
                   min={1}
@@ -318,7 +325,7 @@ const App = () => {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: 16,
+                  gap: 14,
                 }}
               >
                 <div style={metricCardStyle}>
@@ -338,24 +345,10 @@ const App = () => {
                   <input value={current.toFixed(3)} readOnly style={readOnlyStyle} />
                 </div>
               </div>
-
-              <p
-                style={{
-                  marginTop: 16,
-                  marginBottom: 0,
-                  padding: 12,
-                  borderRadius: 12,
-                  background: '#eff6ff',
-                  color: '#1e3a8a',
-                  lineHeight: 1.6,
-                }}
-              >
-                {sourceConfig.note}
-              </p>
             </section>
 
             <section style={cardStyle}>
-              <h2 style={sectionTitleStyle}>Dark Resistance Measurement</h2>
+              <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>Dark Resistance Measurement</h2>
 
               <div
                 style={{
@@ -396,174 +389,244 @@ const App = () => {
             </section>
 
             <section style={cardStyle}>
-              <h2 style={sectionTitleStyle}>Student Exercises</h2>
-              <div style={{ display: 'grid', gap: 14 }}>
-                {exercises.map((exercise) => (
-                  <div
-                    key={exercise.title}
-                    style={{
-                      border: '1px solid #d7deea',
-                      borderRadius: 14,
-                      padding: 16,
-                      background: '#f8fafc',
-                    }}
-                  >
-                    <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 17, color: '#0f172a' }}>
-                      {exercise.title}
-                    </h3>
-                    <p style={{ margin: 0, lineHeight: 1.6, color: '#475569' }}>{exercise.description}</p>
-                  </div>
-                ))}
+              <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>Student Exercises</h2>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: 16,
+                }}
+              >
+                <div style={exerciseCardStyle}>
+                  <h3 style={{ marginTop: 0, marginBottom: 10, color: '#0f172a', fontSize: 18 }}>
+                    Exercise 1: Compare Light Sources
+                  </h3>
+                  <p style={{ margin: 0, color: '#475569', lineHeight: 1.6, fontSize: 14 }}>
+                    Keep the source voltage fixed at <strong>7.5 V</strong> and distance at{' '}
+                    <strong>10 cm</strong>. Compare LED, sunlight, red light, and blue light.
+                    Record carrier generation and resistance, then identify which source produces
+                    the lowest LDR resistance.
+                  </p>
+                </div>
+
+                <div style={exerciseCardStyle}>
+                  <h3 style={{ marginTop: 0, marginBottom: 10, color: '#0f172a', fontSize: 18 }}>
+                    Exercise 2: Same Source, Different Distance
+                  </h3>
+                  <p style={{ margin: 0, color: '#475569', lineHeight: 1.6, fontSize: 14 }}>
+                    Select <strong>{selectedLight.label}</strong>. Vary the distance from{' '}
+                    <strong>5 cm to 15 cm</strong> at each source voltage. Plot the resistance trend
+                    and explain how light intensity and carrier generation change with distance.
+                  </p>
+                </div>
               </div>
             </section>
           </div>
 
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>LDR Live Visual</h2>
-
-            <div
-              style={{
-                position: 'relative',
-                minHeight: 640,
-                border: '1px solid #dbe4f0',
-                borderRadius: 20,
-                overflow: 'hidden',
-                background: `linear-gradient(180deg, ${sourceConfig.sceneTop} 0%, ${sourceConfig.sceneBottom} 100%)`,
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background:
-                    'radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 35%), radial-gradient(circle at bottom right, rgba(255,255,255,0.65), transparent 30%)',
-                }}
-              />
+          <div style={{ display: 'grid', gap: 24 }}>
+            <section style={cardStyle}>
+              <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>LDR Live Visual</h2>
 
               <div
                 style={{
-                  position: 'absolute',
-                  top: 26,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 110,
-                  height: 110,
-                  borderRadius: '50%',
-                  background: sourceConfig.bulb,
-                  boxShadow: `0 0 60px 12px ${sourceConfig.halo}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  letterSpacing: 0.4,
-                }}
-              >
-                {sourceConfig.label}
-              </div>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 120,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: clamp(280 - distance * 6, 170, 260),
-                  height: 280,
-                  clipPath: 'polygon(38% 0%, 62% 0%, 100% 100%, 0% 100%)',
-                  background: `linear-gradient(180deg, ${sourceConfig.beam} 0%, rgba(255,255,255,0.02) 100%)`,
-                  filter: 'blur(1px)',
-                }}
-              />
-
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 146 + distance * 15,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 200,
-                  height: 98,
+                  position: 'relative',
+                  height: 520,
+                  border: '1px solid #dbe4f0',
                   borderRadius: 20,
-                  background: 'linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)',
-                  border: '2px solid #64748b',
-                  boxShadow: `0 0 ${12 + lightFlux * 20}px rgba(16, 185, 129, 0.35)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'column',
-                  gap: 6,
-                  zIndex: 2,
-                }}
-              >
-                <div style={{ fontWeight: 800, fontSize: 18 }}>LDR Sensor</div>
-                <div style={{ fontSize: 13, color: '#334155' }}>Photoresistive element</div>
-              </div>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 132,
-                  left: '50%',
-                  width: 0,
-                  height: 260 + distance * 15,
-                  borderLeft: '2px dashed rgba(71, 85, 105, 0.55)',
-                }}
-              />
-
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 20,
-                  top: 24,
-                  width: 170,
-                  padding: 14,
-                  borderRadius: 14,
-                  background: 'rgba(255, 255, 255, 0.82)',
-                  backdropFilter: 'blur(6px)',
-                  boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
-                }}
-              >
-                <div style={{ fontSize: 12, color: '#475569', marginBottom: 6 }}>Optical State</div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>Flux: {lightFlux.toFixed(3)}</div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>Distance: {distance} cm</div>
-                <div style={{ fontWeight: 700 }}>Source V: {sourceVoltage.toFixed(1)} V</div>
-              </div>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 20,
-                  bottom: 22,
-                  width: 210,
-                  padding: 16,
-                  borderRadius: 16,
-                  background: 'rgba(15, 23, 42, 0.82)',
-                  color: '#f8fafc',
-                  boxShadow: '0 14px 34px rgba(15, 23, 42, 0.2)',
-                }}
-              >
-                <div style={{ marginBottom: 8, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                  Live Response
-                </div>
-                <div style={{ marginBottom: 6 }}>Carriers: {carrierGeneration.toFixed(2)}</div>
-                <div style={{ marginBottom: 6 }}>Resistance: {resistance.toFixed(2)} kOhm</div>
-                <div>Current: {current.toFixed(3)} mA</div>
-              </div>
-
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 86,
+                  overflow: 'hidden',
                   background:
-                    'linear-gradient(180deg, rgba(148,163,184,0) 0%, rgba(148,163,184,0.18) 40%, rgba(100,116,139,0.24) 100%)',
+                    'linear-gradient(180deg, #dbeafe 0%, #e0f2fe 34%, #f8fafc 34%, #f1f5f9 100%)',
                 }}
-              />
-            </div>
-          </section>
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background:
+                      'radial-gradient(circle at 50% 18%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 30%)',
+                  }}
+                />
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 24,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 110,
+                    height: 110,
+                    borderRadius: '50%',
+                    background: selectedLight.color,
+                    boxShadow: `0 0 ${60 + lightFlux * 22}px ${20 + lightFlux * 18}px ${selectedLight.glow}`,
+                    border: '6px solid rgba(255,255,255,0.65)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    letterSpacing: 0.4,
+                    zIndex: 2,
+                  }}
+                >
+                  {lightSource === 'sunlight' ? 'SUN' : 'LAMP'}
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 126,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: `${110 + clamp(lightFlux * 180, 30, 180)}px`,
+                    height: `${140 + distance * 7}px`,
+                    clipPath: 'polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)',
+                    background: `linear-gradient(180deg, ${selectedLight.beam} 0%, rgba(255,255,255,0.02) 100%)`,
+                    filter: 'blur(2px)',
+                    opacity: clamp(0.35 + lightFlux * 0.4, 0.35, 0.95),
+                  }}
+                />
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: 105,
+                    transform: 'translateX(-50%)',
+                    width: 210,
+                    height: 90,
+                    borderRadius: 18,
+                    background: 'linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)',
+                    border: '3px solid #475569',
+                    boxShadow: `0 0 ${18 + carrierGeneration / 8}px rgba(59, 130, 246, 0.32)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 140,
+                      height: 28,
+                      borderRadius: 14,
+                      background:
+                        'repeating-linear-gradient(90deg, #334155 0px, #334155 12px, #f8fafc 12px, #f8fafc 16px)',
+                      boxShadow: 'inset 0 0 0 2px #64748b',
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    bottom: 52,
+                    transform: 'translateX(-50%)',
+                    color: '#0f172a',
+                    fontWeight: 800,
+                    fontSize: 22,
+                    letterSpacing: 1,
+                    zIndex: 2,
+                  }}
+                >
+                  LDR SENSOR
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 20,
+                    top: 20,
+                    width: 250,
+                    background: 'rgba(255,255,255,0.85)',
+                    border: '1px solid #dbe4f0',
+                    borderRadius: 14,
+                    padding: 14,
+                    zIndex: 3,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 8, color: '#1e3a8a' }}>
+                    Active Configuration
+                  </div>
+                  <div style={{ fontSize: 14, color: '#334155', lineHeight: 1.7 }}>
+                    <div>Source: {selectedLight.label}</div>
+                    <div>Source Voltage: {sourceVoltage.toFixed(1)} V</div>
+                    <div>Distance: {distance} cm</div>
+                    <div>Bias Voltage: {biasVoltage.toFixed(1)} V</div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 20,
+                    top: 20,
+                    width: 250,
+                    background: 'rgba(255,255,255,0.85)',
+                    border: '1px solid #dbe4f0',
+                    borderRadius: 14,
+                    padding: 14,
+                    zIndex: 3,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 8, color: '#1e3a8a' }}>
+                    Sensor Response
+                  </div>
+                  <div style={{ fontSize: 14, color: '#334155', lineHeight: 1.7 }}>
+                    <div>Relative Flux: {lightFlux.toFixed(3)}</div>
+                    <div>Carriers: {carrierGeneration.toFixed(2)}</div>
+                    <div>Resistance: {resistance.toFixed(2)} kOhm</div>
+                    <div>Measured Current: {current.toFixed(3)} mA</div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 24,
+                    right: 24,
+                    bottom: 16,
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: 12,
+                    zIndex: 3,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.9)',
+                      color: '#f8fafc',
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    Illumination increases with source voltage
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.9)',
+                      color: '#f8fafc',
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    Carrier generation rises with photon flux
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.9)',
+                      color: '#f8fafc',
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    LDR resistance decreases as light increases
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
 
         <div
@@ -571,55 +634,93 @@ const App = () => {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
             gap: 24,
-            marginBottom: 24,
+            marginTop: 24,
           }}
         >
           <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Carrier Generation vs Source Voltage</h2>
+            <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>
+              Carrier Generation vs Source Voltage
+            </h2>
             <div style={{ width: '100%', height: 340 }}>
               <ResponsiveContainer>
-                <LineChart data={sweepData} margin={chartMargin}>
+                <LineChart
+                  data={sweepData}
+                  margin={{ top: 20, right: 24, left: 26, bottom: 24 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="sourceVoltage"
-                    label={{ value: 'Source Voltage (V)', position: 'insideBottom', offset: -10 }}
+                    tick={{ fontSize: 13 }}
+                    label={{
+                      value: 'Source Voltage (V)',
+                      position: 'insideBottom',
+                      offset: -8,
+                    }}
                   />
                   <YAxis
-                    width={78}
+                    width={72}
+                    tick={{ fontSize: 13 }}
                     label={{
                       value: 'Carrier Generation',
                       angle: -90,
                       position: 'insideLeft',
-                      dx: -10,
+                      style: { textAnchor: 'middle' },
                     }}
                   />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="carriers5" stroke="#f59e0b" strokeWidth={2.5} name="5 cm" />
-                  <Line type="monotone" dataKey="carriers10" stroke="#2563eb" strokeWidth={2.5} name="10 cm" />
-                  <Line type="monotone" dataKey="carriers15" stroke="#10b981" strokeWidth={2.5} name="15 cm" />
+                  <Line
+                    type="monotone"
+                    dataKey="carriers5"
+                    stroke="#f59e0b"
+                    strokeWidth={3}
+                    name="5 cm"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="carriers10"
+                    stroke="#2563eb"
+                    strokeWidth={3}
+                    name="10 cm"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="carriers15"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    name="15 cm"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </section>
 
           <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Distance vs Resistance</h2>
+            <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>Distance vs Resistance</h2>
             <div style={{ width: '100%', height: 340 }}>
               <ResponsiveContainer>
-                <LineChart data={distanceResistanceData} margin={chartMargin}>
+                <LineChart
+                  data={distanceResistanceData}
+                  margin={{ top: 20, right: 24, left: 26, bottom: 24 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="distance"
-                    label={{ value: 'Distance (cm)', position: 'insideBottom', offset: -10 }}
+                    tick={{ fontSize: 13 }}
+                    label={{
+                      value: 'Distance (cm)',
+                      position: 'insideBottom',
+                      offset: -8,
+                    }}
                   />
                   <YAxis
-                    width={78}
+                    width={72}
+                    tick={{ fontSize: 13 }}
                     label={{
                       value: 'Resistance (kOhm)',
                       angle: -90,
                       position: 'insideLeft',
-                      dx: -10,
+                      style: { textAnchor: 'middle' },
                     }}
                   />
                   <Tooltip
@@ -632,7 +733,7 @@ const App = () => {
                     type="monotone"
                     dataKey="resistance"
                     stroke="#7c3aed"
-                    strokeWidth={2.5}
+                    strokeWidth={3}
                     name="Resistance"
                     dot={{ r: 5 }}
                     activeDot={{ r: 7 }}
@@ -643,21 +744,27 @@ const App = () => {
           </section>
         </div>
 
-        <section style={cardStyle}>
-          <h2 style={sectionTitleStyle}>Sweep Table</h2>
+        <section style={{ ...cardStyle, marginTop: 24 }}>
+          <h2 style={{ marginTop: 0, color: '#1d4ed8' }}>Sweep Table</h2>
           <div style={{ overflowX: 'auto' }}>
             <table
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
                 fontSize: 14,
-                minWidth: 760,
+                minWidth: 920,
+                background: '#ffffff',
+                borderRadius: 12,
+                overflow: 'hidden',
               }}
             >
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
                   {[
                     'Source V',
+                    'Flux at 5 cm',
+                    'Flux at 10 cm',
+                    'Flux at 15 cm',
                     'Carriers at 5 cm',
                     'Carriers at 10 cm',
                     'Carriers at 15 cm',
@@ -671,6 +778,7 @@ const App = () => {
                         border: '1px solid #d7deea',
                         padding: 10,
                         textAlign: 'left',
+                        color: '#0f172a',
                       }}
                     >
                       {heading}
@@ -681,13 +789,36 @@ const App = () => {
               <tbody>
                 {sweepData.map((row) => (
                   <tr key={row.sourceVoltage}>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.sourceVoltage.toFixed(1)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.carriers5.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.carriers10.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.carriers15.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.resistance5.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.resistance10.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.resistance15.toFixed(2)}</td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.sourceVoltage.toFixed(1)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.flux5.toFixed(3)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.flux10.toFixed(3)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.flux15.toFixed(3)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.carriers5.toFixed(2)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.carriers10.toFixed(2)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.carriers15.toFixed(2)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.resistance5.toFixed(2)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.resistance10.toFixed(2)}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                      {row.resistance15.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
