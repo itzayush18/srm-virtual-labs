@@ -6,6 +6,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -38,6 +39,8 @@ const snapTemperature = (value: number) => {
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 
 const formatCurrent = (value: number) => `${value.toExponential(4)} A`;
+const formatForwardCurrentMilliAmps = (value: number) => `${(value * 1e3).toFixed(3)} mA`;
+const formatReverseCurrentMicroAmps = (value: number) => `${(Math.abs(value) * 1e6).toFixed(3)} uA`;
 
 const buildCarrier = (
   type: CarrierType,
@@ -272,7 +275,13 @@ const PNJunctionSimulation = () => {
       return saturationCurrent * (Math.exp(v / (n * thermalVoltage)) - 1);
     }
 
-    return -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
+    const reverseLeakageCurrent = -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
+    if (v > -0.4) {
+      return reverseLeakageCurrent;
+    }
+
+    const breakdownStrength = 2.5e-6 * Math.exp((Math.abs(v) - 0.4) * 18);
+    return reverseLeakageCurrent - breakdownStrength;
   };
 
   const resetPlots = () => {
@@ -346,8 +355,20 @@ const PNJunctionSimulation = () => {
   };
 
   const liveTableData = [...reverseData, ...forwardData].sort((a, b) => a.voltage - b.voltage);
-  const yMin = reverseData.length > 0 ? Math.min(...reverseData.map(point => point.current), 0) : 0;
-  const yMax = forwardData.length > 0 ? Math.max(...forwardData.map(point => point.current), 0) : 0;
+  const yMax = forwardData.length > 0 ? Math.max(...forwardData.map(point => point.current * 1e3), 0.001) : 0.001;
+  const reverseBiasChartData = reverseData
+    .map(point => ({
+      reverseVoltage: Math.abs(point.voltage),
+      reverseCurrentMicroamps: Math.abs(point.current) * 1e6,
+      actualVoltage: point.voltage,
+      actualCurrent: point.current,
+      temperature: point.temperature,
+    }))
+    .sort((a, b) => a.reverseVoltage - b.reverseVoltage);
+  const reverseYMax =
+    reverseBiasChartData.length > 0
+      ? Math.max(...reverseBiasChartData.map(point => point.reverseCurrentMicroamps), 0.001)
+      : 0.001;
 
   return (
     <div className="space-y-6">
@@ -451,35 +472,45 @@ const PNJunctionSimulation = () => {
         <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Reverse Bias I-V Graph</h3>
           <div className="h-72">
-            {reverseData.length > 0 ? (
+            {reverseBiasChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={reverseData} margin={{ top: 16, right: 24, bottom: 24, left: 12 }}>
+                <LineChart
+                  data={reverseBiasChartData}
+                  margin={{ top: 28, right: 20, bottom: 28, left: 30 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
+                  <ReferenceLine
+                    x={0.4}
+                    stroke="#b91c1c"
+                    strokeDasharray="6 4"
+                    label={{ value: 'Breakdown ~ -0.4 V', position: 'top', fill: '#b91c1c', fontSize: 12 }}
+                  />
                   <XAxis
                     type="number"
-                    dataKey="voltage"
-                    domain={[-0.6, 0]}
-                    ticks={[-0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0]}
-                    tickFormatter={value => Number(value).toFixed(1)}
-                    label={{ value: 'Reverse Voltage (V)', position: 'insideBottom', offset: -10 }}
+                    dataKey="reverseVoltage"
+                    domain={[0, 0.6]}
+                    ticks={[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]}
+                    tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toFixed(1)}`)}
+                    label={{ value: 'Reverse Voltage (V_R)', position: 'insideBottom', offset: -12 }}
                   />
                   <YAxis
                     type="number"
-                    orientation="right"
-                    domain={[yMin, 0]}
+                    domain={[0, reverseYMax]}
                     width={88}
                     tickMargin={10}
-                    tickFormatter={value => Number(value).toExponential(1)}
-                    label={{ value: 'Reverse Current (A)', angle: 90, position: 'insideRight', offset: 10 }}
+                    tickFormatter={value => Number(value).toFixed(2)}
+                    label={{ value: 'Reverse Current (uA)', angle: -90, position: 'insideLeft', offset: -8 }}
                   />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrent(value), 'Current']}
-                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
+                    formatter={(_, __, item) => [formatReverseCurrentMicroAmps(item.payload.actualCurrent), 'Current']}
+                    labelFormatter={label =>
+                      `Reverse Voltage: ${label === 0 ? '0.00' : `-${Number(label).toFixed(2)}`} V`
+                    }
                   />
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="current"
+                    dataKey="reverseCurrentMicroamps"
                     name={`Reverse Bias at ${temperature} K`}
                     stroke="#b91c1c"
                     strokeWidth={2}
@@ -503,6 +534,12 @@ const PNJunctionSimulation = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={forwardData} margin={{ top: 16, right: 12, bottom: 24, left: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" />
+                  <ReferenceLine
+                    x={0.7}
+                    stroke="#00796b"
+                    strokeDasharray="6 4"
+                    label={{ value: 'Cut-in ~ 0.7 V', position: 'top', fill: '#00796b', fontSize: 12 }}
+                  />
                   <XAxis
                     type="number"
                     dataKey="voltage"
@@ -514,17 +551,17 @@ const PNJunctionSimulation = () => {
                     domain={[0, yMax]}
                     width={88}
                     tickMargin={10}
-                    tickFormatter={value => Number(value).toExponential(1)}
-                    label={{ value: 'Forward Current (A)', angle: -90, position: 'insideLeft', offset: 10 }}
+                    tickFormatter={value => Number(value).toFixed(3)}
+                    label={{ value: 'Forward Current (mA)', angle: -90, position: 'insideLeft', offset: -8 }}
                   />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrent(value), 'Current']}
+                    formatter={(value: number) => [formatForwardCurrentMilliAmps(value / 1e3), 'Current']}
                     labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
                   />
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="current"
+                    dataKey={point => point.current * 1e3}
                     name={`Forward Bias at ${temperature} K`}
                     stroke="#00796b"
                     strokeWidth={2}
@@ -562,7 +599,11 @@ const PNJunctionSimulation = () => {
                       <td className="border px-3 py-2">{row.voltage < 0 ? 'Reverse' : 'Forward'}</td>
                       <td className="border px-3 py-2">{row.temperature}</td>
                       <td className="border px-3 py-2">{row.voltage.toFixed(2)}</td>
-                      <td className="border px-3 py-2">{row.current.toExponential(4)}</td>
+                      <td className="border px-3 py-2">
+                        {row.voltage < 0
+                          ? formatReverseCurrentMicroAmps(row.current)
+                          : formatForwardCurrentMilliAmps(row.current)}
+                      </td>
                     </tr>
                   ))
                 ) : (
