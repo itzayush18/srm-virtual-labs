@@ -207,18 +207,19 @@ export default function App() {
   const normalizedDistance = (distance - REFERENCE_DISTANCE) / (MAX_DISTANCE - REFERENCE_DISTANCE);
   const closenessFactor = 1 - normalizedDistance;
 
-  const beamOpacity = clamp(0.1 + voltageFactor * 0.55 + closenessFactor * 0.25, 0.12, 0.92);
-  const beamBlur = clamp(10 + voltageFactor * 16 - normalizedDistance * 3, 8, 24);
-  const beamHeight = clamp(34 + voltageFactor * 22 + closenessFactor * 10, 34, 70);
-  const beamGlowWidth = clamp(80 + voltageFactor * 90 + closenessFactor * 50, 80, 220);
+  const beamOpacity = clamp(0.12 + voltageFactor * 0.52 + closenessFactor * 0.24, 0.12, 0.92);
+  const beamBlur = clamp(6 + voltageFactor * 10 - normalizedDistance * 2, 5, 16);
   const sourceGlow = clamp(18 + voltageFactor * 38, 18, 56);
   const sensorGlow = clamp(0.18 + lightFlux * 3.6, 0.18, 1);
 
   const ldrLeft = clamp(250 + normalizedDistance * 220, 250, 470);
   const sourceCenterX = 102;
   const sensorCenterX = ldrLeft + 45;
-  const beamLeft = sourceCenterX;
-  const beamWidth = Math.max(50, sensorCenterX - sourceCenterX);
+  const coneLeft = sourceCenterX + 12;
+  const coneWidth = Math.max(70, sensorCenterX - coneLeft + 20);
+  const coneTop = 88;
+  const coneHeight = clamp(78 + voltageFactor * 22 + closenessFactor * 14, 78, 120);
+  const innerConeHeight = clamp(coneHeight * 0.45, 28, 56);
 
   const renderSourceVisual = () => {
     if (lightSource === 'incandescent') {
@@ -583,7 +584,7 @@ export default function App() {
                     position: 'absolute',
                     top: 18,
                     right: 18,
-                    width: 180,
+                    width: 160,
                     padding: 12,
                     borderRadius: 14,
                     background: 'rgba(15,23,42,0.88)',
@@ -593,10 +594,8 @@ export default function App() {
                   }}
                 >
                   <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 4 }}>Output</div>
-                  <div style={{ fontSize: 14 }}>Flux: {lightFlux.toFixed(3)}</div>
                   <div style={{ fontSize: 14 }}>Resistance: {resistance.toFixed(2)} kOhm</div>
                   <div style={{ fontSize: 14 }}>Current: {current.toFixed(3)} mA</div>
-                  <div style={{ fontSize: 14, marginTop: 4 }}>Bias: {biasVoltage.toFixed(1)} V</div>
                 </div>
 
                 <div style={{ position: 'relative', height: 220, marginTop: 26, zIndex: 3 }}>
@@ -621,6 +620,7 @@ export default function App() {
                         padding: '6px 10px',
                         borderRadius: 999,
                         border: '1px solid #dbe4f0',
+                        textAlign: 'center',
                       }}
                     >
                       {selectedLightSource.label}
@@ -630,26 +630,29 @@ export default function App() {
                   <div
                     style={{
                       position: 'absolute',
-                      left: beamLeft,
-                      bottom: 94,
-                      width: beamWidth,
-                      height: beamHeight,
+                      left: coneLeft,
+                      bottom: 78,
+                      width: coneWidth,
+                      height: coneHeight,
                       background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
-                      borderRadius: 999,
+                      clipPath: 'polygon(0% 46%, 0% 54%, 100% 100%, 100% 0%)',
                       filter: `blur(${beamBlur}px)`,
                       opacity: beamOpacity,
+                      transformOrigin: 'left center',
                     }}
                   />
                   <div
                     style={{
                       position: 'absolute',
-                      left: beamLeft + 6,
-                      bottom: 100,
-                      width: Math.max(40, beamWidth - 12),
-                      height: Math.max(8, beamHeight * 0.28),
-                      background: `linear-gradient(90deg, ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
-                      borderRadius: 999,
-                      opacity: clamp(beamOpacity * 0.62, 0.14, 0.7),
+                      left: coneLeft + 8,
+                      bottom: 92,
+                      width: Math.max(50, coneWidth - 22),
+                      height: innerConeHeight,
+                      background: `linear-gradient(90deg, ${selectedLightSource.accent}66, rgba(255,255,255,0.01))`,
+                      clipPath: 'polygon(0% 46%, 0% 54%, 100% 84%, 100% 16%)',
+                      opacity: clamp(beamOpacity * 0.62, 0.14, 0.72),
+                      filter: `blur(${Math.max(2, beamBlur * 0.35)}px)`,
+                      transformOrigin: 'left center',
                     }}
                   />
 
