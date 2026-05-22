@@ -1,104 +1,137 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from 'recharts';
-// Custom PN Junction 2D Visualization using Canvas
-const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const animationRef = React.useRef<number | null>(null);
-  const carriersRef = React.useRef<any[]>([]);
 
-  React.useEffect(() => {
+type CarrierType = 'hole' | 'electron';
+
+type Carrier = {
+  type: CarrierType;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+};
+
+type DataPoint = {
+  voltage: number;
+  current: number;
+  temperature: number;
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const snapTemperature = (value: number) => {
+  const snapped = 300 + Math.round((value - 300) / 25) * 25;
+  return clamp(snapped, 300, 400);
+};
+
+const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
+
+const formatCurrent = (value: number) => `${value.toExponential(4)} A`;
+
+const buildCarrier = (
+  type: CarrierType,
+  width: number,
+  height: number,
+  thermalScale: number,
+): Carrier => {
+  const leftBandEnd = width * 0.42;
+  const rightBandStart = width * 0.58;
+  const speed = 0.35 * thermalScale;
+
+  return {
+    type,
+    x:
+      type === 'hole'
+        ? randomBetween(35, leftBandEnd)
+        : randomBetween(rightBandStart, width - 35),
+    y: randomBetween(35, height - 35),
+    vx: randomBetween(-speed, speed),
+    vy: randomBetween(-speed, speed),
+  };
+};
+
+const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const carriersRef = useRef<Carrier[]>([]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
-    // Initialize charge carriers if empty
-    if (carriersRef.current.length === 0) {
-      // Holes in P-region (left side)
-      for (let i = 0; i < 20; i++) {
-        carriersRef.current.push({
-          type: 'hole',
-          x: 50 + Math.random() * 150,
-          y: 50 + Math.random() * (canvas.height - 100),
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-        });
-      }
-      // Electrons in N-region (right side)
-      for (let i = 0; i < 20; i++) {
-        carriersRef.current.push({
-          type: 'electron',
-          x: canvas.width - 200 + Math.random() * 150,
-          y: 50 + Math.random() * (canvas.height - 100),
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-        });
-      }
+    const thermalScale = 1 + (temperature - 300) / 100;
+    const carriersPerSide = 18 + Math.round((temperature - 300) / 25) * 3;
+    const targetCount = carriersPerSide * 2;
+
+    while (carriersRef.current.length < targetCount) {
+      const type: CarrierType =
+        carriersRef.current.filter(carrier => carrier.type === 'hole').length < carriersPerSide
+          ? 'hole'
+          : 'electron';
+      carriersRef.current.push(buildCarrier(type, canvas.width, canvas.height, thermalScale));
+    }
+
+    if (carriersRef.current.length > targetCount) {
+      carriersRef.current = carriersRef.current.slice(0, targetCount);
     }
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Calculate depletion width based on voltage
-      const baseDepletionWidth = 60;
-      const depletionWidth = voltage >= 0 
-        ? Math.max(10, baseDepletionWidth - voltage * 50) // Shrinks in forward bias
-        : baseDepletionWidth + Math.abs(voltage) * 40; // Expands in reverse bias
+      const baseDepletionWidth = 70;
+      const depletionWidth =
+        voltage >= 0
+          ? Math.max(14, baseDepletionWidth - voltage * 55)
+          : baseDepletionWidth + Math.abs(voltage) * 45;
 
       const centerX = canvas.width / 2;
       const pRegionEnd = centerX - depletionWidth / 2;
       const nRegionStart = centerX + depletionWidth / 2;
 
-      // Draw P-type region (blue)
-      ctx.fillStyle = 'rgba(74, 144, 226, 0.7)';
+      ctx.fillStyle = 'rgba(74, 144, 226, 0.72)';
       ctx.fillRect(0, 0, pRegionEnd, canvas.height);
 
-      // Draw N-type region (red)
-      ctx.fillStyle = 'rgba(226, 74, 74, 0.7)';
+      ctx.fillStyle = 'rgba(226, 74, 74, 0.72)';
       ctx.fillRect(nRegionStart, 0, canvas.width - nRegionStart, canvas.height);
 
-      // Draw depletion region (gray gradient)
       const gradient = ctx.createLinearGradient(pRegionEnd, 0, nRegionStart, 0);
-      gradient.addColorStop(0, 'rgba(74, 144, 226, 0.3)');
-      gradient.addColorStop(0.5, 'rgba(200, 200, 200, 0.5)');
-      gradient.addColorStop(1, 'rgba(226, 74, 74, 0.3)');
+      gradient.addColorStop(0, 'rgba(74, 144, 226, 0.25)');
+      gradient.addColorStop(0.5, 'rgba(210, 210, 210, 0.6)');
+      gradient.addColorStop(1, 'rgba(226, 74, 74, 0.25)');
       ctx.fillStyle = gradient;
       ctx.fillRect(pRegionEnd, 0, depletionWidth, canvas.height);
 
-      // Draw electric field arrows in depletion region
-      ctx.strokeStyle = voltage > 0 ? '#00aa00' : voltage < 0 ? '#aa0000' : '#888888';
+      ctx.strokeStyle = voltage > 0 ? '#15803d' : voltage < 0 ? '#b91c1c' : '#6b7280';
       ctx.lineWidth = 2;
       const arrowDirection = voltage > 0 ? 1 : -1;
-      const arrowLength = Math.min(Math.abs(voltage) * 30 + 20, 50);
+      const arrowLength = Math.min(Math.abs(voltage) * 34 + 18, 52);
 
-      for (let y = 80; y < canvas.height - 20; y += 60) {
-        const startX = centerX - arrowLength / 2 * arrowDirection;
-        const endX = centerX + arrowLength / 2 * arrowDirection;
-        
-        // Arrow line
+      for (let y = 70; y < canvas.height - 20; y += 54) {
+        const startX = centerX - (arrowLength / 2) * arrowDirection;
+        const endX = centerX + (arrowLength / 2) * arrowDirection;
+
         ctx.beginPath();
         ctx.moveTo(startX, y);
         ctx.lineTo(endX, y);
         ctx.stroke();
 
-        // Arrow head
         ctx.beginPath();
         ctx.moveTo(endX, y);
         ctx.lineTo(endX - 8 * arrowDirection, y - 5);
@@ -108,103 +141,91 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
         ctx.fill();
       }
 
-      // Update and draw charge carriers
       carriersRef.current.forEach(carrier => {
-        // Apply voltage-based movement
-        if (voltage > 0) { // Forward bias
+        const thermalBoost = 0.004 * (temperature - 300);
+        carrier.vx += randomBetween(-0.02, 0.02) * thermalScale;
+        carrier.vy += randomBetween(-0.02, 0.02) * thermalScale;
+
+        if (voltage > 0) {
           if (carrier.type === 'hole') {
-            carrier.vx += voltage * 0.03; // Holes move right
+            carrier.vx += voltage * 0.028 + thermalBoost * 0.2;
           } else {
-            carrier.vx -= voltage * 0.03; // Electrons move left
+            carrier.vx -= voltage * 0.028 + thermalBoost * 0.2;
           }
-        } else if (voltage < 0) { // Reverse bias
+        } else if (voltage < 0) {
           if (carrier.type === 'hole') {
-            carrier.vx -= Math.abs(voltage) * 0.02; // Holes move left
+            carrier.vx -= Math.abs(voltage) * 0.022 + thermalBoost * 0.15;
           } else {
-            carrier.vx += Math.abs(voltage) * 0.02; // Electrons move right
+            carrier.vx += Math.abs(voltage) * 0.022 + thermalBoost * 0.15;
           }
         }
 
-        // Damping
-        carrier.vx *= 0.98;
-        carrier.vy *= 0.98;
+        carrier.vx *= 0.982;
+        carrier.vy *= 0.982;
 
-        // Update position
         carrier.x += carrier.vx;
         carrier.y += carrier.vy;
 
-        // Boundary conditions - wrap around and reset
         if (carrier.type === 'hole') {
           if (carrier.x > canvas.width) {
-            carrier.x = 50 + Math.random() * 100;
-            carrier.vx = (Math.random() - 0.5) * 0.5;
+            Object.assign(carrier, buildCarrier('hole', canvas.width, canvas.height, thermalScale));
           }
           if (carrier.x < 0) {
-            carrier.x = 50 + Math.random() * 150;
-            carrier.vx = (Math.random() - 0.5) * 0.5;
+            carrier.x = randomBetween(35, canvas.width * 0.42);
+            carrier.vx = randomBetween(-0.4, 0.4) * thermalScale;
           }
         } else {
-          if (carrier.x < 0) {
-            carrier.x = canvas.width - 150 + Math.random() * 100;
-            carrier.vx = (Math.random() - 0.5) * 0.5;
-          }
-          if (carrier.x > canvas.width) {
-            carrier.x = canvas.width - 200 + Math.random() * 150;
-            carrier.vx = (Math.random() - 0.5) * 0.5;
+          if (carrier.x < 0 || carrier.x > canvas.width) {
+            Object.assign(carrier, buildCarrier('electron', canvas.width, canvas.height, thermalScale));
           }
         }
 
-        // Vertical boundaries
-        if (carrier.y < 30) {
-          carrier.y = 30;
+        if (carrier.y < 28) {
+          carrier.y = 28;
           carrier.vy *= -1;
         }
-        if (carrier.y > canvas.height - 30) {
-          carrier.y = canvas.height - 30;
+        if (carrier.y > canvas.height - 28) {
+          carrier.y = canvas.height - 28;
           carrier.vy *= -1;
         }
 
-        // Draw carrier
         ctx.beginPath();
         ctx.arc(carrier.x, carrier.y, 5, 0, Math.PI * 2);
         if (carrier.type === 'hole') {
           ctx.fillStyle = '#ffffff';
           ctx.fill();
-          ctx.strokeStyle = '#333333';
+          ctx.strokeStyle = '#1f2937';
           ctx.lineWidth = 1;
           ctx.stroke();
-          // Draw + sign
-          ctx.strokeStyle = '#333333';
-          ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(carrier.x - 3, carrier.y);
           ctx.lineTo(carrier.x + 3, carrier.y);
           ctx.moveTo(carrier.x, carrier.y - 3);
           ctx.lineTo(carrier.x, carrier.y + 3);
+          ctx.strokeStyle = '#1f2937';
+          ctx.lineWidth = 2;
           ctx.stroke();
         } else {
-          ctx.fillStyle = '#333333';
+          ctx.fillStyle = '#1f2937';
           ctx.fill();
-          // Draw - sign
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(carrier.x - 3, carrier.y);
           ctx.lineTo(carrier.x + 3, carrier.y);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
           ctx.stroke();
         }
       });
 
-      // Draw labels
       ctx.font = 'bold 16px sans-serif';
-      ctx.fillStyle = '#1e40af';
-      ctx.fillText('P-type', 20, 30);
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillText('P-type', 18, 28);
       ctx.fillStyle = '#991b1b';
-      ctx.fillText('N-type', canvas.width - 70, 30);
-      
+      ctx.fillText('N-type', canvas.width - 75, 28);
+
       ctx.font = '14px sans-serif';
-      ctx.fillStyle = '#666666';
-      ctx.fillText('Depletion Region', centerX - 60, canvas.height - 10);
+      ctx.fillStyle = '#4b5563';
+      ctx.fillText('Depletion Region', centerX - 58, canvas.height - 10);
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -212,25 +233,24 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
     animate();
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [voltage, temperature]);
+  }, [temperature, voltage]);
 
   return (
-    <div className="w-full h-full relative">
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-full"
-        style={{ width: '100%', height: '100%' }}
-      />
-      <div className="absolute top-2 left-2 bg-white bg-opacity-90 px-3 py-2 rounded shadow text-sm">
+    <div className="relative h-full w-full">
+      <canvas ref={canvasRef} className="h-full w-full" style={{ width: '100%', height: '100%' }} />
+      <div className="absolute left-2 top-2 rounded bg-white/90 px-3 py-2 text-sm shadow">
         <div className="font-semibold">
-          {voltage < -0.05 ? '⚡ Reverse Bias' : voltage > 0.05 ? '⚡ Forward Bias' : '⚬ No Bias'}
+          {voltage < -0.05 ? 'Reverse Bias' : voltage > 0.05 ? 'Forward Bias' : 'No Bias'}
         </div>
-        <div className="text-xs text-gray-600 mt-1">
+        <div className="mt-1 text-xs text-gray-600">
           V = {voltage.toFixed(2)} V | T = {temperature} K
+        </div>
+        <div className="mt-1 text-xs text-gray-600">
+          Carrier density increases with temperature
         </div>
       </div>
     </div>
@@ -240,90 +260,99 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
 const PNJunctionSimulation = () => {
   const [voltage, setVoltage] = useState(0);
   const [temperature, setTemperature] = useState(300);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [forwardData, setForwardData] = useState<DataPoint[]>([]);
+  const [reverseData, setReverseData] = useState<DataPoint[]>([]);
 
-  // Calculate current based on diode equation
   const calculateCurrent = (v: number, t: number) => {
-    const kB = 1.380649e-23; // Boltzmann constant
-    const q = 1.60217663e-19; // Elementary charge
-    const n = 1.5; // Ideality factor
-    const Is = 1e-12 * Math.pow(t / 300, 3) * Math.exp((-1.1 * q) / (n * kB * t)); // Saturation current
+    const kB = 1.380649e-23;
+    const q = 1.60217663e-19;
+    const n = 1.5;
+    const bandgapEnergy = 1.1;
+    const thermalVoltage = (kB * t) / q;
+    const saturationCurrent =
+      1e-12 * Math.pow(t / 300, 3) * Math.exp((-bandgapEnergy * q) / (n * kB * t));
 
-    // Diode equation: I = Is * (exp(qV/nkT) - 1)
-    const vT = (kB * t) / q; // Thermal voltage
-    return Is * (Math.exp(v / (n * vT)) - 1);
+    if (v >= 0) {
+      return saturationCurrent * (Math.exp(v / (n * thermalVoltage)) - 1);
+    }
+
+    return -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
   };
 
-  // Add data point to chart
+  const currentValue = calculateCurrent(voltage, temperature);
+
   const addDataPoint = () => {
-    const current = calculateCurrent(voltage, temperature);
-    // Use absolute value for log scale, store sign separately
-    const absCurrent = Math.abs(current);
-    const newPoint = { 
-      voltage, 
-      current: absCurrent > 0 ? absCurrent : 1e-20, // Ensure positive for log scale
-      currentDisplay: current.toExponential(4), // For display only
-      temperature 
+    const newPoint: DataPoint = {
+      voltage: Number(voltage.toFixed(2)),
+      current: currentValue,
+      temperature,
     };
 
-    setChartData(prevData => {
-      const existingIndex = prevData.findIndex(
-        p => Math.abs(p.voltage - voltage) < 0.05 && Math.abs(p.temperature - temperature) < 5
-      );
+    if (voltage >= 0) {
+      setForwardData(prevData => {
+        const filtered = prevData.filter(
+          point =>
+            !(
+              Math.abs(point.voltage - newPoint.voltage) < 0.01 &&
+              point.temperature === newPoint.temperature
+            ),
+        );
+        return [...filtered, newPoint].sort((a, b) => a.voltage - b.voltage);
+      });
+      return;
+    }
 
-      if (existingIndex >= 0) {
-        const newData = [...prevData];
-        newData[existingIndex] = newPoint;
-        return newData;
-      } else {
-        return [...prevData, newPoint].sort((a, b) => a.voltage - b.voltage);
-      }
+    setReverseData(prevData => {
+      const filtered = prevData.filter(
+        point =>
+          !(
+            Math.abs(point.voltage - newPoint.voltage) < 0.01 &&
+            point.temperature === newPoint.temperature
+          ),
+      );
+      return [...filtered, newPoint].sort((a, b) => a.voltage - b.voltage);
     });
   };
 
-  // Generate I-V curve
-  const generateIVCurve = () => {
-    const newData = [];
-    for (let v = -0.6; v <= 0.8; v += 0.1) {
-      const current = calculateCurrent(v, temperature);
-      const absCurrent = Math.abs(current);
-      newData.push({
-        voltage: parseFloat(v.toFixed(1)),
-        current: absCurrent > 0 ? absCurrent : 1e-20, // Ensure positive for log scale
-        currentDisplay: current.toExponential(4), // For display only
+  const generateCurves = () => {
+    const nextForward: DataPoint[] = [];
+    const nextReverse: DataPoint[] = [];
+
+    for (let v = 0; v <= 0.8; v += 0.1) {
+      const roundedVoltage = Number(v.toFixed(2));
+      const current = calculateCurrent(roundedVoltage, temperature);
+      nextForward.push({
+        voltage: roundedVoltage,
+        current,
         temperature,
       });
     }
-    setChartData(newData);
+
+    for (let v = -0.6; v <= 0; v += 0.1) {
+      const roundedVoltage = Number(v.toFixed(2));
+      const current = calculateCurrent(roundedVoltage, temperature);
+      nextReverse.push({
+        voltage: roundedVoltage,
+        current,
+        temperature,
+      });
+    }
+
+    setForwardData(nextForward);
+    setReverseData(nextReverse);
   };
 
-  // Export data as CSV
-  const exportData = () => {
-    const csvData = [
-      ['Voltage (V)', 'Current (A)', 'Temperature (K)'],
-      ...chartData.map(point => [point.voltage, point.current, point.temperature]),
-    ]
-      .map(row => row.join(','))
-      .join('\n');
-
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'pn_junction_data.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const referenceVoltages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
+  const comparisonTable = referenceVoltages.map(value => ({
+    voltage: value,
+    current350: calculateCurrent(value, 350),
+    current400: calculateCurrent(value, 400),
+  }));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Control Panel */}
-      <div className="control-panel">
-        <h3 className="text-lg font-semibold mb-4 text-lab-blue">PN Junction Control Panel</h3>
-
-        <div className="space-y-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="control-panel rounded-lg border bg-white p-4 shadow-sm">
+        <div className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium">Applied Voltage (V)</label>
             <div className="flex items-center space-x-2">
@@ -332,7 +361,7 @@ const PNJunctionSimulation = () => {
                 max={0.8}
                 step={0.01}
                 value={[voltage]}
-                onValueChange={values => setVoltage(values[0])}
+                onValueChange={values => setVoltage(values[0] ?? 0)}
                 className="flex-1"
               />
               <input
@@ -341,14 +370,18 @@ const PNJunctionSimulation = () => {
                 max={0.8}
                 step={0.01}
                 value={voltage.toFixed(2)}
-                onChange={e => {
-                  const val = parseFloat(e.target.value);
-                  if (!isNaN(val) && val >= -0.6 && val <= 0.8) {
-                    setVoltage(val);
+                onChange={event => {
+                  const nextValue = parseFloat(event.target.value);
+                  if (!Number.isNaN(nextValue)) {
+                    setVoltage(clamp(nextValue, -0.6, 0.8));
                   }
                 }}
-                className="w-20 px-2 py-1 border rounded text-right text-sm"
+                className="w-24 rounded border px-2 py-1 text-right text-sm"
               />
+            </div>
+            <div className="text-xs text-gray-500">
+              Negative voltage shows reverse bias data in the third quadrant. Positive voltage shows
+              forward bias data in the first quadrant.
             </div>
           </div>
 
@@ -356,104 +389,175 @@ const PNJunctionSimulation = () => {
             <label className="text-sm font-medium">Temperature (K)</label>
             <div className="flex items-center space-x-2">
               <Slider
-                min={250}
-                max={500}
-                step={5}
+                min={300}
+                max={400}
+                step={25}
                 value={[temperature]}
-                onValueChange={values => setTemperature(values[0])}
+                onValueChange={values => setTemperature(values[0] ?? 300)}
                 className="flex-1"
               />
               <input
                 type="number"
-                min={250}
-                max={500}
-                step={5}
+                min={300}
+                max={400}
+                step={25}
                 value={temperature}
-                onChange={e => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val) && val >= 250 && val <= 500) {
-                    setTemperature(val);
+                onChange={event => {
+                  const nextValue = parseInt(event.target.value, 10);
+                  if (!Number.isNaN(nextValue)) {
+                    setTemperature(snapTemperature(nextValue));
                   }
                 }}
-                className="w-20 px-2 py-1 border rounded text-right text-sm"
+                className="w-24 rounded border px-2 py-1 text-right text-sm"
               />
             </div>
+            <div className="text-xs text-gray-500">Allowed values: 300 K, 325 K, 350 K, 375 K, 400 K.</div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 bg-gray-50 p-3 rounded-md">
+          <div className="rounded-md bg-gray-50 p-3">
             <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">Calculated Current</div>
-              <div className="text-2xl font-bold text-lab-teal">
-                {calculateCurrent(voltage, temperature).toExponential(4)} A
-              </div>
+              <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
+              <div className="text-2xl font-bold text-lab-teal">{formatCurrent(currentValue)}</div>
             </div>
           </div>
 
           <div className="flex gap-2">
             <Button onClick={addDataPoint} className="flex-1">
-              Add Data Point
+              Add Current Value
             </Button>
-            <Button onClick={generateIVCurve} variant="outline" className="flex-1">
-              Generate I-V Curve
+            <Button onClick={generateCurves} variant="outline" className="flex-1">
+              Generate Bias Curves
             </Button>
           </div>
-
-          <Button onClick={exportData} disabled={chartData.length === 0}>
-            Export Data
-          </Button>
         </div>
       </div>
 
-      {/* Visualization and Results */}
       <div className="space-y-6">
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">PN Junction Visualization</h3>
-
-          <div className="h-80 bg-gray-100 border rounded-md">
+        <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">PN Junction Visualization</h3>
+          <div className="h-80 rounded-md border bg-gray-100">
             <PNJunctionScene voltage={voltage} temperature={temperature} />
           </div>
         </div>
 
-        <div className="data-panel">
-          <h3 className="text-lg font-semibold mb-4 text-lab-blue">I-V Characteristics</h3>
-
+        <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Forward Bias I-V Graph</h3>
           <div className="h-64">
-            {chartData.length > 0 ? (
+            {forwardData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart data={forwardData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
+                    type="number"
                     dataKey="voltage"
+                    domain={[0, 0.8]}
                     label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -5 }}
                   />
                   <YAxis
+                    type="number"
+                    domain={[0, 'auto']}
                     label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
-                    scale="log"
-                    domain={[1e-15, 'auto']}
-                    allowDataOverflow={false}
                   />
                   <Tooltip
-                    formatter={(value: any) => [typeof value === 'number' ? value.toExponential(4) + ' A' : value + ' A', 'Current']}
-                    labelFormatter={label => `Voltage: ${label} V`}
+                    formatter={(value: number) => [formatCurrent(value), 'Current']}
+                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
                   />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey="current"
-                    name={`Current at ${temperature}K`}
+                    name={`Forward Bias at ${temperature} K`}
                     stroke="#00796b"
                     strokeWidth={2}
-                    dot={{ r: 5 }}
-                    activeDot={{ r: 8 }}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 7 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-gray-500">
-                Add data points or generate I-V curve to see characteristics
+                Add forward-bias points or generate the curve to view the first-quadrant graph.
               </div>
             )}
           </div>
+        </div>
+
+        <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Reverse Bias I-V Graph</h3>
+          <div className="h-64">
+            {reverseData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={reverseData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    type="number"
+                    dataKey="voltage"
+                    domain={[-0.6, 0]}
+                    label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -5 }}
+                  />
+                  <YAxis
+                    type="number"
+                    domain={['auto', 0]}
+                    label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [formatCurrent(value), 'Current']}
+                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="current"
+                    name={`Reverse Bias at ${temperature} K`}
+                    stroke="#b91c1c"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-gray-500">
+                Add reverse-bias points or generate the curve to view the third-quadrant graph.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">
+            Forward Bias Reference Table at 350 K and 400 K
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-left">
+                  <th className="border px-3 py-2">Voltage (V)</th>
+                  <th className="border px-3 py-2">Current at 350 K (A)</th>
+                  <th className="border px-3 py-2">Current at 400 K (A)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonTable.map(row => (
+                  <tr key={row.voltage}>
+                    <td className="border px-3 py-2">{row.voltage.toFixed(1)}</td>
+                    <td className="border px-3 py-2">{row.current350.toExponential(4)}</td>
+                    <td className="border px-3 py-2">{row.current400.toExponential(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-amber-50 p-4 shadow-sm">
+          <h3 className="mb-2 text-lg font-semibold text-amber-900">Student Exercise</h3>
+          <p className="text-sm leading-6 text-amber-950">
+            Using the forward-bias table and the simulation, plot the forward-bias I-V graph at
+            different temperatures from 300 K to 400 K. Compare each curve with the room
+            temperature result at 300 K, and discuss how the PN junction performance changes as the
+            temperature increases.
+          </p>
         </div>
       </div>
     </div>
