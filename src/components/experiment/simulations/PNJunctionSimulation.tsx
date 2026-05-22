@@ -28,14 +28,6 @@ type DataPoint = {
   temperature: number;
 };
 
-type ReverseBiasPoint = {
-  plotVoltage: number;
-  plotCurrent: number;
-  actualVoltage: number;
-  actualCurrent: number;
-  temperature: number;
-};
-
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const snapTemperature = (value: number) => {
@@ -68,14 +60,6 @@ const buildCarrier = (
     vy: randomBetween(-speed, speed),
   };
 };
-
-const toReverseBiasPlotPoint = (point: DataPoint): ReverseBiasPoint => ({
-  plotVoltage: Math.abs(point.voltage),
-  plotCurrent: Math.abs(point.current),
-  actualVoltage: point.voltage,
-  actualCurrent: point.current,
-  temperature: point.temperature,
-});
 
 const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -361,17 +345,9 @@ const PNJunctionSimulation = () => {
     setReverseData(nextReverse);
   };
 
-  const comparisonTable = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8].map(value => ({
-    voltage: value,
-    current350: calculateCurrent(value, 350),
-    current400: calculateCurrent(value, 400),
-  }));
-
-  const reverseBiasChartData = reverseData.map(toReverseBiasPlotPoint).sort(
-    (a, b) => a.plotVoltage - b.plotVoltage,
-  );
-
-  const reverseVoltageTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+  const liveTableData = [...reverseData, ...forwardData].sort((a, b) => a.voltage - b.voltage);
+  const yMin = reverseData.length > 0 ? Math.min(...reverseData.map(point => point.current), 0) : 0;
+  const yMax = forwardData.length > 0 ? Math.max(...forwardData.map(point => point.current), 0) : 0;
 
   return (
     <div className="space-y-6">
@@ -475,33 +451,35 @@ const PNJunctionSimulation = () => {
         <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Reverse Bias I-V Graph</h3>
           <div className="h-72">
-            {reverseBiasChartData.length > 0 ? (
+            {reverseData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={reverseBiasChartData}>
+                <LineChart data={reverseData} margin={{ top: 16, right: 24, bottom: 24, left: 12 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     type="number"
-                    dataKey="plotVoltage"
-                    domain={[0, 0.6]}
-                    ticks={reverseVoltageTicks}
-                    tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toFixed(1)}`)}
-                    label={{ value: 'Reverse Voltage (V)', position: 'insideBottom', offset: -5 }}
+                    dataKey="voltage"
+                    domain={[-0.6, 0]}
+                    ticks={[-0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0]}
+                    tickFormatter={value => Number(value).toFixed(1)}
+                    label={{ value: 'Reverse Voltage (V)', position: 'insideBottom', offset: -10 }}
                   />
                   <YAxis
                     type="number"
-                    dataKey="plotCurrent"
-                    domain={[0, 'auto']}
-                    tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toExponential(1)}`)}
-                    label={{ value: 'Reverse Current (A)', angle: -90, position: 'insideLeft' }}
+                    orientation="right"
+                    domain={[yMin, 0]}
+                    width={88}
+                    tickMargin={10}
+                    tickFormatter={value => Number(value).toExponential(1)}
+                    label={{ value: 'Reverse Current (A)', angle: 90, position: 'insideRight', offset: 10 }}
                   />
                   <Tooltip
-                    formatter={(_, __, item) => [formatCurrent(item.payload.actualCurrent), 'Current']}
-                    labelFormatter={label => `Voltage: ${label === 0 ? '0.00' : `-${Number(label).toFixed(2)}`} V`}
+                    formatter={(value: number) => [formatCurrent(value), 'Current']}
+                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
                   />
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="plotCurrent"
+                    dataKey="current"
                     name={`Reverse Bias at ${temperature} K`}
                     stroke="#b91c1c"
                     strokeWidth={2}
@@ -523,18 +501,21 @@ const PNJunctionSimulation = () => {
           <div className="h-72">
             {forwardData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={forwardData}>
+                <LineChart data={forwardData} margin={{ top: 16, right: 12, bottom: 24, left: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     type="number"
                     dataKey="voltage"
                     domain={[0, 0.8]}
-                    label={{ value: 'Forward Voltage (V)', position: 'insideBottom', offset: -5 }}
+                    label={{ value: 'Forward Voltage (V)', position: 'insideBottom', offset: -10 }}
                   />
                   <YAxis
                     type="number"
-                    domain={[0, 'auto']}
-                    label={{ value: 'Forward Current (A)', angle: -90, position: 'insideLeft' }}
+                    domain={[0, yMax]}
+                    width={88}
+                    tickMargin={10}
+                    tickFormatter={value => Number(value).toExponential(1)}
+                    label={{ value: 'Forward Current (A)', angle: -90, position: 'insideLeft', offset: 10 }}
                   />
                   <Tooltip
                     formatter={(value: number) => [formatCurrent(value), 'Current']}
@@ -563,26 +544,34 @@ const PNJunctionSimulation = () => {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-lab-blue">
-            Forward Bias Reference Table at 350 K and 400 K
-          </h3>
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Live Observation Table</h3>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-100 text-left">
+                  <th className="border px-3 py-2">Bias Type</th>
+                  <th className="border px-3 py-2">Temperature (K)</th>
                   <th className="border px-3 py-2">Voltage (V)</th>
-                  <th className="border px-3 py-2">Current at 350 K (A)</th>
-                  <th className="border px-3 py-2">Current at 400 K (A)</th>
+                  <th className="border px-3 py-2">Current (A)</th>
                 </tr>
               </thead>
               <tbody>
-                {comparisonTable.map(row => (
-                  <tr key={row.voltage}>
-                    <td className="border px-3 py-2">{row.voltage.toFixed(1)}</td>
-                    <td className="border px-3 py-2">{row.current350.toExponential(4)}</td>
-                    <td className="border px-3 py-2">{row.current400.toExponential(4)}</td>
+                {liveTableData.length > 0 ? (
+                  liveTableData.map((row, index) => (
+                    <tr key={`${row.temperature}-${row.voltage}-${index}`}>
+                      <td className="border px-3 py-2">{row.voltage < 0 ? 'Reverse' : 'Forward'}</td>
+                      <td className="border px-3 py-2">{row.temperature}</td>
+                      <td className="border px-3 py-2">{row.voltage.toFixed(2)}</td>
+                      <td className="border px-3 py-2">{row.current.toExponential(4)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="border px-3 py-3 text-gray-500" colSpan={4}>
+                      Add a point or plot a graph to fill this live table.
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
