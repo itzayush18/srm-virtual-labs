@@ -16,15 +16,15 @@ const GRAPH_DISTANCES = [5, 10, 15];
 
 const MAX_SOURCE_VOLTAGE = 12.5;
 const REFERENCE_DISTANCE = 2.5;
+const MAX_DISTANCE = 20;
 
 const LIGHT_SOURCES = {
   incandescent: {
     label: 'Incandescent Lamp',
     multiplier: 1,
     accent: '#f59e0b',
-    glowCore: '#fde68a',
     glowOuter: 'rgba(245, 158, 11, 0.45)',
-    beamColor: 'rgba(250, 204, 21, 0.28)',
+    beamColor: 'rgba(250, 204, 21, 0.32)',
     panel: 'linear-gradient(135deg, #fff7d6, #ffedd5)',
     summary: 'Warm yellow light with moderate intensity and broad illumination.',
   },
@@ -32,9 +32,8 @@ const LIGHT_SOURCES = {
     label: 'White LED',
     multiplier: 1.18,
     accent: '#2563eb',
-    glowCore: '#dbeafe',
     glowOuter: 'rgba(59, 130, 246, 0.42)',
-    beamColor: 'rgba(96, 165, 250, 0.28)',
+    beamColor: 'rgba(96, 165, 250, 0.32)',
     panel: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
     summary: 'Focused cool white light that produces slightly higher useful flux at the LDR.',
   },
@@ -42,9 +41,8 @@ const LIGHT_SOURCES = {
     label: 'Sunlight',
     multiplier: 1.45,
     accent: '#eab308',
-    glowCore: '#fef08a',
     glowOuter: 'rgba(234, 179, 8, 0.42)',
-    beamColor: 'rgba(253, 224, 71, 0.30)',
+    beamColor: 'rgba(253, 224, 71, 0.34)',
     panel: 'linear-gradient(135deg, #fef3c7, #fde68a)',
     summary: 'High-intensity natural light that gives the strongest photoresponse in this model.',
   },
@@ -52,9 +50,8 @@ const LIGHT_SOURCES = {
     label: 'Colored Light',
     multiplier: 0.82,
     accent: '#a855f7',
-    glowCore: '#f5d0fe',
     glowOuter: 'rgba(168, 85, 247, 0.42)',
-    beamColor: 'rgba(192, 132, 252, 0.28)',
+    beamColor: 'rgba(192, 132, 252, 0.30)',
     panel: 'linear-gradient(135deg, #fdf2f8, #ede9fe)',
     summary: 'Filtered colored illumination with lower effective intensity reaching the LDR.',
   },
@@ -207,17 +204,21 @@ export default function App() {
   };
 
   const voltageFactor = sourceVoltage / MAX_SOURCE_VOLTAGE;
-  const normalizedDistance = (distance - REFERENCE_DISTANCE) / (20 - REFERENCE_DISTANCE);
+  const normalizedDistance = (distance - REFERENCE_DISTANCE) / (MAX_DISTANCE - REFERENCE_DISTANCE);
   const closenessFactor = 1 - normalizedDistance;
 
-  const sourceGlow = clamp(0.35 + voltageFactor * 0.75, 0.35, 1.2);
-  const beamOpacity = clamp(0.12 + voltageFactor * 0.52 + closenessFactor * 0.22, 0.12, 0.9);
-  const beamWidth = clamp(280 - normalizedDistance * 135, 120, 280);
-  const beamHeight = clamp(44 + voltageFactor * 24, 44, 72);
-  const beamBlur = clamp(10 + voltageFactor * 18, 10, 28);
-  const beamSkew = clamp(2 + normalizedDistance * 10, 2, 12);
-  const sensorGlow = clamp(0.18 + lightFlux * 3.5, 0.18, 1);
-  const sensorRotation = clamp(-14 + closenessFactor * 12, -14, -2);
+  const beamOpacity = clamp(0.1 + voltageFactor * 0.55 + closenessFactor * 0.25, 0.12, 0.92);
+  const beamBlur = clamp(10 + voltageFactor * 16 - normalizedDistance * 3, 8, 24);
+  const beamHeight = clamp(34 + voltageFactor * 22 + closenessFactor * 10, 34, 70);
+  const beamGlowWidth = clamp(80 + voltageFactor * 90 + closenessFactor * 50, 80, 220);
+  const sourceGlow = clamp(18 + voltageFactor * 38, 18, 56);
+  const sensorGlow = clamp(0.18 + lightFlux * 3.6, 0.18, 1);
+
+  const ldrLeft = clamp(250 + normalizedDistance * 220, 250, 470);
+  const sourceCenterX = 102;
+  const sensorCenterX = ldrLeft + 45;
+  const beamLeft = sourceCenterX;
+  const beamWidth = Math.max(50, sensorCenterX - sourceCenterX);
 
   const renderSourceVisual = () => {
     if (lightSource === 'incandescent') {
@@ -228,7 +229,7 @@ export default function App() {
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${24 + sourceGlow * 42}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${sourceGlow}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
@@ -271,7 +272,7 @@ export default function App() {
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${22 + sourceGlow * 44}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${sourceGlow}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
@@ -301,7 +302,7 @@ export default function App() {
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${20 + sourceGlow * 40}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${sourceGlow}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
@@ -357,7 +358,7 @@ export default function App() {
             borderRadius: '50%',
             background:
               'conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444)',
-            boxShadow: `0 0 ${22 + sourceGlow * 40}px ${selectedLightSource.glowOuter}`,
+            boxShadow: `0 0 ${sourceGlow}px ${selectedLightSource.glowOuter}`,
           }}
         />
         <div
@@ -538,13 +539,13 @@ export default function App() {
               <div
                 style={{
                   position: 'relative',
-                  minHeight: 330,
+                  minHeight: 350,
                   borderRadius: 24,
                   overflow: 'hidden',
                   background:
                     'linear-gradient(180deg, rgba(14,165,233,0.12), rgba(226,232,240,0.18) 46%, rgba(15,23,42,0.08) 100%)',
                   border: '1px solid #dbe4f0',
-                  padding: '74px 24px 30px',
+                  padding: '74px 24px 24px',
                   boxSizing: 'border-box',
                 }}
               >
@@ -598,79 +599,75 @@ export default function App() {
                   <div style={{ fontSize: 14, marginTop: 4 }}>Bias: {biasVoltage.toFixed(1)} V</div>
                 </div>
 
-                <div
-                  style={{
-                    position: 'relative',
-                    zIndex: 3,
-                    display: 'grid',
-                    gridTemplateColumns: '110px minmax(140px, 1fr) 160px',
-                    alignItems: 'center',
-                    columnGap: 18,
-                    minHeight: 180,
-                    marginTop: 12,
-                  }}
-                >
+                <div style={{ position: 'relative', height: 220, marginTop: 26, zIndex: 3 }}>
                   <div
                     style={{
+                      position: 'absolute',
+                      left: 48,
+                      bottom: 34,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      height: 110,
+                      gap: 10,
                     }}
                   >
                     {renderSourceVisual()}
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: '#334155',
+                        background: 'rgba(255,255,255,0.88)',
+                        padding: '6px 10px',
+                        borderRadius: 999,
+                        border: '1px solid #dbe4f0',
+                      }}
+                    >
+                      {selectedLightSource.label}
+                    </div>
                   </div>
 
                   <div
                     style={{
-                      position: 'relative',
-                      height: 140,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      position: 'absolute',
+                      left: beamLeft,
+                      bottom: 94,
+                      width: beamWidth,
+                      height: beamHeight,
+                      background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
+                      borderRadius: 999,
+                      filter: `blur(${beamBlur}px)`,
+                      opacity: beamOpacity,
                     }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        right: 0,
-                        top: '50%',
-                        transform: `translateY(-50%) skewX(${beamSkew}deg)`,
-                        height: beamHeight,
-                        borderRadius: 999,
-                        background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
-                        filter: `blur(${beamBlur}px)`,
-                        opacity: beamOpacity,
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 10,
-                        right: 10,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        height: Math.max(8, beamHeight * 0.26),
-                        borderRadius: 999,
-                        background: `linear-gradient(90deg, ${selectedLightSource.accent}55, rgba(255,255,255,0.02))`,
-                        opacity: clamp(beamOpacity * 0.55, 0.12, 0.6),
-                      }}
-                    />
-                  </div>
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: beamLeft + 6,
+                      bottom: 100,
+                      width: Math.max(40, beamWidth - 12),
+                      height: Math.max(8, beamHeight * 0.28),
+                      background: `linear-gradient(90deg, ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
+                      borderRadius: 999,
+                      opacity: clamp(beamOpacity * 0.62, 0.14, 0.7),
+                    }}
+                  />
 
                   <div
                     style={{
+                      position: 'absolute',
+                      left: ldrLeft,
+                      bottom: 26,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      height: 140,
+                      gap: 10,
                     }}
                   >
                     <div
                       style={{
-                        width: 150,
-                        height: 88,
+                        width: 90,
+                        height: 120,
                         borderRadius: 18,
                         background:
                           'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(226,232,240,0.96))',
@@ -680,18 +677,13 @@ export default function App() {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 6,
-                        transform: `rotate(${sensorRotation}deg)`,
-                        transformOrigin: 'center center',
+                        gap: 8,
                       }}
                     >
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#334155', letterSpacing: 0.8 }}>
-                        BOX TYPE LDR
-                      </div>
                       <div
                         style={{
-                          width: 96,
-                          height: 30,
+                          width: 34,
+                          height: 78,
                           borderRadius: 8,
                           background: 'linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)',
                           border: '2px solid #64748b',
@@ -705,7 +697,7 @@ export default function App() {
                             inset: 5,
                             borderRadius: 5,
                             background:
-                              'repeating-linear-gradient(90deg, #334155 0 8px, #f8fafc 8px 12px)',
+                              'repeating-linear-gradient(180deg, #334155 0 6px, #f8fafc 6px 10px)',
                             opacity: clamp(0.5 + sensorGlow * 0.5, 0.5, 1),
                           }}
                         />
@@ -713,12 +705,25 @@ export default function App() {
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            background: `linear-gradient(90deg, rgba(255,255,255,0.02), ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
+                            background: `linear-gradient(180deg, rgba(255,255,255,0.02), ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
                             opacity: sensorGlow,
                           }}
                         />
                       </div>
-                      <div style={{ fontSize: 11, color: '#475569' }}>Light sensitive sensor</div>
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: '#334155',
+                        background: 'rgba(255,255,255,0.88)',
+                        padding: '6px 14px',
+                        borderRadius: 999,
+                        border: '1px solid #dbe4f0',
+                      }}
+                    >
+                      LDR
                     </div>
                   </div>
                 </div>
