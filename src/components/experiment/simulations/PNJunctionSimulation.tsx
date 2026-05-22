@@ -28,6 +28,14 @@ type DataPoint = {
   temperature: number;
 };
 
+type ReverseBiasPoint = {
+  plotVoltage: number;
+  plotCurrent: number;
+  actualVoltage: number;
+  actualCurrent: number;
+  temperature: number;
+};
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const snapTemperature = (value: number) => {
@@ -61,6 +69,14 @@ const buildCarrier = (
   };
 };
 
+const toReverseBiasPlotPoint = (point: DataPoint): ReverseBiasPoint => ({
+  plotVoltage: Math.abs(point.voltage),
+  plotCurrent: Math.abs(point.current),
+  actualVoltage: point.voltage,
+  actualCurrent: point.current,
+  temperature: point.temperature,
+});
+
 const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -79,12 +95,10 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
     const thermalScale = 1 + (temperature - 300) / 100;
     const carriersPerSide = 18 + Math.round((temperature - 300) / 25) * 3;
     const targetCount = carriersPerSide * 2;
+    const holeCount = carriersRef.current.filter(carrier => carrier.type === 'hole').length;
 
     while (carriersRef.current.length < targetCount) {
-      const type: CarrierType =
-        carriersRef.current.filter(carrier => carrier.type === 'hole').length < carriersPerSide
-          ? 'hole'
-          : 'electron';
+      const type: CarrierType = carriersRef.current.length - holeCount < carriersPerSide ? 'hole' : 'electron';
       carriersRef.current.push(buildCarrier(type, canvas.width, canvas.height, thermalScale));
     }
 
@@ -174,10 +188,8 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
             carrier.x = randomBetween(35, canvas.width * 0.42);
             carrier.vx = randomBetween(-0.4, 0.4) * thermalScale;
           }
-        } else {
-          if (carrier.x < 0 || carrier.x > canvas.width) {
-            Object.assign(carrier, buildCarrier('electron', canvas.width, canvas.height, thermalScale));
-          }
+        } else if (carrier.x < 0 || carrier.x > canvas.width) {
+          Object.assign(carrier, buildCarrier('electron', canvas.width, canvas.height, thermalScale));
         }
 
         if (carrier.y < 28) {
@@ -279,6 +291,15 @@ const PNJunctionSimulation = () => {
     return -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
   };
 
+  const resetPlots = () => {
+    setForwardData([]);
+    setReverseData([]);
+  };
+
+  useEffect(() => {
+    resetPlots();
+  }, [temperature]);
+
   const currentValue = calculateCurrent(voltage, temperature);
 
   const addDataPoint = () => {
@@ -320,20 +341,18 @@ const PNJunctionSimulation = () => {
 
     for (let v = 0; v <= 0.8; v += 0.1) {
       const roundedVoltage = Number(v.toFixed(2));
-      const current = calculateCurrent(roundedVoltage, temperature);
       nextForward.push({
         voltage: roundedVoltage,
-        current,
+        current: calculateCurrent(roundedVoltage, temperature),
         temperature,
       });
     }
 
     for (let v = -0.6; v <= 0; v += 0.1) {
       const roundedVoltage = Number(v.toFixed(2));
-      const current = calculateCurrent(roundedVoltage, temperature);
       nextReverse.push({
         voltage: roundedVoltage,
-        current,
+        current: calculateCurrent(roundedVoltage, temperature),
         temperature,
       });
     }
@@ -342,107 +361,166 @@ const PNJunctionSimulation = () => {
     setReverseData(nextReverse);
   };
 
-  const referenceVoltages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-  const comparisonTable = referenceVoltages.map(value => ({
+  const comparisonTable = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8].map(value => ({
     voltage: value,
     current350: calculateCurrent(value, 350),
     current400: calculateCurrent(value, 400),
   }));
 
+  const reverseBiasChartData = reverseData.map(toReverseBiasPlotPoint).sort(
+    (a, b) => a.plotVoltage - b.plotVoltage,
+  );
+
+  const reverseVoltageTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div className="control-panel rounded-lg border bg-white p-4 shadow-sm">
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Applied Voltage (V)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={-0.6}
-                max={0.8}
-                step={0.01}
-                value={[voltage]}
-                onValueChange={values => setVoltage(values[0] ?? 0)}
-                className="flex-1"
-              />
-              <input
-                type="number"
-                min={-0.6}
-                max={0.8}
-                step={0.01}
-                value={voltage.toFixed(2)}
-                onChange={event => {
-                  const nextValue = parseFloat(event.target.value);
-                  if (!Number.isNaN(nextValue)) {
-                    setVoltage(clamp(nextValue, -0.6, 0.8));
-                  }
-                }}
-                className="w-24 rounded border px-2 py-1 text-right text-sm"
-              />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="control-panel rounded-lg border bg-white p-4 shadow-sm">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Applied Voltage (V)</label>
+              <div className="flex items-center space-x-2">
+                <Slider
+                  min={-0.6}
+                  max={0.8}
+                  step={0.01}
+                  value={[voltage]}
+                  onValueChange={values => setVoltage(values[0] ?? 0)}
+                  className="flex-1"
+                />
+                <input
+                  type="number"
+                  min={-0.6}
+                  max={0.8}
+                  step={0.01}
+                  value={voltage.toFixed(2)}
+                  onChange={event => {
+                    const nextValue = parseFloat(event.target.value);
+                    if (!Number.isNaN(nextValue)) {
+                      setVoltage(clamp(nextValue, -0.6, 0.8));
+                    }
+                  }}
+                  className="w-24 rounded border px-2 py-1 text-right text-sm"
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                Reverse bias is shown on the left graph and forward bias is shown on the right
+                graph.
+              </div>
             </div>
-            <div className="text-xs text-gray-500">
-              Negative voltage shows reverse bias data in the third quadrant. Positive voltage shows
-              forward bias data in the first quadrant.
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Temperature (K)</label>
-            <div className="flex items-center space-x-2">
-              <Slider
-                min={300}
-                max={400}
-                step={25}
-                value={[temperature]}
-                onValueChange={values => setTemperature(values[0] ?? 300)}
-                className="flex-1"
-              />
-              <input
-                type="number"
-                min={300}
-                max={400}
-                step={25}
-                value={temperature}
-                onChange={event => {
-                  const nextValue = parseInt(event.target.value, 10);
-                  if (!Number.isNaN(nextValue)) {
-                    setTemperature(snapTemperature(nextValue));
-                  }
-                }}
-                className="w-24 rounded border px-2 py-1 text-right text-sm"
-              />
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Temperature (K)</label>
+              <div className="flex items-center space-x-2">
+                <Slider
+                  min={300}
+                  max={400}
+                  step={25}
+                  value={[temperature]}
+                  onValueChange={values => setTemperature(values[0] ?? 300)}
+                  className="flex-1"
+                />
+                <input
+                  type="number"
+                  min={300}
+                  max={400}
+                  step={25}
+                  value={temperature}
+                  onChange={event => {
+                    const nextValue = parseInt(event.target.value, 10);
+                    if (!Number.isNaN(nextValue)) {
+                      setTemperature(snapTemperature(nextValue));
+                    }
+                  }}
+                  className="w-24 rounded border px-2 py-1 text-right text-sm"
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                Allowed values: 300 K, 325 K, 350 K, 375 K, 400 K. Changing temperature resets
+                the existing plots.
+              </div>
             </div>
-            <div className="text-xs text-gray-500">Allowed values: 300 K, 325 K, 350 K, 375 K, 400 K.</div>
-          </div>
 
-          <div className="rounded-md bg-gray-50 p-3">
-            <div className="text-center">
-              <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
-              <div className="text-2xl font-bold text-lab-teal">{formatCurrent(currentValue)}</div>
+            <div className="rounded-md bg-gray-50 p-3">
+              <div className="text-center">
+                <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
+                <div className="text-2xl font-bold text-lab-teal">{formatCurrent(currentValue)}</div>
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-2">
-            <Button onClick={addDataPoint} className="flex-1">
-              Add Current Value
-            </Button>
-            <Button onClick={generateCurves} variant="outline" className="flex-1">
-              Generate Bias Curves
-            </Button>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Button onClick={addDataPoint} className="w-full">
+                Add Current
+              </Button>
+              <Button onClick={generateCurves} variant="outline" className="w-full">
+                Plot Graph
+              </Button>
+              <Button onClick={resetPlots} variant="outline" className="w-full">
+                Reset Graph
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-6">
         <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">PN Junction Visualization</h3>
           <div className="h-80 rounded-md border bg-gray-100">
             <PNJunctionScene voltage={voltage} temperature={temperature} />
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Reverse Bias I-V Graph</h3>
+          <div className="h-72">
+            {reverseBiasChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={reverseBiasChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    type="number"
+                    dataKey="plotVoltage"
+                    domain={[0, 0.6]}
+                    ticks={reverseVoltageTicks}
+                    tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toFixed(1)}`)}
+                    label={{ value: 'Reverse Voltage (V)', position: 'insideBottom', offset: -5 }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="plotCurrent"
+                    domain={[0, 'auto']}
+                    tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toExponential(1)}`)}
+                    label={{ value: 'Reverse Current (A)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip
+                    formatter={(_, __, item) => [formatCurrent(item.payload.actualCurrent), 'Current']}
+                    labelFormatter={label => `Voltage: ${label === 0 ? '0.00' : `-${Number(label).toFixed(2)}`} V`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="plotCurrent"
+                    name={`Reverse Bias at ${temperature} K`}
+                    stroke="#b91c1c"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-gray-500">
+                Plot reverse-bias points to see the graph from 0 toward negative voltage.
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Forward Bias I-V Graph</h3>
-          <div className="h-64">
+          <div className="h-72">
             {forwardData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={forwardData}>
@@ -451,12 +529,12 @@ const PNJunctionSimulation = () => {
                     type="number"
                     dataKey="voltage"
                     domain={[0, 0.8]}
-                    label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -5 }}
+                    label={{ value: 'Forward Voltage (V)', position: 'insideBottom', offset: -5 }}
                   />
                   <YAxis
                     type="number"
                     domain={[0, 'auto']}
-                    label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Forward Current (A)', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip
                     formatter={(value: number) => [formatCurrent(value), 'Current']}
@@ -476,54 +554,14 @@ const PNJunctionSimulation = () => {
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-gray-500">
-                Add forward-bias points or generate the curve to view the first-quadrant graph.
+                Plot forward-bias points to see the first-quadrant graph.
               </div>
             )}
           </div>
         </div>
+      </div>
 
-        <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-lab-blue">Reverse Bias I-V Graph</h3>
-          <div className="h-64">
-            {reverseData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={reverseData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    type="number"
-                    dataKey="voltage"
-                    domain={[-0.6, 0]}
-                    label={{ value: 'Voltage (V)', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis
-                    type="number"
-                    domain={['auto', 0]}
-                    label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [formatCurrent(value), 'Current']}
-                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="current"
-                    name={`Reverse Bias at ${temperature} K`}
-                    stroke="#b91c1c"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 7 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-gray-500">
-                Add reverse-bias points or generate the curve to view the third-quadrant graph.
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">
             Forward Bias Reference Table at 350 K and 400 K
