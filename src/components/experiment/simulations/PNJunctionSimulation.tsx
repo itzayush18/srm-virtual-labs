@@ -27,6 +27,7 @@ type DataPoint = {
   voltage: number;
   current: number;
   temperature: number;
+  sourceVoltage: number;
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -41,6 +42,10 @@ const randomBetween = (min: number, max: number) => min + Math.random() * (max -
 const formatCurrent = (value: number) => `${value.toExponential(4)} A`;
 const formatForwardCurrentMilliAmps = (value: number) => `${(value * 1e3).toFixed(3)} mA`;
 const formatReverseCurrentMicroAmps = (value: number) => `${(Math.abs(value) * 1e6).toFixed(3)} uA`;
+const FORWARD_SERIES_RESISTANCE = 1000;
+const FORWARD_IDEALITY = 1.5;
+const FORWARD_SATURATION_CURRENT = 1e-12;
+const BASE_THERMAL_VOLTAGE = 0.0258;
 
 const buildCarrier = (
   type: CarrierType,
@@ -262,6 +267,38 @@ const PNJunctionSimulation = () => {
   const [forwardData, setForwardData] = useState<DataPoint[]>([]);
   const [reverseData, setReverseData] = useState<DataPoint[]>([]);
 
+  const solveForwardBiasPoint = (sourceVoltage: number, t: number) => {
+    const thermalVoltage = BASE_THERMAL_VOLTAGE * (t / 300);
+    let diodeVoltage = Math.min(sourceVoltage, 0.8);
+
+    for (let iteration = 0; iteration < 50; iteration += 1) {
+      const exponentialTerm = Math.exp(diodeVoltage / (FORWARD_IDEALITY * thermalVoltage));
+      const diodeCurrent = FORWARD_SATURATION_CURRENT * (exponentialTerm - 1);
+      const equationValue = diodeVoltage + diodeCurrent * FORWARD_SERIES_RESISTANCE - sourceVoltage;
+      const derivative =
+        1 +
+        FORWARD_SERIES_RESISTANCE *
+          (FORWARD_SATURATION_CURRENT / (FORWARD_IDEALITY * thermalVoltage)) *
+          exponentialTerm;
+      const nextVoltage = diodeVoltage - equationValue / derivative;
+
+      if (Math.abs(nextVoltage - diodeVoltage) < 1e-9) {
+        diodeVoltage = nextVoltage;
+        break;
+      }
+
+      diodeVoltage = clamp(nextVoltage, 0, sourceVoltage);
+    }
+
+    const diodeCurrent =
+      FORWARD_SATURATION_CURRENT * (Math.exp(diodeVoltage / (FORWARD_IDEALITY * thermalVoltage)) - 1);
+
+    return {
+      diodeVoltage,
+      diodeCurrent,
+    };
+  };
+
   const calculateCurrent = (v: number, t: number) => {
     const kB = 1.380649e-23;
     const q = 1.60217663e-19;
@@ -272,7 +309,7 @@ const PNJunctionSimulation = () => {
       1e-12 * Math.pow(t / 300, 3) * Math.exp((-bandgapEnergy * q) / (n * kB * t));
 
     if (v >= 0) {
-      return saturationCurrent * (Math.exp(v / (n * thermalVoltage)) - 1);
+      return solveForwardBiasPoint(v, t).diodeCurrent;
     }
 
     const reverseLeakageCurrent = -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
@@ -294,20 +331,22 @@ const PNJunctionSimulation = () => {
   }, [temperature]);
 
   const currentValue = calculateCurrent(voltage, temperature);
+  const forwardOperatingPoint = voltage >= 0 ? solveForwardBiasPoint(voltage, temperature) : null;
 
   const addDataPoint = () => {
-    const newPoint: DataPoint = {
-      voltage: Number(voltage.toFixed(2)),
-      current: currentValue,
-      temperature,
-    };
-
     if (voltage >= 0) {
+      if (!forwardOperatingPoint) return;
+      const newPoint: DataPoint = {
+        sourceVoltage: Number(voltage.toFixed(2)),
+        voltage: Number(forwardOperatingPoint.diodeVoltage.toFixed(4)),
+        current: forwardOperatingPoint.diodeCurrent,
+        temperature,
+      };
       setForwardData(prevData => {
         const filtered = prevData.filter(
           point =>
             !(
-              Math.abs(point.voltage - newPoint.voltage) < 0.01 &&
+              Math.abs(point.sourceVoltage - newPoint.sourceVoltage) < 0.01 &&
               point.temperature === newPoint.temperature
             ),
         );
@@ -316,11 +355,17 @@ const PNJunctionSimulation = () => {
       return;
     }
 
+    const newPoint: DataPoint = {
+      sourceVoltage: Number(voltage.toFixed(2)),
+      voltage: Number(voltage.toFixed(2)),
+      current: currentValue,
+      temperature,
+    };
     setReverseData(prevData => {
       const filtered = prevData.filter(
         point =>
           !(
-            Math.abs(point.voltage - newPoint.voltage) < 0.01 &&
+            Math.abs(point.sourceVoltage - newPoint.sourceVoltage) < 0.01 &&
             point.temperature === newPoint.temperature
           ),
       );
@@ -332,11 +377,13 @@ const PNJunctionSimulation = () => {
     const nextForward: DataPoint[] = [];
     const nextReverse: DataPoint[] = [];
 
-    for (let v = 0; v <= 0.8; v += 0.1) {
-      const roundedVoltage = Number(v.toFixed(2));
+    for (let sourceVoltage = 0; sourceVoltage <= 1.5; sourceVoltage += 0.05) {
+      const roundedSourceVoltage = Number(sourceVoltage.toFixed(2));
+      const operatingPoint = solveForwardBiasPoint(roundedSourceVoltage, temperature);
       nextForward.push({
-        voltage: roundedVoltage,
-        current: calculateCurrent(roundedVoltage, temperature),
+        sourceVoltage: roundedSourceVoltage,
+        voltage: Number(operatingPoint.diodeVoltage.toFixed(4)),
+        current: operatingPoint.diodeCurrent,
         temperature,
       });
     }
@@ -344,6 +391,7 @@ const PNJunctionSimulation = () => {
     for (let v = -0.6; v <= 0; v += 0.1) {
       const roundedVoltage = Number(v.toFixed(2));
       nextReverse.push({
+        sourceVoltage: roundedVoltage,
         voltage: roundedVoltage,
         current: calculateCurrent(roundedVoltage, temperature),
         temperature,
@@ -380,7 +428,7 @@ const PNJunctionSimulation = () => {
               <div className="flex items-center space-x-2">
                 <Slider
                   min={-0.6}
-                  max={0.8}
+                  max={1.5}
                   step={0.01}
                   value={[voltage]}
                   onValueChange={values => setVoltage(values[0] ?? 0)}
@@ -389,13 +437,13 @@ const PNJunctionSimulation = () => {
                 <input
                   type="number"
                   min={-0.6}
-                  max={0.8}
+                  max={1.5}
                   step={0.01}
                   value={voltage.toFixed(2)}
                   onChange={event => {
                     const nextValue = parseFloat(event.target.value);
                     if (!Number.isNaN(nextValue)) {
-                      setVoltage(clamp(nextValue, -0.6, 0.8));
+                      setVoltage(clamp(nextValue, -0.6, 1.5));
                     }
                   }}
                   className="w-24 rounded border px-2 py-1 text-right text-sm"
@@ -403,7 +451,7 @@ const PNJunctionSimulation = () => {
               </div>
               <div className="text-xs text-gray-500">
                 Reverse bias is shown on the left graph and forward bias is shown on the right
-                graph.
+                graph. Forward bias uses a 1 kOhm series resistor and Newton-Raphson solving.
               </div>
             </div>
 
@@ -443,6 +491,11 @@ const PNJunctionSimulation = () => {
               <div className="text-center">
                 <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
                 <div className="text-2xl font-bold text-lab-teal">{formatCurrent(currentValue)}</div>
+                {forwardOperatingPoint ? (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Forward diode voltage: {forwardOperatingPoint.diodeVoltage.toFixed(4)} V
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -543,8 +596,8 @@ const PNJunctionSimulation = () => {
                   <XAxis
                     type="number"
                     dataKey="voltage"
-                    domain={[0, 0.8]}
-                    label={{ value: 'Forward Voltage (V)', position: 'insideBottom', offset: -10 }}
+                    domain={[0, 1]}
+                    label={{ value: 'Diode Voltage V_D (V)', position: 'insideBottom', offset: -10 }}
                   />
                   <YAxis
                     type="number"
@@ -556,7 +609,7 @@ const PNJunctionSimulation = () => {
                   />
                   <Tooltip
                     formatter={(value: number) => [formatForwardCurrentMilliAmps(value / 1e3), 'Current']}
-                    labelFormatter={label => `Voltage: ${Number(label).toFixed(2)} V`}
+                    labelFormatter={label => `Diode Voltage: ${Number(label).toFixed(4)} V`}
                   />
                   <Legend />
                   <Line
@@ -588,8 +641,9 @@ const PNJunctionSimulation = () => {
                 <tr className="bg-gray-100 text-left">
                   <th className="border px-3 py-2">Bias Type</th>
                   <th className="border px-3 py-2">Temperature (K)</th>
-                  <th className="border px-3 py-2">Voltage (V)</th>
-                  <th className="border px-3 py-2">Current (A)</th>
+                  <th className="border px-3 py-2">Input Voltage (V)</th>
+                  <th className="border px-3 py-2">Plotted Voltage (V)</th>
+                  <th className="border px-3 py-2">Current</th>
                 </tr>
               </thead>
               <tbody>
@@ -598,6 +652,7 @@ const PNJunctionSimulation = () => {
                     <tr key={`${row.temperature}-${row.voltage}-${index}`}>
                       <td className="border px-3 py-2">{row.voltage < 0 ? 'Reverse' : 'Forward'}</td>
                       <td className="border px-3 py-2">{row.temperature}</td>
+                      <td className="border px-3 py-2">{row.sourceVoltage.toFixed(2)}</td>
                       <td className="border px-3 py-2">{row.voltage.toFixed(2)}</td>
                       <td className="border px-3 py-2">
                         {row.voltage < 0
@@ -608,7 +663,7 @@ const PNJunctionSimulation = () => {
                   ))
                 ) : (
                   <tr>
-                    <td className="border px-3 py-3 text-gray-500" colSpan={4}>
+                    <td className="border px-3 py-3 text-gray-500" colSpan={5}>
                       Add a point or plot a graph to fill this live table.
                     </td>
                   </tr>
