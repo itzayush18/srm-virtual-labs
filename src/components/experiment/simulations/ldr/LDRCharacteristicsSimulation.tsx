@@ -209,41 +209,39 @@ export default function App() {
   const voltageFactor = sourceVoltage / MAX_SOURCE_VOLTAGE;
   const normalizedDistance = (distance - REFERENCE_DISTANCE) / (20 - REFERENCE_DISTANCE);
   const closenessFactor = 1 - normalizedDistance;
-  const sourceFactor = selectedLightSource.multiplier / 1.45;
 
-  const sourceGlow = clamp(0.35 + voltageFactor * 0.75 + sourceFactor * 0.12, 0.35, 1.3);
-  const beamOpacity = clamp(0.1 + voltageFactor * 0.55 + closenessFactor * 0.2, 0.1, 0.9);
-  const beamWidth = clamp(360 - normalizedDistance * 190, 150, 360);
-  const beamHeight = clamp(160 + closenessFactor * 70 + voltageFactor * 15, 160, 250);
-  const beamBlur = clamp(1 + voltageFactor * 2.8, 1, 4);
-  const beamTop = 122;
-  const sensorTop = 255 + normalizedDistance * 52;
+  const sourceGlow = clamp(0.35 + voltageFactor * 0.75, 0.35, 1.2);
+  const beamOpacity = clamp(0.12 + voltageFactor * 0.52 + closenessFactor * 0.22, 0.12, 0.9);
+  const beamWidth = clamp(280 - normalizedDistance * 135, 120, 280);
+  const beamHeight = clamp(44 + voltageFactor * 24, 44, 72);
+  const beamBlur = clamp(10 + voltageFactor * 18, 10, 28);
+  const beamSkew = clamp(2 + normalizedDistance * 10, 2, 12);
   const sensorGlow = clamp(0.18 + lightFlux * 3.5, 0.18, 1);
-  const sensorBeamOpacity = clamp(0.12 + closenessFactor * 0.45, 0.12, 0.55);
+  const sensorRotation = clamp(-14 + closenessFactor * 12, -14, -2);
 
   const renderSourceVisual = () => {
     if (lightSource === 'incandescent') {
       return (
-        <div style={{ position: 'relative', width: 92, height: 92 }}>
+        <div style={{ position: 'relative', width: 86, height: 86 }}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${28 + sourceGlow * 48}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${24 + sourceGlow * 42}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
             style={{
               position: 'absolute',
-              inset: 12,
+              inset: 10,
               borderRadius: '50%',
               background: 'linear-gradient(180deg, #fff7cc 0%, #fde68a 100%)',
               border: '4px solid #f59e0b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 26,
+              fontSize: 24,
             }}
           >
             💡
@@ -254,8 +252,8 @@ export default function App() {
               left: '50%',
               bottom: 2,
               transform: 'translateX(-50%)',
-              width: 24,
-              height: 16,
+              width: 22,
+              height: 14,
               borderRadius: '0 0 8px 8px',
               background: '#64748b',
               border: '2px solid #475569',
@@ -267,26 +265,26 @@ export default function App() {
 
     if (lightSource === 'sunlight') {
       return (
-        <div style={{ position: 'relative', width: 98, height: 98 }}>
+        <div style={{ position: 'relative', width: 90, height: 90 }}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${26 + sourceGlow * 50}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${22 + sourceGlow * 44}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
             style={{
               position: 'absolute',
-              inset: 12,
+              inset: 10,
               borderRadius: '50%',
               background: 'radial-gradient(circle, #fef9c3 0%, #fde047 60%, #f59e0b 100%)',
               border: '4px solid #eab308',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 26,
+              fontSize: 24,
             }}
           >
             ☀️
@@ -297,13 +295,13 @@ export default function App() {
 
     if (lightSource === 'led') {
       return (
-        <div style={{ position: 'relative', width: 90, height: 90 }}>
+        <div style={{ position: 'relative', width: 84, height: 84 }}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
               borderRadius: '50%',
-              boxShadow: `0 0 ${24 + sourceGlow * 44}px ${selectedLightSource.glowOuter}`,
+              boxShadow: `0 0 ${20 + sourceGlow * 40}px ${selectedLightSource.glowOuter}`,
             }}
           />
           <div
@@ -312,14 +310,14 @@ export default function App() {
               left: 12,
               right: 12,
               top: 10,
-              height: 46,
-              borderRadius: '44px 44px 18px 18px',
+              height: 42,
+              borderRadius: '42px 42px 18px 18px',
               background: 'linear-gradient(180deg, #ffffff 0%, #dbeafe 100%)',
               border: '4px solid #60a5fa',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: 700,
               color: '#1d4ed8',
             }}
@@ -329,20 +327,20 @@ export default function App() {
           <div
             style={{
               position: 'absolute',
-              left: 30,
+              left: 28,
               bottom: 8,
               width: 6,
-              height: 22,
+              height: 20,
               background: '#94a3b8',
             }}
           />
           <div
             style={{
               position: 'absolute',
-              right: 30,
+              right: 28,
               bottom: 8,
               width: 6,
-              height: 22,
+              height: 20,
               background: '#94a3b8',
             }}
           />
@@ -351,7 +349,7 @@ export default function App() {
     }
 
     return (
-      <div style={{ position: 'relative', width: 96, height: 96 }}>
+      <div style={{ position: 'relative', width: 88, height: 88 }}>
         <div
           style={{
             position: 'absolute',
@@ -359,7 +357,7 @@ export default function App() {
             borderRadius: '50%',
             background:
               'conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6, #8b5cf6, #ef4444)',
-            boxShadow: `0 0 ${26 + sourceGlow * 44}px ${selectedLightSource.glowOuter}`,
+            boxShadow: `0 0 ${22 + sourceGlow * 40}px ${selectedLightSource.glowOuter}`,
           }}
         />
         <div
@@ -372,7 +370,7 @@ export default function App() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 24,
+            fontSize: 22,
           }}
         >
           🌈
@@ -540,12 +538,14 @@ export default function App() {
               <div
                 style={{
                   position: 'relative',
-                  minHeight: 400,
+                  minHeight: 330,
                   borderRadius: 24,
                   overflow: 'hidden',
                   background:
                     'linear-gradient(180deg, rgba(14,165,233,0.12), rgba(226,232,240,0.18) 46%, rgba(15,23,42,0.08) 100%)',
                   border: '1px solid #dbe4f0',
+                  padding: '74px 24px 30px',
+                  boxSizing: 'border-box',
                 }}
               >
                 <div
@@ -560,19 +560,8 @@ export default function App() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: 34,
-                    left: 86,
-                    zIndex: 4,
-                  }}
-                >
-                  {renderSourceVisual()}
-                </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 30,
-                    left: 22,
+                    top: 18,
+                    left: 18,
                     width: 180,
                     padding: 12,
                     borderRadius: 14,
@@ -582,7 +571,7 @@ export default function App() {
                     zIndex: 5,
                   }}
                 >
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Input Condition</div>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Input</div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>Source: {selectedLightSource.label}</div>
                   <div style={{ fontSize: 14 }}>Voltage: {sourceVoltage.toFixed(1)} V</div>
                   <div style={{ fontSize: 14 }}>Distance: {distance.toFixed(1)} cm</div>
@@ -591,109 +580,147 @@ export default function App() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: beamTop,
-                    left: 132,
-                    width: beamWidth,
-                    height: beamHeight,
-                    background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
-                    clipPath: 'polygon(0% 46%, 0% 54%, 100% 100%, 100% 0%)',
-                    filter: `blur(${beamBlur}px)`,
-                    opacity: beamOpacity,
-                    zIndex: 1,
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: sensorTop - 10,
-                    left: 300,
-                    width: 80 + closenessFactor * 70,
-                    height: 18,
-                    background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
-                    opacity: sensorBeamOpacity,
-                    filter: 'blur(6px)',
-                    zIndex: 2,
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: sensorTop,
-                    left: 286,
-                    width: 240,
-                    height: 108,
-                    borderRadius: 18,
-                    background:
-                      'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(226,232,240,0.96))',
-                    border: '2px solid #475569',
-                    boxShadow: `0 14px 30px rgba(15,23,42,0.16), inset 0 0 ${14 + sensorGlow * 24}px rgba(255,255,255,0.82)`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    zIndex: 3,
-                  }}
-                >
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#334155', letterSpacing: 1 }}>
-                    BOX TYPE LDR SENSOR
-                  </div>
-                  <div
-                    style={{
-                      width: 154,
-                      height: 38,
-                      borderRadius: 8,
-                      background: 'linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)',
-                      border: '2px solid #64748b',
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 6,
-                        borderRadius: 5,
-                        background:
-                          'repeating-linear-gradient(90deg, #334155 0 10px, #f8fafc 10px 14px)',
-                        opacity: clamp(0.5 + sensorGlow * 0.5, 0.5, 1),
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: `linear-gradient(90deg, rgba(255,255,255,0.02), ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
-                        opacity: sensorGlow,
-                      }}
-                    />
-                  </div>
-                  <div style={{ fontSize: 12, color: '#475569' }}>
-                    Conductivity increases as light intensity rises
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 48,
-                    right: 22,
-                    width: 190,
-                    padding: 14,
-                    borderRadius: 16,
+                    top: 18,
+                    right: 18,
+                    width: 180,
+                    padding: 12,
+                    borderRadius: 14,
                     background: 'rgba(15,23,42,0.88)',
                     color: '#f8fafc',
                     boxShadow: '0 10px 22px rgba(15,23,42,0.2)',
                     zIndex: 5,
                   }}
                 >
-                  <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 6 }}>Output</div>
+                  <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 4 }}>Output</div>
                   <div style={{ fontSize: 14 }}>Flux: {lightFlux.toFixed(3)}</div>
                   <div style={{ fontSize: 14 }}>Resistance: {resistance.toFixed(2)} kOhm</div>
                   <div style={{ fontSize: 14 }}>Current: {current.toFixed(3)} mA</div>
                   <div style={{ fontSize: 14, marginTop: 4 }}>Bias: {biasVoltage.toFixed(1)} V</div>
+                </div>
+
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 3,
+                    display: 'grid',
+                    gridTemplateColumns: '110px minmax(140px, 1fr) 160px',
+                    alignItems: 'center',
+                    columnGap: 18,
+                    minHeight: 180,
+                    marginTop: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: 110,
+                    }}
+                  >
+                    {renderSourceVisual()}
+                  </div>
+
+                  <div
+                    style={{
+                      position: 'relative',
+                      height: 140,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: '50%',
+                        transform: `translateY(-50%) skewX(${beamSkew}deg)`,
+                        height: beamHeight,
+                        borderRadius: 999,
+                        background: `linear-gradient(90deg, ${selectedLightSource.beamColor}, rgba(255,255,255,0.02))`,
+                        filter: `blur(${beamBlur}px)`,
+                        opacity: beamOpacity,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 10,
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        height: Math.max(8, beamHeight * 0.26),
+                        borderRadius: 999,
+                        background: `linear-gradient(90deg, ${selectedLightSource.accent}55, rgba(255,255,255,0.02))`,
+                        opacity: clamp(beamOpacity * 0.55, 0.12, 0.6),
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: 140,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 150,
+                        height: 88,
+                        borderRadius: 18,
+                        background:
+                          'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(226,232,240,0.96))',
+                        border: '2px solid #475569',
+                        boxShadow: `0 14px 30px rgba(15,23,42,0.16), inset 0 0 ${14 + sensorGlow * 24}px rgba(255,255,255,0.82)`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        transform: `rotate(${sensorRotation}deg)`,
+                        transformOrigin: 'center center',
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#334155', letterSpacing: 0.8 }}>
+                        BOX TYPE LDR
+                      </div>
+                      <div
+                        style={{
+                          width: 96,
+                          height: 30,
+                          borderRadius: 8,
+                          background: 'linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)',
+                          border: '2px solid #64748b',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 5,
+                            borderRadius: 5,
+                            background:
+                              'repeating-linear-gradient(90deg, #334155 0 8px, #f8fafc 8px 12px)',
+                            opacity: clamp(0.5 + sensorGlow * 0.5, 0.5, 1),
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: `linear-gradient(90deg, rgba(255,255,255,0.02), ${selectedLightSource.accent}66, rgba(255,255,255,0.02))`,
+                            opacity: sensorGlow,
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 11, color: '#475569' }}>Light sensitive sensor</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -712,13 +739,13 @@ export default function App() {
                   style={{
                     background: selectedLightSource.panel,
                     border: `1px solid ${selectedLightSource.accent}33`,
-                    borderRadius: 16,
-                    padding: 16,
-                    height: '100%',
+                    borderRadius: 14,
+                    padding: 14,
+                    maxWidth: '100%',
                     boxSizing: 'border-box',
                   }}
                 >
-                  <ol style={{ margin: 0, paddingLeft: 20, color: '#334155', lineHeight: 1.75 }}>
+                  <ol style={{ margin: 0, paddingLeft: 20, color: '#334155', lineHeight: 1.7 }}>
                     <li>
                       Calculate carrier generation for 2.5 V, 5 V, 7.5 V, 10 V, and 12.5 V at
                       distances 5 cm, 10 cm, and 15 cm.
