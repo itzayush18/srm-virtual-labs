@@ -175,25 +175,6 @@ function SliderRow({ label, id, min, max, step, value, onChange, display }) {
   );
 }
 
-function MetricCard({ label, value, sub, accent }) {
-  return (
-    <div
-      style={{
-        background: accent ? `${accent}12` : 'var(--color-background-secondary)',
-        border: `1px solid ${accent ? `${accent}66` : 'var(--color-border-tertiary)'}`,
-        borderRadius: 10,
-        padding: '10px 11px',
-      }}
-    >
-      <div style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{value}</div>
-      {sub ? (
-        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 4, lineHeight: 1.35 }}>{sub}</div>
-      ) : null}
-    </div>
-  );
-}
-
 function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
   const isN = mat.type === 'n';
   const carrierColor = isN ? '#1E63A7' : '#D86A2F';
@@ -477,7 +458,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
   );
 }
 
-function ExercisePanel({ mat, B, thickness, coilI, I_mA }) {
+function ExerciseNote() {
   return (
     <div
       style={{
@@ -485,82 +466,64 @@ function ExercisePanel({ mat, B, thickness, coilI, I_mA }) {
         border: '1px solid var(--color-border-tertiary)',
         borderRadius: 12,
         padding: 14,
+        fontSize: 12,
+        lineHeight: 1.7,
+        color: 'var(--color-text-secondary)',
       }}
     >
-      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-        Exercise Details
-      </div>
-      <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--color-text-secondary)' }}>
-        <div>1. Assume the experiment is performed at room temperature ({ROOM_TEMPERATURE_K} K).</div>
-        <div>2. Magnetic field is produced by the electromagnet using B = mu0 x N x Icoil / L.</div>
-        <div>3. Hall voltage follows VH = RH x I x B / t.</div>
-        <div>4. Hall mobility is calculated using muH = |RH| x sigma.</div>
-        <div>5. Carrier density and mobility vary with temperature in the model as n(T) and mu(T).</div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 12,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 8,
-        }}
-      >
-        <MetricCard label="Coil current" value={`${coilI.toFixed(1)} A`} sub="Used to compute the magnetic field" accent="#D05538" />
-        <MetricCard label="Sample current" value={`${I_mA} mA`} sub="Applied through the semiconductor plate" accent="#185FA5" />
-        <MetricCard label="Thickness" value={`${thickness.toFixed(1)} mm`} sub="Increasing thickness reduces Hall voltage" accent="#0E7A61" />
-        <MetricCard label="Magnetic field" value={fmtB(B)} sub={`Calculated at ${FIXED_COIL_TURNS} turns`} accent="#156F59" />
-      </div>
-
-      <div
-        style={{
-          marginTop: 12,
-          border: '1px dashed var(--color-border-secondary)',
-          borderRadius: 10,
-          padding: 10,
-          fontSize: 11,
-          lineHeight: 1.6,
-          color: 'var(--color-text-secondary)',
-          background: 'rgba(255,255,255,0.65)',
-        }}
-      >
-        Observation prompt: compare n-type and p-type results. Note the sign of Hall voltage and identify the majority carrier.
-        Then repeat the experiment with a larger thickness and observe that Hall voltage decreases as thickness increases.
-      </div>
+      Exercise: compare n-type and p-type results. Note the sign of Hall voltage and identify the majority carrier.
+      Then repeat the experiment with a larger thickness and observe that Hall voltage decreases as thickness increases.
     </div>
   );
 }
 
-function AnswerCell({ value, canReveal, revealed, onReveal }) {
-  if (!canReveal) {
-    return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{value}</span>;
-  }
+function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
+  if (isPType) {
+    if (revealed) {
+      return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{row.value}</span>;
+    }
 
-  if (revealed) {
-    return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{value}</span>;
+    return (
+      <button
+        type="button"
+        onClick={onReveal}
+        style={{
+          border: '1px solid #185FA566',
+          background: '#185FA50F',
+          color: '#185FA5',
+          borderRadius: 8,
+          padding: '5px 9px',
+          fontSize: 11,
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
+        Click for answer
+      </button>
+    );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onReveal}
+    <input
+      type="text"
+      inputMode="decimal"
+      value={studentValue}
+      onChange={(e) => onStudentChange(e.target.value)}
+      placeholder="Enter value"
       style={{
-        border: '1px solid #185FA566',
-        background: '#185FA50F',
-        color: '#185FA5',
+        width: '100%',
+        border: '1px solid var(--color-border-secondary)',
         borderRadius: 8,
-        padding: '5px 9px',
+        padding: '7px 9px',
         fontSize: 11,
-        fontWeight: 700,
-        cursor: 'pointer',
+        background: 'var(--color-background-primary)',
+        color: 'var(--color-text-primary)',
       }}
-    >
-      Click for answer
-    </button>
+    />
   );
 }
 
-function MeasurementTable({ mat, data, answerState, setAnswerState }) {
+function MeasurementTable({ mat, data, answerState, setAnswerState, studentValues, setStudentValues }) {
   const isPTypeExercise = mat.type === 'p';
 
   const reveal = (key) => {
@@ -571,43 +534,43 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
     {
       key: 'bField',
       label: 'Magnetic field B',
-      formula: 'B = mu0 x N x Icoil / L',
+      formula: 'B = μ0 × N × Icoil / L',
       value: fmtB(data.B),
     },
     {
       key: 'hallVoltage',
-      label: 'Hall voltage VH',
-      formula: 'VH = RH x I x B / t',
+      label: 'Hall voltage V_H',
+      formula: 'V_H = R_H × I × B / t',
       value: fmtVh(data.Vh),
     },
     {
       key: 'hallCoeff',
-      label: 'Hall coefficient RH',
-      formula: 'RH = VH x t / (I x B)',
+      label: 'Hall coefficient R_H',
+      formula: 'R_H = V_H × t / (I × B)',
       value: fmtSci(data.measuredRh, 'm³/C'),
     },
     {
       key: 'carrierDensity',
-      label: 'Carrier density',
+      label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityWithAltUnit(data.carrierDensity),
     },
     {
       key: 'hallMobility',
-      label: 'Hall mobility muH',
-      formula: 'muH = |RH| x sigma',
+      label: 'Hall mobility μ_H',
+      formula: 'μ_H = |R_H| × σ',
       value: fmtSci(data.muH, 'm²/V·s'),
     },
     {
       key: 'mobility',
-      label: 'Carrier mobility mu',
-      formula: 'mu(T) from material model',
+      label: 'Carrier mobility μ',
+      formula: 'μ(T) from material model',
       value: fmtSci(data.mobility, 'm²/V·s'),
     },
     {
       key: 'conductivity',
-      label: 'Conductivity sigma',
-      formula: 'sigma = q x n x mu',
+      label: 'Conductivity σ',
+      formula: 'σ = q × n × μ',
       value: fmtSci(data.sigma, 'S/m'),
     },
   ];
@@ -621,51 +584,13 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
         padding: 12,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 10,
-          flexWrap: 'wrap',
-          marginBottom: 10,
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)' }}>Measurement Table</div>
           <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-            Formulas are shown in the header row. p-type uses click-to-reveal answers for exercise mode.
+            n-type uses blank entry boxes. p-type uses click-to-reveal answers.
           </div>
         </div>
-        {isPTypeExercise ? (
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#B85030',
-              background: '#FFF3ED',
-              border: '1px solid #F2C6B6',
-              borderRadius: 999,
-              padding: '6px 10px',
-            }}
-          >
-            Student exercise mode
-          </div>
-        ) : (
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#156F59',
-              background: '#EAF7F1',
-              border: '1px solid #C8E8DB',
-              borderRadius: 999,
-              padding: '6px 10px',
-            }}
-          >
-            Answer mode
-          </div>
-        )}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -674,7 +599,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
             width: '100%',
             borderCollapse: 'separate',
             borderSpacing: 0,
-            minWidth: 680,
+            minWidth: 720,
             fontSize: 12,
           }}
         >
@@ -682,7 +607,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
             <tr>
               <th style={thStyle}>Quantity</th>
               <th style={thStyle}>Formula</th>
-              <th style={thStyle}>Answer</th>
+              <th style={thStyle}>Value</th>
             </tr>
           </thead>
           <tbody>
@@ -691,9 +616,11 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
                 <td style={tdStyle(index === rows.length - 1)}>{row.label}</td>
                 <td style={tdStyle(index === rows.length - 1)}>{row.formula}</td>
                 <td style={tdStyle(index === rows.length - 1)}>
-                  <AnswerCell
-                    value={row.value}
-                    canReveal={isPTypeExercise}
+                  <TableCellValue
+                    row={row}
+                    isPType={isPTypeExercise}
+                    studentValue={studentValues[row.key] || ''}
+                    onStudentChange={(value) => setStudentValues((prev) => ({ ...prev, [row.key]: value }))}
                     revealed={answerState[row.key]}
                     onReveal={() => reveal(row.key)}
                   />
@@ -702,28 +629,6 @@ function MeasurementTable({ mat, data, answerState, setAnswerState }) {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div
-        style={{
-          marginTop: 12,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 8,
-        }}
-      >
-        <MetricCard
-          label="Carrier type"
-          value={mat.type === 'n' ? 'n-type' : 'p-type'}
-          sub={`${mat.name} at room temperature`}
-          accent={mat.type === 'n' ? '#185FA5' : '#D86A2F'}
-        />
-        <MetricCard
-          label="Observation hint"
-          value={mat.type === 'n' ? 'Negative Hall voltage' : 'Positive Hall voltage'}
-          sub="Students should compare sign and carrier type"
-          accent={mat.type === 'n' ? '#185FA5' : '#D86A2F'}
-        />
       </div>
     </div>
   );
@@ -756,6 +661,7 @@ const HallCoefficientSimulation = () => {
   const [I_mA, setI_mA] = useState(10);
   const [thickness, setThickness] = useState(1);
   const [answerState, setAnswerState] = useState({});
+  const [studentValues, setStudentValues] = useState({});
   const [isCompact, setIsCompact] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 980 : false
   );
@@ -775,11 +681,11 @@ const HallCoefficientSimulation = () => {
   const t = thickness / 1e3;
   const Vh = ((materialState.rh * I * B) / t) * 1e3;
   const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
-  const carrierDensity = materialState.carrierDensity;
   const muH = Math.abs(materialState.rh) * materialState.sigma;
 
   useEffect(() => {
     setAnswerState({});
+    setStudentValues({});
   }, [matKey]);
 
   const resetAll = () => {
@@ -788,6 +694,7 @@ const HallCoefficientSimulation = () => {
     setI_mA(10);
     setThickness(1);
     setAnswerState({});
+    setStudentValues({});
   };
 
   const sectionLabel = {
@@ -859,14 +766,7 @@ const HallCoefficientSimulation = () => {
               ))}
             </select>
           </div>
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              lineHeight: 1.5,
-              color: 'var(--color-text-tertiary)',
-            }}
-          >
+          <div style={{ marginTop: 8, fontSize: 11, lineHeight: 1.5, color: 'var(--color-text-tertiary)' }}>
             Room temperature is fixed at {ROOM_TEMPERATURE_K} K for this exercise.
           </div>
         </div>
@@ -899,12 +799,10 @@ const HallCoefficientSimulation = () => {
             }}
           >
             <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>Fixed coil turns</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>
-              {FIXED_COIL_TURNS}
-            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>{FIXED_COIL_TURNS}</span>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Magnetic field: B = mu0 x N x Icoil / L
+            Magnetic field: B = μ0 × N × Icoil / L
           </div>
         </SourceCard>
 
@@ -934,42 +832,9 @@ const HallCoefficientSimulation = () => {
             display={`${thickness.toFixed(1)} mm`}
           />
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Hall voltage is inversely proportional to thickness, so increasing thickness reduces VH.
+            Hall voltage is inversely proportional to thickness, so increasing thickness reduces V_H.
           </div>
         </SourceCard>
-
-        <div>
-          <div style={sectionLabel}>Quick Results</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <MetricCard label="Hall voltage" value={fmtVh(Vh)} sub="Live transverse Hall voltage" accent={mat.type === 'n' ? '#185FA5' : '#D86A2F'} />
-            <MetricCard
-              label="Carrier type"
-              value={mat.type === 'n' ? 'n-type' : 'p-type'}
-              sub={`${mat.name} at room temperature`}
-              accent={mat.type === 'n' ? '#185FA5' : '#D86A2F'}
-            />
-            <MetricCard
-              label="Hall coeff. RH"
-              value={fmtSci(measuredRh, 'm³/C')}
-              sub="Calculated from VH x t / (I x B)"
-            />
-            <MetricCard
-              label="Carrier density"
-              value={fmtDensityWithAltUnit(carrierDensity)}
-              sub="Temperature-dependent effective density"
-            />
-            <MetricCard
-              label="Hall mobility muH"
-              value={fmtSci(muH, 'm²/V·s')}
-              sub={`muH = |RH| x sigma`}
-            />
-            <MetricCard
-              label="Carrier mobility"
-              value={fmtSci(materialState.mobility, 'm²/V·s')}
-              sub="Mobility follows the n(T) and mu(T) model"
-            />
-          </div>
-        </div>
 
         <button
           onClick={resetAll}
@@ -1001,7 +866,7 @@ const HallCoefficientSimulation = () => {
           <HallPlate3D mat={mat} B={B} Vh={Vh} thickness={thickness} I_mA={I_mA} coilI={coilI} />
         </div>
 
-        <ExercisePanel mat={mat} B={B} thickness={thickness} coilI={coilI} I_mA={I_mA} />
+        <ExerciseNote />
 
         <MeasurementTable
           mat={mat}
@@ -1009,13 +874,15 @@ const HallCoefficientSimulation = () => {
             B,
             Vh,
             measuredRh,
-            carrierDensity,
+            carrierDensity: materialState.carrierDensity,
             muH,
             mobility: materialState.mobility,
             sigma: materialState.sigma,
           }}
           answerState={answerState}
           setAnswerState={setAnswerState}
+          studentValues={studentValues}
+          setStudentValues={setStudentValues}
         />
       </div>
     </div>
