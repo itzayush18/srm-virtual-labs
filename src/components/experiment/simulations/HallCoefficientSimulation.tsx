@@ -175,252 +175,284 @@ function SliderRow({ label, id, min, max, step, value, onChange, display }) {
   );
 }
 
-function HallPlate3D({ mat, B, Vh, thickness, I_mA, showVh }) {
-  const isN = mat.type === 'n';
-  const carrierColor = isN ? '#1E63A7' : '#D86A2F';
-  const strongField = Math.abs(B) > 0.002;
-
-  const depth = 18 + ((thickness - 0.1) / 4.9) * 42;
-  const frontX = 168;
-  const frontY = 118;
-  const width = 150;
-  const height = 86;
-  const dx = depth;
-  const dy = -depth * 0.55;
-
-  const topFace = `${frontX},${frontY} ${frontX + width},${frontY} ${frontX + width + dx},${frontY + dy} ${frontX + dx},${frontY + dy}`;
-  const sideFace = `${frontX + width},${frontY} ${frontX + width + dx},${frontY + dy} ${frontX + width + dx},${frontY + height + dy} ${frontX + width},${frontY + height}`;
-
-  const currentArrowCount = clamp(Math.round(2 + I_mA / 7), 2, 8);
-  const flowingCarrierCount = clamp(Math.round(8 + I_mA / 2.5), 8, 28);
-  const buildupCount = clamp(Math.round(4 + Math.abs(Vh) * 1.5), 4, 18);
-  const topChargeDominant = Vh > 0;
-
-  const seededRnd = (seed) => {
-    const x = Math.sin(seed * 17.23 + 3.1) * 43758.5453123;
-    return x - Math.floor(x);
-  };
-
-  const flowingCarriers = Array.from({ length: flowingCarrierCount }, (_, i) => ({
-    x: frontX + 12 + seededRnd(i + 1) * (width - 24),
-    y: frontY + 14 + seededRnd(i + 11) * (height - 28),
-    dur: (1.6 + seededRnd(i + 31) * 1.3).toFixed(2),
-    delay: (-seededRnd(i + 47) * 2.4).toFixed(2),
-  }));
-
-  const buildupCharges = Array.from({ length: buildupCount }, (_, i) => ({
-    x: frontX + 16 + seededRnd(i + 71) * (width - 28),
-    yTop: frontY + 6 + seededRnd(i + 83) * 12,
-    yBottom: frontY + height - 6 - seededRnd(i + 97) * 12,
-  }));
-
-  const meterValue = showVh ? fmtVh(Vh) : '---';
-
+function TogglePill({ label, active, onClick }) {
   return (
-    <svg width="100%" viewBox="0 0 520 330" style={{ display: 'block', background: 'transparent' }}>
-      <defs>
-        <linearGradient id="bgGlow" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FAFCFF" />
-          <stop offset="100%" stopColor="#EEF4FA" />
-        </linearGradient>
-        <linearGradient id="supplyBodyWarm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E7EEF5" />
-        </linearGradient>
-        <linearGradient id="supplyBodyCool" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E4EEF9" />
-        </linearGradient>
-        <linearGradient id="meterScreen" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0D1D2A" />
-          <stop offset="100%" stopColor="#162B3A" />
-        </linearGradient>
-        <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#EDF4FB" />
-          <stop offset="100%" stopColor="#D9E7F6" />
-        </linearGradient>
-        <linearGradient id="topFaceFill" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#F6FAFE" />
-          <stop offset="100%" stopColor="#DDEAF7" />
-        </linearGradient>
-        <linearGradient id="sideFaceFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#D3E1EE" />
-          <stop offset="100%" stopColor="#BFCFE0" />
-        </linearGradient>
-        <linearGradient id="magnetBody" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#4D5864" />
-          <stop offset="100%" stopColor="#2F3944" />
-        </linearGradient>
-        <marker id="arrowCurrent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#D86A2F" strokeWidth="1.5" strokeLinecap="round" />
-        </marker>
-        <marker id="arrowField" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#156F59" strokeWidth="1.5" strokeLinecap="round" />
-        </marker>
-        <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="shadow" x="-20%" y="-20%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#6B8099" floodOpacity="0.18" />
-        </filter>
-      </defs>
-
-      <rect x="12" y="12" width="496" height="306" rx="18" fill="url(#bgGlow)" />
-
-      <g filter="url(#shadow)">
-        <rect x="22" y="46" width="74" height="44" rx="12" fill="url(#supplyBodyWarm)" stroke="#B85030" strokeWidth="1.1" />
-        <circle cx="42" cy="68" r="10" fill="#F4F7FB" stroke="#B85030" strokeWidth="1.1" />
-        <line x1="42" y1="68" x2="49" y2="62" stroke="#B85030" strokeWidth="1.4" strokeLinecap="round" />
-        <path d="M52 54H78" stroke="#B85030" strokeWidth="1.3" strokeLinecap="round" />
-      </g>
-      <text
-        x="59"
-        y="110"
-        textAnchor="middle"
-        fill="#8E4A31"
-        fontSize="9.5"
-        fontWeight="700"
-        letterSpacing="0.02em"
-        fontFamily="Segoe UI, Arial, sans-serif"
-      >
-        DC supply for electromagnet
-      </text>
-
-      <g filter="url(#shadow)">
-        <rect x="22" y="184" width="74" height="44" rx="12" fill="url(#supplyBodyCool)" stroke="#1E63A7" strokeWidth="1.1" />
-        <circle cx="42" cy="206" r="10" fill="#F4F9FF" stroke="#1E63A7" strokeWidth="1.1" />
-        <line x1="42" y1="206" x2="49" y2="200" stroke="#1E63A7" strokeWidth="1.4" strokeLinecap="round" />
-        <path d="M52 192H78" stroke="#1E63A7" strokeWidth="1.3" strokeLinecap="round" />
-      </g>
-      <text
-        x="59"
-        y="248"
-        textAnchor="middle"
-        fill="#235E8D"
-        fontSize="9.5"
-        fontWeight="700"
-        letterSpacing="0.02em"
-        fontFamily="Segoe UI, Arial, sans-serif"
-      >
-        DC supply for sample
-      </text>
-
-      <line x1="96" y1="68" x2="138" y2="68" stroke="#B85030" strokeWidth="1.4" />
-      <line x1="96" y1="206" x2={frontX - 24} y2="206" stroke="#D86A2F" strokeWidth="1.8" markerEnd="url(#arrowCurrent)" />
-      <text x={frontX - 35} y="199" fontSize="13" fontWeight="700" fill="#D86A2F" fontFamily="Segoe UI, Arial, sans-serif">
-        I
-      </text>
-
-      <g filter="url(#shadow)">
-        <path
-          d="M 386 58 H 430 C 447 58 456 67 456 83 V 195 C 456 209 448 217 435 217 H 406 V 196 H 432 C 436 196 438 194 438 190 V 87 C 438 83 435 80 431 80 H 386"
-          fill="url(#magnetBody)"
-        />
-        <rect x="370" y="58" width="28" height="34" rx="10" fill="#D8EBDD" stroke="#2E7D68" strokeWidth="1.1" />
-        <rect x="370" y="178" width="28" height="34" rx="10" fill="#E5F0F8" stroke="#1E63A7" strokeWidth="1.1" />
-        <text x="384" y="79" textAnchor="middle" fill="#156F59" fontSize="12" fontWeight="800" fontFamily="Segoe UI, Arial, sans-serif">
-          N
-        </text>
-        <text x="384" y="200" textAnchor="middle" fill="#1E63A7" fontSize="12" fontWeight="800" fontFamily="Segoe UI, Arial, sans-serif">
-          S
-        </text>
-      </g>
-
-      {Array.from({ length: 5 }, (_, i) => {
-        const x = 205 + i * 26;
-        const sweep = 16 + i * 2;
-        return (
-          <g key={`field-${i}`} opacity={0.42 + i / 11}>
-            <path
-              d={`M ${x} 78 C ${x - sweep} 104, ${x - sweep} 128, ${x} 154 C ${x + sweep} 180, ${x + sweep} 202, ${x} 224`}
-              fill="none"
-              stroke="#156F59"
-              strokeWidth="1.7"
-              markerEnd="url(#arrowField)"
-            />
-          </g>
-        );
-      })}
-
-      <polygon points={topFace} fill="url(#topFaceFill)" stroke="#6E94BA" strokeWidth="1" />
-      <polygon points={sideFace} fill="url(#sideFaceFill)" stroke="#6E94BA" strokeWidth="1" />
-      <rect x={frontX} y={frontY} width={width} height={height} rx="10" fill="url(#frontFace)" stroke="#185FA5" strokeWidth="1.8" />
-
-      <line x1={frontX} y1={frontY} x2={frontX + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
-      <line x1={frontX + width} y1={frontY} x2={frontX + width + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
-      <line x1={frontX + width} y1={frontY + height} x2={frontX + width + dx} y2={frontY + height + dy} stroke="#6E94BA" strokeWidth="1" />
-
-      <text x={frontX + 10} y={frontY - 15} fontSize="11" fontWeight="700" fill="#345A7C" fontFamily="Segoe UI, Arial, sans-serif">
-        {mat.name} plate ({mat.type}-type)
-      </text>
-
-      {Array.from({ length: currentArrowCount }, (_, i) => {
-        const y = frontY + 14 + i * ((height - 28) / Math.max(currentArrowCount - 1, 1));
-        return (
-          <line
-            key={`current-${i}`}
-            x1={frontX + 10}
-            y1={y}
-            x2={frontX + width - 12}
-            y2={y}
-            stroke="#D86A2F"
-            strokeWidth="1.3"
-            opacity="0.55"
-            markerEnd="url(#arrowCurrent)"
-          />
-        );
-      })}
-
-      {flowingCarriers.map((p, i) => (
-        <g key={`carrier-${i}`} filter="url(#softGlow)">
-          <circle cx={p.x} cy={p.y} r="3.1" fill={carrierColor}>
-            <animateTransform
-              attributeName="transform"
-              type="translate"
-              from="-24 0"
-              to="24 0"
-              dur={`${p.dur}s`}
-              begin={`${p.delay}s`}
-              repeatCount="indefinite"
-            />
-          </circle>
-        </g>
-      ))}
-
-      {strongField &&
-        buildupCharges.map((p, i) => (
-          <g key={`buildup-${i}`}>
-            <circle cx={p.x} cy={topChargeDominant ? p.yTop : p.yBottom} r="4" fill={carrierColor} opacity="0.95" />
-          </g>
-        ))}
-
-      <line x1={frontX + width + dx + 2} y1={frontY + 12} x2="414" y2="104" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
-      <line x1={frontX + width + dx + 2} y1={frontY + height - 12} x2="414" y2="176" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
-
-      <g filter="url(#shadow)">
-        <rect x="410" y="108" width="74" height="56" rx="12" fill="#F4FBF7" stroke="#0E7A61" strokeWidth="1.1" />
-        <rect x="421" y="120" width="52" height="18" rx="5" fill="url(#meterScreen)" />
-        <text x="447" y="133" fontSize="10.5" fontWeight="700" textAnchor="middle" fill="#9BFFCC" fontFamily="Segoe UI, Arial, sans-serif">
-          {meterValue}
-        </text>
-        <text x="447" y="153" fontSize="9.5" fontWeight="700" textAnchor="middle" fill="#0E7A61" fontFamily="Segoe UI, Arial, sans-serif">
-          Hall voltmeter
-        </text>
-      </g>
-
-      <text x="336" y="260" fontSize="10.5" fill={carrierColor} fontFamily="Segoe UI, Arial, sans-serif">
-        {strongField
-          ? isN
-            ? 'Electrons collect at the bottom edge. Opposite edge develops equal and opposite Hall polarity.'
-            : 'Holes collect at the top edge. Opposite edge develops equal and opposite Hall polarity.'
-          : 'Increase magnetic field to observe charge separation.'}
-      </text>
-    </svg>
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: `1px solid ${active ? '#1B8E5B' : 'var(--color-border-secondary)'}`,
+        background: active ? 'rgba(27, 142, 91, 0.12)' : 'var(--color-background-secondary)',
+        color: active ? '#166B45' : 'var(--color-text-secondary)',
+        borderRadius: 999,
+        padding: '8px 12px',
+        fontSize: 11,
+        fontWeight: 700,
+        cursor: 'pointer',
+        letterSpacing: '0.01em',
+      }}
+    >
+      {label}
+    </button>
   );
+}
+
+function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
+  const canvasRef = React.useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    let animationFrame = 0;
+    let lastTime = performance.now();
+    const particles = [];
+    const fieldDots = [];
+    const dotCount = 48;
+    const width = 940;
+    const height = 320;
+    canvas.width = width;
+    canvas.height = height;
+
+    for (let i = 0; i < dotCount; i += 1) {
+      fieldDots.push({
+        x: 120 + Math.random() * 700,
+        y: 34 + Math.random() * 236,
+        r: 1.1 + Math.random() * 1.5,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.7 + Math.random() * 1.4,
+      });
+    }
+
+    const resetParticle = (particle) => {
+      particle.x = 820 + Math.random() * 90;
+      particle.y = 160 + (Math.random() - 0.5) * 22;
+      particle.vx = -(55 + Math.random() * 40);
+      particle.vy = 0;
+      particle.spin = Math.random() * Math.PI * 2;
+    };
+
+    for (let i = 0; i < 22; i += 1) {
+      const particle = {};
+      resetParticle(particle);
+      particle.x -= i * 34;
+      particles.push(particle);
+    }
+
+    const drawGlow = (x, y, radius, color, alpha = 1) => {
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, `rgba(${color}, ${alpha})`);
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const render = (time) => {
+      const delta = Math.min(0.032, (time - lastTime) / 1000);
+      lastTime = time;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const bg = ctx.createLinearGradient(0, 0, width, height);
+      bg.addColorStop(0, '#F9FCFF');
+      bg.addColorStop(1, '#EEF4FA');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = '#D9E7F5';
+      ctx.fillRect(0, 0, width, 18);
+
+      ctx.save();
+      ctx.translate(0, 0);
+      for (const d of fieldDots) {
+        if (BOn) {
+          d.phase += delta * d.speed;
+          const pulse = 0.5 + 0.5 * Math.sin(d.phase);
+          const x = d.x + Math.sin(d.phase * 0.8) * 5;
+          const y = d.y + Math.cos(d.phase * 0.6) * 4;
+          drawGlow(x, y, d.r * 7.2, '21, 111, 89', 0.12 + pulse * 0.17);
+          ctx.fillStyle = `rgba(33,111,89,${0.35 + pulse * 0.38})`;
+          ctx.beginPath();
+          ctx.arc(x, y, d.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(120, 92);
+      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 126);
+      bodyGradient.addColorStop(0, '#F8FBFF');
+      bodyGradient.addColorStop(1, '#DDEAF7');
+      ctx.fillStyle = bodyGradient;
+      roundRect(ctx, 0, 0, 700, 126, 18);
+      ctx.fill();
+      ctx.strokeStyle = '#8BA7C3';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
+      conductorGradient.addColorStop(0, '#FFFFFF');
+      conductorGradient.addColorStop(1, '#EAF3FB');
+      ctx.fillStyle = conductorGradient;
+      roundRect(ctx, 78, 49, 544, 28, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#8BB2D9';
+      ctx.stroke();
+
+      ctx.fillStyle = '#3C5875';
+      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Thin Hall conductor', 250, 38);
+
+      ctx.fillStyle = 'rgba(28, 121, 180, 0.12)';
+      roundRect(ctx, 82, 53, 536, 20, 10);
+      ctx.fill();
+
+      if (currentOn) {
+        for (const particle of particles) {
+          particle.x += particle.vx * delta;
+
+          if (BOn) {
+            const centerY = 63;
+            const verticalTarget = 16;
+            particle.vy += (verticalTarget - (particle.y - centerY)) * 0.7 * delta;
+            particle.vy += 55 * delta;
+          } else {
+            particle.vy += (63 - particle.y) * 0.1 * delta;
+          }
+
+          particle.y += particle.vy * delta;
+          particle.spin += delta * 7;
+
+          if (particle.x < 84) resetParticle(particle);
+          if (particle.y < 56) particle.y = 56;
+          if (particle.y > 98) particle.y = 98;
+        }
+      }
+
+      const hallChargeStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.12 + Math.abs(B) * 200)) : 0;
+      const hallGlowX = 640;
+      const hallGlowY = 110;
+
+      if (BOn && currentOn) {
+        drawGlow(hallGlowX, hallGlowY, 64, '24, 158, 105', 0.35);
+        ctx.strokeStyle = 'rgba(24, 160, 102, 0.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(602, 63);
+        ctx.quadraticCurveTo(670, 63, 690, 63);
+        ctx.stroke();
+      }
+
+      for (const particle of particles) {
+        const localY = particle.y;
+        const distBottom = Math.max(0, localY - 79);
+        const collectBoost = BOn && currentOn ? Math.min(1, distBottom / 22) : 0;
+        const particleColor = '32, 111, 212';
+        drawGlow(particle.x, particle.y, 14, particleColor, 0.08 + collectBoost * 0.12);
+        ctx.fillStyle = `rgba(${particleColor}, 0.95)`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 4.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (BOn && currentOn) {
+        ctx.fillStyle = 'rgba(37, 165, 104, 0.12)';
+        roundRect(ctx, 612, 52, 72, 22, 10);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(37, 165, 104, 0.55)';
+        ctx.beginPath();
+        ctx.moveTo(612, 63);
+        ctx.lineTo(620, 54);
+        ctx.lineTo(620, 72);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(678, 63);
+        ctx.lineTo(670, 54);
+        ctx.lineTo(670, 72);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      const bottomCount = BOn && currentOn ? 10 : 0;
+      for (let i = 0; i < bottomCount; i += 1) {
+        const x = 160 + i * 46 + Math.sin(time / 340 + i) * 4;
+        const y = 88 + Math.sin(time / 260 + i * 0.8) * 2;
+        drawGlow(x, y, 18, '35, 165, 104', 0.12);
+        ctx.fillStyle = 'rgba(37, 165, 104, 0.88)';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = '#C5D6E7';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(90, 63);
+      ctx.lineTo(82, 63);
+      ctx.stroke();
+
+      ctx.fillStyle = '#6C849D';
+      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Current direction', 88, 36);
+      ctx.fillText('B-field dots', 112, 20);
+
+      if (BOn && currentOn) {
+        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
+        ctx.fillStyle = '#1B8E5B';
+        ctx.shadowColor = 'rgba(27, 142, 91, 0.4)';
+        ctx.shadowBlur = 12;
+        ctx.fillText('Hall Voltage', hallGlowX - 26, hallGlowY + 4);
+        ctx.shadowBlur = 0;
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillStyle = '#188E5B';
+        ctx.fillText(hallVoltageText, 613, 85);
+        const barW = 56 + hallChargeStrength * 58;
+        const gradient = ctx.createLinearGradient(612, 104, 612 + barW, 104);
+        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.15)');
+        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.85)');
+        roundRect(ctx, 612, 92, barW, 20, 10);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      ctx.fillStyle = '#3A536D';
+      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Magnetic field: glowing dots show B passing through the conductor', 84, 24);
+
+      animationFrame = requestAnimationFrame(render);
+    };
+
+    animationFrame = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [BOn, currentOn, hallVoltageText]);
+
+  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: 'auto' }} />;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
 function ExerciseNote() {
@@ -625,6 +657,8 @@ const HallCoefficientSimulation = () => {
   const [coilI, setCoilI] = useState(5);
   const [I_mA, setI_mA] = useState(10);
   const [thickness, setThickness] = useState(1);
+  const [fieldOn, setFieldOn] = useState(true);
+  const [currentOn, setCurrentOn] = useState(true);
   const [answerState, setAnswerState] = useState({});
   const [studentValues, setStudentValues] = useState({});
   const [isCompact, setIsCompact] = useState(() =>
@@ -659,6 +693,8 @@ const HallCoefficientSimulation = () => {
     setCoilI(5);
     setI_mA(10);
     setThickness(1);
+    setFieldOn(true);
+    setCurrentOn(true);
     setAnswerState({});
     setStudentValues({});
   };
@@ -827,9 +863,27 @@ const HallCoefficientSimulation = () => {
             border: '1px solid var(--color-border-tertiary)',
             borderRadius: 12,
             overflow: 'hidden',
+            padding: 12,
           }}
         >
-          <HallPlate3D mat={mat} B={B} Vh={Vh} thickness={thickness} I_mA={I_mA} showVh={showVh} />
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            <TogglePill label="Magnetic Field On/Off" active={fieldOn} onClick={() => setFieldOn((prev) => !prev)} />
+            <TogglePill label="Current On/Off" active={currentOn} onClick={() => setCurrentOn((prev) => !prev)} />
+          </div>
+          <HallCanvas2D
+            BOn={fieldOn}
+            currentOn={currentOn}
+            showVh={showVh}
+            hallVoltageText={showVh ? fmtVh(Vh) : '---'}
+          />
         </div>
 
         <ExerciseNote />
