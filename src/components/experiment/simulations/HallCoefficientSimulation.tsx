@@ -566,12 +566,17 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
 
       const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
       conductorGradient.addColorStop(0, '#FFFFFF');
+      conductorGradient.addColorStop(0.5, '#FBFDFF');
       conductorGradient.addColorStop(1, '#F2F7FC');
       ctx.fillStyle = conductorGradient;
-      roundRect(ctx, 88, 48, 524, 30, 15);
+      roundRect(ctx, 88, 44, 524, 38, 18);
       ctx.fill();
       ctx.strokeStyle = '#8BB2D9';
       ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      roundRect(ctx, 92, 55, 516, 16, 8);
+      ctx.fill();
 
       ctx.fillStyle = '#3C5875';
       ctx.font = '600 13px Segoe UI, Arial, sans-serif';
@@ -580,12 +585,14 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       const isN = matType === 'n';
       const hallSign = isN ? 1 : -1;
       const forceTowardTop = !isN;
-      const edgeYTop = 55;
-      const edgeYBottom = 73;
+      const edgeYTop = 51;
+      const edgeYBottom = 77;
+      const centerY = 64;
+      const trackMinY = 47;
+      const trackMaxY = 81;
       const carrierColor = isN ? '32, 111, 212' : '221, 125, 45';
       const oppositeColor = isN ? '221, 125, 45' : '32, 111, 212';
       const chargeEdgeY = forceTowardTop ? edgeYTop : edgeYBottom;
-      const oppositeEdgeY = forceTowardTop ? edgeYBottom : edgeYTop;
       const accumulationStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.25 + Math.abs(B) * 120)) : 0;
 
       if (BOn) {
@@ -628,17 +635,22 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
 
           if (BOn) {
             particle.vy += hallSign * 95 * delta;
-            particle.vy += (chargeEdgeY - particle.y) * 0.055 * delta;
-          } else {
-            particle.vy += (63 - particle.y) * 0.10 * delta;
+          particle.vy += (chargeEdgeY - particle.y) * 0.055 * delta;
+        } else {
+            particle.vy += (centerY - particle.y) * 0.12 * delta;
           }
 
           particle.y += particle.vy * delta;
           particle.vy *= 0.98;
 
           if (particle.x < 88) resetParticle(particle, 0);
-          if (particle.y < 51) particle.y = 51;
-          if (particle.y > 79) particle.y = 79;
+          if (currentOn && !BOn) {
+            particle.y = centerY;
+            particle.vy = 0;
+          } else {
+            if (particle.y < trackMinY) particle.y = trackMinY;
+            if (particle.y > trackMaxY) particle.y = trackMaxY;
+          }
         }
       }
 
@@ -657,6 +669,17 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, 4.0, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      if (currentOn && !BOn) {
+        ctx.strokeStyle = 'rgba(24, 95, 165, 0.28)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath();
+        ctx.moveTo(92, centerY);
+        ctx.lineTo(612, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       if (BOn && currentOn) {
@@ -742,7 +765,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       if (currentOn) {
         ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Charge flow', 116, 86);
+        ctx.fillText(BOn ? 'Charge flow shifts to edge' : 'Charge flow at center', 116, 86);
       }
 
       ctx.restore();
