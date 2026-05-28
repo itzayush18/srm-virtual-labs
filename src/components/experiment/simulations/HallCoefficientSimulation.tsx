@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const MATERIALS = {
   si: {
@@ -36,10 +36,6 @@ const E_CHARGE = 1.602176634e-19;
 const ROOM_TEMPERATURE_K = 300;
 const FIXED_COIL_TURNS = 800;
 
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
-
 function toSup(n) {
   return String(n)
     .split('')
@@ -62,27 +58,27 @@ function toSup(n) {
     .join('');
 }
 
-function fmtSci(v, unit = '') {
+function fmtSciValue(v) {
   if (!Number.isFinite(v)) return '--';
-  if (v === 0) return `0${unit ? ` ${unit}` : ''}`;
+  if (v === 0) return '0';
   const e = Math.floor(Math.log10(Math.abs(v)));
   const m = (v / Math.pow(10, e)).toFixed(2);
-  return `${m}×10${toSup(e)}${unit ? ` ${unit}` : ''}`;
+  return `${m}×10${toSup(e)}`;
 }
 
-function fmtVh(v) {
+function fmtVhValue(v) {
   if (!Number.isFinite(v)) return '--';
-  return `${v.toFixed(Math.abs(v) < 10 ? 3 : 1)} mV`;
+  return v.toFixed(Math.abs(v) < 10 ? 3 : 1);
 }
 
-function fmtB(v) {
+function fmtBValue(v) {
   if (!Number.isFinite(v)) return '--';
-  return `${v.toFixed(4)} T`;
+  return v.toFixed(4);
 }
 
-function fmtDensityWithAltUnit(v) {
+function fmtDensityValue(v) {
   const perCm3 = v / 1e6;
-  return `${fmtSci(perCm3, 'cm⁻³')} (${fmtSci(v, 'm⁻³')})`;
+  return `${fmtSciValue(perCm3)} / ${fmtSciValue(v)}`;
 }
 
 function calcB(coilI, coilN) {
@@ -109,6 +105,21 @@ function calcMaterialState(material, temperatureK) {
     rh: calcHallCoefficient(material, carrierDensity),
     sigma: calcConductivity(carrierDensity, mobility),
   };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
 function SourceCard({ color, title, subtitle, children }) {
@@ -252,273 +263,6 @@ function TogglePill({ label, active, onClick }) {
   );
 }
 
-function HallCanvas2D({ matType, BOn, currentOn, showVh, hallVoltageText }) {
-  const canvasRef = React.useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return undefined;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return undefined;
-
-    let animationFrame = 0;
-    let lastTime = performance.now();
-    const particles = [];
-    const fieldLines = [];
-    const lineCount = 8;
-    const width = 940;
-    const height = 320;
-    canvas.width = width;
-    canvas.height = height;
-
-    for (let i = 0; i < lineCount; i += 1) {
-      fieldLines.push({
-        x: 170 + i * 78,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.9 + Math.random() * 0.6,
-      });
-    }
-
-    const resetParticle = (particle) => {
-      particle.x = 860 + Math.random() * 70;
-      particle.y = 161 + (Math.random() - 0.5) * 18;
-      particle.vx = -(62 + Math.random() * 44);
-      particle.vy = 0;
-    };
-
-    for (let i = 0; i < 22; i += 1) {
-      const particle = {};
-      resetParticle(particle);
-      particle.x -= i * 34;
-      particles.push(particle);
-    }
-
-    const drawGlow = (x, y, radius, color, alpha = 1) => {
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      gradient.addColorStop(0, `rgba(${color}, ${alpha})`);
-      gradient.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
-    const render = (time) => {
-      const delta = Math.min(0.032, (time - lastTime) / 1000);
-      lastTime = time;
-
-      ctx.clearRect(0, 0, width, height);
-
-      const bg = ctx.createLinearGradient(0, 0, width, height);
-      bg.addColorStop(0, '#F7FBFF');
-      bg.addColorStop(1, '#EAF2F8');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.fillStyle = '#D9E4EE';
-      ctx.fillRect(0, 0, width, 20);
-
-      ctx.save();
-      ctx.translate(120, 98);
-      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 122);
-      bodyGradient.addColorStop(0, '#F9FCFF');
-      bodyGradient.addColorStop(1, '#DDEBF8');
-      ctx.fillStyle = bodyGradient;
-      roundRect(ctx, 0, 0, 700, 122, 18);
-      ctx.fill();
-      ctx.strokeStyle = '#8BA7C3';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
-      conductorGradient.addColorStop(0, '#FFFFFF');
-      conductorGradient.addColorStop(1, '#F2F7FC');
-      ctx.fillStyle = conductorGradient;
-      roundRect(ctx, 88, 48, 524, 30, 15);
-      ctx.fill();
-      ctx.strokeStyle = '#8BB2D9';
-      ctx.stroke();
-
-      ctx.fillStyle = '#3C5875';
-      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Thin Hall conductor', 248, 38);
-
-      if (currentOn) {
-        for (const particle of particles) {
-          particle.x += particle.vx * delta;
-
-          if (BOn) {
-            const isN = matType === 'n';
-            const upward = isN ? 1 : -1;
-            particle.vy += upward * 54 * delta;
-            particle.vy += ((isN ? 58 : 68) - particle.y) * 0.02 * delta;
-          } else {
-            particle.vy += (63 - particle.y) * 0.10 * delta;
-          }
-
-          particle.y += particle.vy * delta;
-
-          if (particle.x < 88) resetParticle(particle);
-          if (particle.y < 53) particle.y = 53;
-          if (particle.y > 77) particle.y = 77;
-        }
-      }
-
-      const hallChargeStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.2 + Math.abs(B) * 160)) : 0;
-      const isN = matType === 'n';
-      const majorityColor = isN ? '32, 111, 212' : '221, 125, 45';
-      const topChargeColor = isN ? '221, 125, 45' : '32, 111, 212';
-      const accumulateTop = !isN;
-
-      if (BOn) {
-        const fieldTop = 20;
-        const fieldBottom = 100;
-        for (const line of fieldLines) {
-          line.phase += delta * line.speed;
-          const wobble = Math.sin(line.phase) * 2;
-          const x = line.x + wobble;
-          const grad = ctx.createLinearGradient(x, fieldTop, x, fieldBottom);
-          grad.addColorStop(0, 'rgba(22, 124, 74, 0.08)');
-          grad.addColorStop(0.45, 'rgba(22, 124, 74, 0.78)');
-          grad.addColorStop(1, 'rgba(22, 124, 74, 0.08)');
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 1.9;
-          ctx.beginPath();
-          ctx.moveTo(x, fieldTop);
-          ctx.lineTo(x, fieldBottom);
-          ctx.stroke();
-
-          ctx.fillStyle = 'rgba(22, 124, 74, 0.82)';
-          ctx.beginPath();
-          ctx.moveTo(x - 4, fieldTop + 6);
-          ctx.lineTo(x + 4, fieldTop + 6);
-          ctx.lineTo(x, fieldTop);
-          ctx.closePath();
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(x - 4, fieldBottom - 6);
-          ctx.lineTo(x + 4, fieldBottom - 6);
-          ctx.lineTo(x, fieldBottom);
-          ctx.closePath();
-          ctx.fill();
-        }
-      }
-
-      for (const particle of particles) {
-        const collectBoost = BOn && currentOn ? 1 - Math.min(1, Math.abs(particle.y - (accumulateTop ? 57 : 73)) / 18) : 0;
-        drawGlow(particle.x, particle.y, 13, majorityColor, 0.07 + collectBoost * 0.10);
-        ctx.fillStyle = `rgba(${majorityColor}, 0.95)`;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 4.0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      const edgeYTop = 55;
-      const edgeYBottom = 73;
-      const topAccum = BOn && currentOn && accumulateTop ? hallChargeStrength : 0;
-      const bottomAccum = BOn && currentOn && !accumulateTop ? hallChargeStrength : 0;
-      const oppositeAccum = BOn && currentOn ? Math.max(0.18, 0.62 - hallChargeStrength * 0.28) : 0;
-
-      if (BOn) {
-        drawGlow(322, 47, 54, '37, 165, 104', 0.16 + hallChargeStrength * 0.22);
-        drawGlow(322, 77, 54, '37, 165, 104', 0.16 + hallChargeStrength * 0.22);
-      }
-
-      if (BOn && currentOn) {
-        ctx.fillStyle = 'rgba(37,165,104,0.18)';
-        roundRect(ctx, 598, 36, 120, 24, 12);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(37,165,104,0.40)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = '#15935A';
-        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Hall Voltage', 618, 53);
-
-        const topMajority = accumulateTop;
-        const topColor = `rgba(${topChargeColor}, ${0.35 + topAccum * 0.55})`;
-        const bottomColor = `rgba(${majorityColor}, ${0.35 + bottomAccum * 0.55})`;
-
-        for (let i = 0; i < 11; i += 1) {
-          const x = 92 + i * 48 + Math.sin(time / 220 + i) * 2;
-          const y = topMajority ? edgeYTop : edgeYBottom;
-          drawGlow(x, y, 15, topMajority ? topChargeColor : majorityColor, 0.10 + topAccum * 0.14);
-          ctx.fillStyle = topMajority ? topColor : bottomColor;
-          ctx.beginPath();
-          ctx.arc(x, y, 3.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        for (let i = 0; i < 11; i += 1) {
-          const x = 92 + i * 48 + Math.cos(time / 260 + i) * 2;
-          const y = topMajority ? edgeYBottom : edgeYTop;
-          drawGlow(x, y, 10, isN ? '221, 125, 45' : '32, 111, 212', 0.06 + oppositeAccum * 0.10);
-          ctx.fillStyle = `rgba(${isN ? '221, 125, 45' : '32, 111, 212'}, ${0.25 + oppositeAccum * 0.35})`;
-          ctx.beginPath();
-          ctx.arc(x, y, 2.1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      ctx.strokeStyle = '#C5D6E7';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(90, 63);
-      ctx.lineTo(82, 63);
-      ctx.stroke();
-
-      ctx.fillStyle = '#6C849D';
-      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('I', 88, 39);
-      ctx.fillText('B', 170, 24);
-
-      if (BOn && currentOn && showVh) {
-        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillStyle = '#188E5B';
-        ctx.fillText(hallVoltageText, 620, 72);
-        const barW = 68 + hallChargeStrength * 58;
-        const gradient = ctx.createLinearGradient(612, 102, 612 + barW, 102);
-        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.12)');
-        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.88)');
-        roundRect(ctx, 612, 82, barW, 22, 11);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
-        ctx.stroke();
-      }
-
-      ctx.restore();
-
-      ctx.fillStyle = '#3A536D';
-      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Magnetic field: vertical lines pass through the conductor', 84, 24);
-
-      animationFrame = requestAnimationFrame(render);
-    };
-
-    animationFrame = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [BOn, currentOn, hallVoltageText]);
-
-  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: 'auto' }} />;
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  const radius = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + w - radius, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-  ctx.lineTo(x + w, y + h - radius);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-  ctx.lineTo(x + radius, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
-
 function ExerciseNote() {
   return (
     <div
@@ -541,120 +285,105 @@ function ExerciseNote() {
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
   if (isPType) {
     if (revealed) {
-      return (
-        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-          {row.value}
-          <span style={{ marginLeft: 6, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{row.unit}</span>
-        </span>
-      );
+      return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{row.value}</span>;
     }
 
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        <button
-          type="button"
-          onClick={onReveal}
-          style={{
-            border: '1px solid #185FA566',
-            background: '#185FA50F',
-            color: '#185FA5',
-            borderRadius: 8,
-            padding: '5px 9px',
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Click for answer
-        </button>
-        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 600 }}>{row.unit}</span>
-      </span>
+      <button
+        type="button"
+        onClick={onReveal}
+        style={{
+          border: '1px solid #185FA566',
+          background: '#185FA50F',
+          color: '#185FA5',
+          borderRadius: 8,
+          padding: '5px 9px',
+          fontSize: 11,
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
+        Click for answer
+      </button>
     );
   }
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: '100%' }}>
-      <input
-        type="text"
-        inputMode="decimal"
-        value={studentValue}
-        onChange={(e) => onStudentChange(e.target.value)}
-        placeholder="Enter value"
-        style={{
-          flex: 1,
-          border: '1px solid var(--color-border-secondary)',
-          borderRadius: 8,
-          padding: '7px 9px',
-          fontSize: 11,
-          background: 'var(--color-background-primary)',
-          color: 'var(--color-text-primary)',
-        }}
-      />
-      <span style={{ color: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
-        {row.unit}
-      </span>
-    </span>
+    <input
+      type="text"
+      inputMode="decimal"
+      value={studentValue}
+      onChange={(e) => onStudentChange(e.target.value)}
+      placeholder="Enter value"
+      style={{
+        width: '100%',
+        border: '1px solid var(--color-border-secondary)',
+        borderRadius: 8,
+        padding: '7px 9px',
+        fontSize: 11,
+        background: 'var(--color-background-primary)',
+        color: 'var(--color-text-primary)',
+      }}
+    />
   );
 }
 
 function MeasurementTable({ mat, data, answerState, setAnswerState, studentValues, setStudentValues }) {
   const isPTypeExercise = mat.type === 'p';
 
-  const reveal = (key) => {
-    setAnswerState((prev) => ({ ...prev, [key]: true }));
-  };
-
   const rows = [
     {
       key: 'bField',
       label: 'Magnetic field B',
       formula: 'B = μ0 × N × Icoil / L',
-      value: fmtB(data.B),
+      value: fmtBValue(data.B),
       unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
       formula: 'V_H = R_H × I × B / t',
-      value: fmtVh(data.Vh),
+      value: fmtVhValue(data.Vh),
       unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
       formula: 'R_H = V_H × t / (I × B)',
-      value: fmtSci(data.measuredRh, 'm³/C'),
+      value: fmtSciValue(data.measuredRh),
       unit: 'm³/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
-      value: fmtDensityWithAltUnit(data.carrierDensity),
+      value: fmtDensityValue(data.carrierDensity),
       unit: 'cm⁻³ / m⁻³',
     },
     {
       key: 'hallMobility',
       label: 'Hall mobility μ_H',
       formula: 'μ_H = |R_H| × σ',
-      value: fmtSci(data.muH, 'm²/V·s'),
+      value: fmtSciValue(data.muH),
       unit: 'm²/V·s',
     },
     {
       key: 'mobility',
       label: 'Carrier mobility μ',
       formula: 'μ(T) from material model',
-      value: fmtSci(data.mobility, 'm²/V·s'),
+      value: fmtSciValue(data.mobility),
       unit: 'm²/V·s',
     },
     {
       key: 'conductivity',
       label: 'Conductivity σ',
       formula: 'σ = q × n × μ',
-      value: fmtSci(data.sigma, 'S/m'),
+      value: fmtSciValue(data.sigma),
       unit: 'S/m',
     },
   ];
+
+  const reveal = (key) => setAnswerState((prev) => ({ ...prev, [key]: true }));
 
   return (
     <div
@@ -736,6 +465,300 @@ function tdStyle(isLast) {
     background: 'var(--color-background-primary)',
     verticalAlign: 'middle',
   };
+}
+
+function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    let animationFrame = 0;
+    let lastTime = performance.now();
+    const particles = [];
+    const fieldLines = [];
+    const lineCount = 10;
+    const width = 940;
+    const height = 320;
+    canvas.width = width;
+    canvas.height = height;
+
+    for (let i = 0; i < lineCount; i += 1) {
+      fieldLines.push({
+        x: 160 + i * 70,
+        phase: Math.random() * Math.PI * 2,
+        speed: 1.2 + Math.random() * 0.7,
+      });
+    }
+
+    const resetParticle = (particle, offset = 0) => {
+      particle.x = 860 + Math.random() * 70 - offset;
+      particle.y = 160 + (Math.random() - 0.5) * 18;
+      particle.vx = -(70 + Math.random() * 36);
+      particle.vy = 0;
+    };
+
+    for (let i = 0; i < 24; i += 1) {
+      const particle = {};
+      resetParticle(particle, i * 22);
+      particles.push(particle);
+    }
+
+    const drawGlow = (x, y, radius, color, alpha = 1) => {
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, `rgba(${color}, ${alpha})`);
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const drawArrow = (x1, y1, x2, y2, color) => {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const size = 7;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    const render = (time) => {
+      const delta = Math.min(0.032, (time - lastTime) / 1000);
+      lastTime = time;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const bg = ctx.createLinearGradient(0, 0, width, height);
+      bg.addColorStop(0, '#F7FBFF');
+      bg.addColorStop(1, '#EAF2F8');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = '#D9E4EE';
+      ctx.fillRect(0, 0, width, 20);
+
+      ctx.save();
+      ctx.translate(120, 98);
+
+      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 122);
+      bodyGradient.addColorStop(0, '#F9FCFF');
+      bodyGradient.addColorStop(1, '#DDEBF8');
+      ctx.fillStyle = bodyGradient;
+      roundRect(ctx, 0, 0, 700, 122, 18);
+      ctx.fill();
+      ctx.strokeStyle = '#8BA7C3';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
+      conductorGradient.addColorStop(0, '#FFFFFF');
+      conductorGradient.addColorStop(1, '#F2F7FC');
+      ctx.fillStyle = conductorGradient;
+      roundRect(ctx, 88, 48, 524, 30, 15);
+      ctx.fill();
+      ctx.strokeStyle = '#8BB2D9';
+      ctx.stroke();
+
+      ctx.fillStyle = '#3C5875';
+      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Thin Hall conductor', 248, 38);
+
+      const isN = matType === 'n';
+      const hallSign = isN ? 1 : -1;
+      const forceTowardTop = !isN;
+      const edgeYTop = 55;
+      const edgeYBottom = 73;
+      const carrierColor = isN ? '32, 111, 212' : '221, 125, 45';
+      const oppositeColor = isN ? '221, 125, 45' : '32, 111, 212';
+      const chargeEdgeY = forceTowardTop ? edgeYTop : edgeYBottom;
+      const oppositeEdgeY = forceTowardTop ? edgeYBottom : edgeYTop;
+      const accumulationStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.25 + Math.abs(B) * 120)) : 0;
+
+      if (BOn) {
+        const fieldTop = 18;
+        const fieldBottom = 102;
+        for (const line of fieldLines) {
+          line.phase += delta * line.speed;
+          const wobble = Math.sin(line.phase + time / 260) * 6;
+          const x = line.x + wobble;
+          const grad = ctx.createLinearGradient(x, fieldTop, x, fieldBottom);
+          grad.addColorStop(0, 'rgba(22, 124, 74, 0.06)');
+          grad.addColorStop(0.45, 'rgba(22, 124, 74, 0.88)');
+          grad.addColorStop(1, 'rgba(22, 124, 74, 0.06)');
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, fieldTop);
+          ctx.lineTo(x, fieldBottom);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(22, 124, 74, 0.85)';
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldTop + 7);
+          ctx.lineTo(x + 4, fieldTop + 7);
+          ctx.lineTo(x, fieldTop);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldBottom - 7);
+          ctx.lineTo(x + 4, fieldBottom - 7);
+          ctx.lineTo(x, fieldBottom);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      if (currentOn) {
+        for (const particle of particles) {
+          particle.x += particle.vx * delta;
+
+          if (BOn) {
+            particle.vy += hallSign * 95 * delta;
+            particle.vy += (chargeEdgeY - particle.y) * 0.055 * delta;
+          } else {
+            particle.vy += (63 - particle.y) * 0.10 * delta;
+          }
+
+          particle.y += particle.vy * delta;
+          particle.vy *= 0.98;
+
+          if (particle.x < 88) resetParticle(particle, 0);
+          if (particle.y < 51) particle.y = 51;
+          if (particle.y > 79) particle.y = 79;
+        }
+      }
+
+      if (currentOn) {
+        for (let i = 0; i < 5; i += 1) {
+          const x = 120 + ((time / 18 + i * 130) % 450);
+          const y = 63 + Math.sin(time / 180 + i) * 2;
+          drawArrow(x, y, x + 42, y, 'rgba(24, 95, 165, 0.45)');
+        }
+      }
+
+      for (const particle of particles) {
+        const centerBias = BOn && currentOn ? 1 - Math.min(1, Math.abs(particle.y - chargeEdgeY) / 18) : 0;
+        drawGlow(particle.x, particle.y, 14, carrierColor, 0.08 + centerBias * 0.14);
+        ctx.fillStyle = `rgba(${carrierColor}, ${currentOn ? 0.96 : 0.25})`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 4.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (BOn && currentOn) {
+        const topDensity = forceTowardTop ? accumulationStrength : Math.max(0.18, 0.55 - accumulationStrength * 0.25);
+        const bottomDensity = forceTowardTop ? Math.max(0.18, 0.55 - accumulationStrength * 0.25) : accumulationStrength;
+
+        ctx.fillStyle = 'rgba(37,165,104,0.18)';
+        roundRect(ctx, 598, 36, 120, 24, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(37,165,104,0.40)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#15935A';
+        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
+        ctx.fillText('Hall Voltage', 618, 53);
+
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.sin(time / 220 + i) * 2;
+          const y = forceTowardTop ? edgeYTop : edgeYBottom;
+          drawGlow(x, y, 15, forceTowardTop ? oppositeColor : carrierColor, 0.11 + accumulationStrength * 0.12);
+          ctx.fillStyle = forceTowardTop
+            ? `rgba(${oppositeColor}, ${0.28 + topDensity * 0.50})`
+            : `rgba(${carrierColor}, ${0.28 + bottomDensity * 0.50})`;
+          ctx.beginPath();
+          ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.cos(time / 260 + i) * 2;
+          const y = forceTowardTop ? edgeYBottom : edgeYTop;
+          drawGlow(x, y, 10, forceTowardTop ? carrierColor : oppositeColor, 0.07 + (1 - accumulationStrength) * 0.08);
+          ctx.fillStyle = `rgba(${forceTowardTop ? carrierColor : oppositeColor}, ${0.22 + (1 - accumulationStrength) * 0.30})`;
+          ctx.beginPath();
+          ctx.arc(x, y, 2.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const fx = 332;
+        const fy = forceTowardTop ? 52 : 72;
+        drawArrow(fx, 63, fx, fy, 'rgba(27, 142, 91, 0.9)');
+        ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText('F_L', fx + 8, forceTowardTop ? 56 : 76);
+      } else if (BOn) {
+        drawGlow(322, 47, 54, '37, 165, 104', 0.14);
+        drawGlow(322, 77, 54, '37, 165, 104', 0.14);
+      }
+
+      ctx.strokeStyle = '#C5D6E7';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(90, 63);
+      ctx.lineTo(82, 63);
+      ctx.stroke();
+
+      ctx.fillStyle = '#6C849D';
+      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
+      ctx.fillText('I', 88, 39);
+      ctx.fillText('B', 170, 24);
+
+      if (currentOn && BOn) {
+        ctx.fillStyle = 'rgba(24, 142, 91, 0.92)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText(forceTowardTop ? 'Lorentz force upward' : 'Lorentz force downward', 390, 38);
+      }
+
+      if (BOn && currentOn && showVh) {
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillStyle = '#188E5B';
+        ctx.fillText(hallVoltageText, 620, 72);
+        const barW = 68 + accumulationStrength * 58;
+        const gradient = ctx.createLinearGradient(612, 102, 612 + barW, 102);
+        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.12)');
+        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.88)');
+        roundRect(ctx, 612, 82, barW, 22, 11);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
+        ctx.stroke();
+      }
+
+      if (currentOn) {
+        ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText('Charge flow', 116, 86);
+      }
+
+      ctx.restore();
+
+      ctx.fillStyle = '#3A536D';
+      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Magnetic field: animated vertical lines while B is on', 84, 24);
+
+      animationFrame = requestAnimationFrame(render);
+    };
+
+    animationFrame = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [BOn, currentOn, B, hallVoltageText, matType, showVh]);
+
+  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: 'auto' }} />;
 }
 
 const HallCoefficientSimulation = () => {
@@ -968,8 +991,9 @@ const HallCoefficientSimulation = () => {
             matType={mat.type}
             BOn={fieldOn}
             currentOn={currentOn}
+            B={B}
             showVh={showVh}
-            hallVoltageText={showVh ? fmtVh(Vh) : '---'}
+            hallVoltageText={showVh ? `${fmtVhValue(Vh)} mV` : '---'}
           />
         </div>
 
