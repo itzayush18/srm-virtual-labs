@@ -181,23 +181,78 @@ function TogglePill({ label, active, onClick }) {
       type="button"
       onClick={onClick}
       style={{
-        border: `1px solid ${active ? '#1B8E5B' : 'var(--color-border-secondary)'}`,
-        background: active ? 'rgba(27, 142, 91, 0.12)' : 'var(--color-background-secondary)',
-        color: active ? '#166B45' : 'var(--color-text-secondary)',
+        border: '1px solid var(--color-border-secondary)',
+        background: 'var(--color-background-secondary)',
         borderRadius: 999,
         padding: '8px 12px',
         fontSize: 11,
         fontWeight: 700,
         cursor: 'pointer',
         letterSpacing: '0.01em',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        minWidth: 190,
+        justifyContent: 'space-between',
       }}
     >
-      {label}
+      <span style={{ color: 'var(--color-text-secondary)' }}>{label}</span>
+      <span
+        style={{
+          position: 'relative',
+          width: 42,
+          height: 24,
+          borderRadius: 999,
+          background: active ? 'linear-gradient(180deg, #1B8E5B 0%, #16764A 100%)' : '#B8C8D8',
+          boxShadow: active ? '0 0 0 3px rgba(27, 142, 91, 0.10)' : 'none',
+          display: 'inline-block',
+          transition: 'background 160ms ease',
+        }}
+        aria-hidden="true"
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 3,
+            left: active ? 21 : 3,
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            background: '#fff',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+            transition: 'left 160ms ease',
+          }}
+        />
+        <span
+          style={{
+            position: 'absolute',
+            left: 6,
+            top: 5,
+            fontSize: 8,
+            fontWeight: 800,
+            color: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)',
+          }}
+        >
+          OFF
+        </span>
+        <span
+          style={{
+            position: 'absolute',
+            right: 5,
+            top: 5,
+            fontSize: 8,
+            fontWeight: 800,
+            color: active ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.8)',
+          }}
+        >
+          ON
+        </span>
+      </span>
     </button>
   );
 }
 
-function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
+function HallCanvas2D({ matType, BOn, currentOn, showVh, hallVoltageText }) {
   const canvasRef = React.useRef(null);
 
   useEffect(() => {
@@ -210,29 +265,26 @@ function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
     let animationFrame = 0;
     let lastTime = performance.now();
     const particles = [];
-    const fieldDots = [];
-    const dotCount = 48;
+    const fieldLines = [];
+    const lineCount = 8;
     const width = 940;
     const height = 320;
     canvas.width = width;
     canvas.height = height;
 
-    for (let i = 0; i < dotCount; i += 1) {
-      fieldDots.push({
-        x: 120 + Math.random() * 700,
-        y: 34 + Math.random() * 236,
-        r: 1.1 + Math.random() * 1.5,
+    for (let i = 0; i < lineCount; i += 1) {
+      fieldLines.push({
+        x: 170 + i * 78,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.7 + Math.random() * 1.4,
+        speed: 0.9 + Math.random() * 0.6,
       });
     }
 
     const resetParticle = (particle) => {
-      particle.x = 820 + Math.random() * 90;
-      particle.y = 160 + (Math.random() - 0.5) * 22;
-      particle.vx = -(55 + Math.random() * 40);
+      particle.x = 860 + Math.random() * 70;
+      particle.y = 161 + (Math.random() - 0.5) * 18;
+      particle.vx = -(62 + Math.random() * 44);
       particle.vy = 0;
-      particle.spin = Math.random() * Math.PI * 2;
     };
 
     for (let i = 0; i < 22; i += 1) {
@@ -259,38 +311,21 @@ function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
       ctx.clearRect(0, 0, width, height);
 
       const bg = ctx.createLinearGradient(0, 0, width, height);
-      bg.addColorStop(0, '#F9FCFF');
-      bg.addColorStop(1, '#EEF4FA');
+      bg.addColorStop(0, '#F7FBFF');
+      bg.addColorStop(1, '#EAF2F8');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, width, height);
 
-      ctx.fillStyle = '#D9E7F5';
-      ctx.fillRect(0, 0, width, 18);
+      ctx.fillStyle = '#D9E4EE';
+      ctx.fillRect(0, 0, width, 20);
 
       ctx.save();
-      ctx.translate(0, 0);
-      for (const d of fieldDots) {
-        if (BOn) {
-          d.phase += delta * d.speed;
-          const pulse = 0.5 + 0.5 * Math.sin(d.phase);
-          const x = d.x + Math.sin(d.phase * 0.8) * 5;
-          const y = d.y + Math.cos(d.phase * 0.6) * 4;
-          drawGlow(x, y, d.r * 7.2, '21, 111, 89', 0.12 + pulse * 0.17);
-          ctx.fillStyle = `rgba(33,111,89,${0.35 + pulse * 0.38})`;
-          ctx.beginPath();
-          ctx.arc(x, y, d.r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.restore();
-
-      ctx.save();
-      ctx.translate(120, 92);
-      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 126);
-      bodyGradient.addColorStop(0, '#F8FBFF');
-      bodyGradient.addColorStop(1, '#DDEAF7');
+      ctx.translate(120, 98);
+      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 122);
+      bodyGradient.addColorStop(0, '#F9FCFF');
+      bodyGradient.addColorStop(1, '#DDEBF8');
       ctx.fillStyle = bodyGradient;
-      roundRect(ctx, 0, 0, 700, 126, 18);
+      roundRect(ctx, 0, 0, 700, 122, 18);
       ctx.fill();
       ctx.strokeStyle = '#8BA7C3';
       ctx.lineWidth = 1.2;
@@ -298,97 +333,132 @@ function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
 
       const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
       conductorGradient.addColorStop(0, '#FFFFFF');
-      conductorGradient.addColorStop(1, '#EAF3FB');
+      conductorGradient.addColorStop(1, '#F2F7FC');
       ctx.fillStyle = conductorGradient;
-      roundRect(ctx, 78, 49, 544, 28, 14);
+      roundRect(ctx, 88, 48, 524, 30, 15);
       ctx.fill();
       ctx.strokeStyle = '#8BB2D9';
       ctx.stroke();
 
       ctx.fillStyle = '#3C5875';
       ctx.font = '600 13px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Thin Hall conductor', 250, 38);
-
-      ctx.fillStyle = 'rgba(28, 121, 180, 0.12)';
-      roundRect(ctx, 82, 53, 536, 20, 10);
-      ctx.fill();
+      ctx.fillText('Thin Hall conductor', 248, 38);
 
       if (currentOn) {
         for (const particle of particles) {
           particle.x += particle.vx * delta;
 
           if (BOn) {
-            const centerY = 63;
-            const verticalTarget = 16;
-            particle.vy += (verticalTarget - (particle.y - centerY)) * 0.7 * delta;
-            particle.vy += 55 * delta;
+            const isN = matType === 'n';
+            const upward = isN ? 1 : -1;
+            particle.vy += upward * 54 * delta;
+            particle.vy += ((isN ? 58 : 68) - particle.y) * 0.02 * delta;
           } else {
-            particle.vy += (63 - particle.y) * 0.1 * delta;
+            particle.vy += (63 - particle.y) * 0.10 * delta;
           }
 
           particle.y += particle.vy * delta;
-          particle.spin += delta * 7;
 
-          if (particle.x < 84) resetParticle(particle);
-          if (particle.y < 56) particle.y = 56;
-          if (particle.y > 98) particle.y = 98;
+          if (particle.x < 88) resetParticle(particle);
+          if (particle.y < 53) particle.y = 53;
+          if (particle.y > 77) particle.y = 77;
         }
       }
 
-      const hallChargeStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.12 + Math.abs(B) * 200)) : 0;
-      const hallGlowX = 640;
-      const hallGlowY = 110;
+      const hallChargeStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.2 + Math.abs(B) * 160)) : 0;
+      const isN = matType === 'n';
+      const majorityColor = isN ? '32, 111, 212' : '221, 125, 45';
+      const topChargeColor = isN ? '221, 125, 45' : '32, 111, 212';
+      const accumulateTop = !isN;
 
-      if (BOn && currentOn) {
-        drawGlow(hallGlowX, hallGlowY, 64, '24, 158, 105', 0.35);
-        ctx.strokeStyle = 'rgba(24, 160, 102, 0.55)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(602, 63);
-        ctx.quadraticCurveTo(670, 63, 690, 63);
-        ctx.stroke();
+      if (BOn) {
+        const fieldTop = 20;
+        const fieldBottom = 100;
+        for (const line of fieldLines) {
+          line.phase += delta * line.speed;
+          const wobble = Math.sin(line.phase) * 2;
+          const x = line.x + wobble;
+          const grad = ctx.createLinearGradient(x, fieldTop, x, fieldBottom);
+          grad.addColorStop(0, 'rgba(22, 124, 74, 0.08)');
+          grad.addColorStop(0.45, 'rgba(22, 124, 74, 0.78)');
+          grad.addColorStop(1, 'rgba(22, 124, 74, 0.08)');
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.9;
+          ctx.beginPath();
+          ctx.moveTo(x, fieldTop);
+          ctx.lineTo(x, fieldBottom);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(22, 124, 74, 0.82)';
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldTop + 6);
+          ctx.lineTo(x + 4, fieldTop + 6);
+          ctx.lineTo(x, fieldTop);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldBottom - 6);
+          ctx.lineTo(x + 4, fieldBottom - 6);
+          ctx.lineTo(x, fieldBottom);
+          ctx.closePath();
+          ctx.fill();
+        }
       }
 
       for (const particle of particles) {
-        const localY = particle.y;
-        const distBottom = Math.max(0, localY - 79);
-        const collectBoost = BOn && currentOn ? Math.min(1, distBottom / 22) : 0;
-        const particleColor = '32, 111, 212';
-        drawGlow(particle.x, particle.y, 14, particleColor, 0.08 + collectBoost * 0.12);
-        ctx.fillStyle = `rgba(${particleColor}, 0.95)`;
+        const collectBoost = BOn && currentOn ? 1 - Math.min(1, Math.abs(particle.y - (accumulateTop ? 57 : 73)) / 18) : 0;
+        drawGlow(particle.x, particle.y, 13, majorityColor, 0.07 + collectBoost * 0.10);
+        ctx.fillStyle = `rgba(${majorityColor}, 0.95)`;
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 4.1, 0, Math.PI * 2);
+        ctx.arc(particle.x, particle.y, 4.0, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      const edgeYTop = 55;
+      const edgeYBottom = 73;
+      const topAccum = BOn && currentOn && accumulateTop ? hallChargeStrength : 0;
+      const bottomAccum = BOn && currentOn && !accumulateTop ? hallChargeStrength : 0;
+      const oppositeAccum = BOn && currentOn ? Math.max(0.18, 0.62 - hallChargeStrength * 0.28) : 0;
+
+      if (BOn) {
+        drawGlow(322, 47, 54, '37, 165, 104', 0.16 + hallChargeStrength * 0.22);
+        drawGlow(322, 77, 54, '37, 165, 104', 0.16 + hallChargeStrength * 0.22);
       }
 
       if (BOn && currentOn) {
-        ctx.fillStyle = 'rgba(37, 165, 104, 0.12)';
-        roundRect(ctx, 612, 52, 72, 22, 10);
+        ctx.fillStyle = 'rgba(37,165,104,0.18)';
+        roundRect(ctx, 598, 36, 120, 24, 12);
         ctx.fill();
-        ctx.fillStyle = 'rgba(37, 165, 104, 0.55)';
-        ctx.beginPath();
-        ctx.moveTo(612, 63);
-        ctx.lineTo(620, 54);
-        ctx.lineTo(620, 72);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(678, 63);
-        ctx.lineTo(670, 54);
-        ctx.lineTo(670, 72);
-        ctx.closePath();
-        ctx.fill();
-      }
+        ctx.strokeStyle = 'rgba(37,165,104,0.40)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#15935A';
+        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
+        ctx.fillText('Hall Voltage', 618, 53);
 
-      const bottomCount = BOn && currentOn ? 10 : 0;
-      for (let i = 0; i < bottomCount; i += 1) {
-        const x = 160 + i * 46 + Math.sin(time / 340 + i) * 4;
-        const y = 88 + Math.sin(time / 260 + i * 0.8) * 2;
-        drawGlow(x, y, 18, '35, 165, 104', 0.12);
-        ctx.fillStyle = 'rgba(37, 165, 104, 0.88)';
-        ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-        ctx.fill();
+        const topMajority = accumulateTop;
+        const topColor = `rgba(${topChargeColor}, ${0.35 + topAccum * 0.55})`;
+        const bottomColor = `rgba(${majorityColor}, ${0.35 + bottomAccum * 0.55})`;
+
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.sin(time / 220 + i) * 2;
+          const y = topMajority ? edgeYTop : edgeYBottom;
+          drawGlow(x, y, 15, topMajority ? topChargeColor : majorityColor, 0.10 + topAccum * 0.14);
+          ctx.fillStyle = topMajority ? topColor : bottomColor;
+          ctx.beginPath();
+          ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.cos(time / 260 + i) * 2;
+          const y = topMajority ? edgeYBottom : edgeYTop;
+          drawGlow(x, y, 10, isN ? '221, 125, 45' : '32, 111, 212', 0.06 + oppositeAccum * 0.10);
+          ctx.fillStyle = `rgba(${isN ? '221, 125, 45' : '32, 111, 212'}, ${0.25 + oppositeAccum * 0.35})`;
+          ctx.beginPath();
+          ctx.arc(x, y, 2.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       ctx.strokeStyle = '#C5D6E7';
@@ -400,24 +470,18 @@ function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
 
       ctx.fillStyle = '#6C849D';
       ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Current direction', 88, 36);
-      ctx.fillText('B-field dots', 112, 20);
+      ctx.fillText('I', 88, 39);
+      ctx.fillText('B', 170, 24);
 
-      if (BOn && currentOn) {
-        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillStyle = '#1B8E5B';
-        ctx.shadowColor = 'rgba(27, 142, 91, 0.4)';
-        ctx.shadowBlur = 12;
-        ctx.fillText('Hall Voltage', hallGlowX - 26, hallGlowY + 4);
-        ctx.shadowBlur = 0;
+      if (BOn && currentOn && showVh) {
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
         ctx.fillStyle = '#188E5B';
-        ctx.fillText(hallVoltageText, 613, 85);
-        const barW = 56 + hallChargeStrength * 58;
-        const gradient = ctx.createLinearGradient(612, 104, 612 + barW, 104);
-        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.15)');
-        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.85)');
-        roundRect(ctx, 612, 92, barW, 20, 10);
+        ctx.fillText(hallVoltageText, 620, 72);
+        const barW = 68 + hallChargeStrength * 58;
+        const gradient = ctx.createLinearGradient(612, 102, 612 + barW, 102);
+        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.12)');
+        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.88)');
+        roundRect(ctx, 612, 82, barW, 22, 11);
         ctx.fillStyle = gradient;
         ctx.fill();
         ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
@@ -428,7 +492,7 @@ function HallCanvas2D({ BOn, currentOn, showVh, hallVoltageText }) {
 
       ctx.fillStyle = '#3A536D';
       ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Magnetic field: glowing dots show B passing through the conductor', 84, 24);
+      ctx.fillText('Magnetic field: vertical lines pass through the conductor', 84, 24);
 
       animationFrame = requestAnimationFrame(render);
     };
@@ -477,46 +541,59 @@ function ExerciseNote() {
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
   if (isPType) {
     if (revealed) {
-      return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{row.value}</span>;
+      return (
+        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
+          {row.value}
+          <span style={{ marginLeft: 6, color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{row.unit}</span>
+        </span>
+      );
     }
 
     return (
-      <button
-        type="button"
-        onClick={onReveal}
-        style={{
-          border: '1px solid #185FA566',
-          background: '#185FA50F',
-          color: '#185FA5',
-          borderRadius: 8,
-          padding: '5px 9px',
-          fontSize: 11,
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        Click for answer
-      </button>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <button
+          type="button"
+          onClick={onReveal}
+          style={{
+            border: '1px solid #185FA566',
+            background: '#185FA50F',
+            color: '#185FA5',
+            borderRadius: 8,
+            padding: '5px 9px',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Click for answer
+        </button>
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 600 }}>{row.unit}</span>
+      </span>
     );
   }
 
   return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={studentValue}
-      onChange={(e) => onStudentChange(e.target.value)}
-      placeholder="Enter value"
-      style={{
-        width: '100%',
-        border: '1px solid var(--color-border-secondary)',
-        borderRadius: 8,
-        padding: '7px 9px',
-        fontSize: 11,
-        background: 'var(--color-background-primary)',
-        color: 'var(--color-text-primary)',
-      }}
-    />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: '100%' }}>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={studentValue}
+        onChange={(e) => onStudentChange(e.target.value)}
+        placeholder="Enter value"
+        style={{
+          flex: 1,
+          border: '1px solid var(--color-border-secondary)',
+          borderRadius: 8,
+          padding: '7px 9px',
+          fontSize: 11,
+          background: 'var(--color-background-primary)',
+          color: 'var(--color-text-primary)',
+        }}
+      />
+      <span style={{ color: 'var(--color-text-tertiary)', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+        {row.unit}
+      </span>
+    </span>
   );
 }
 
@@ -533,42 +610,49 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
       label: 'Magnetic field B',
       formula: 'B = μ0 × N × Icoil / L',
       value: fmtB(data.B),
+      unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
       formula: 'V_H = R_H × I × B / t',
       value: fmtVh(data.Vh),
+      unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
       formula: 'R_H = V_H × t / (I × B)',
       value: fmtSci(data.measuredRh, 'm³/C'),
+      unit: 'm³/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityWithAltUnit(data.carrierDensity),
+      unit: 'cm⁻³ / m⁻³',
     },
     {
       key: 'hallMobility',
       label: 'Hall mobility μ_H',
       formula: 'μ_H = |R_H| × σ',
       value: fmtSci(data.muH, 'm²/V·s'),
+      unit: 'm²/V·s',
     },
     {
       key: 'mobility',
       label: 'Carrier mobility μ',
       formula: 'μ(T) from material model',
       value: fmtSci(data.mobility, 'm²/V·s'),
+      unit: 'm²/V·s',
     },
     {
       key: 'conductivity',
       label: 'Conductivity σ',
       formula: 'σ = q × n × μ',
       value: fmtSci(data.sigma, 'S/m'),
+      unit: 'S/m',
     },
   ];
 
@@ -605,6 +689,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
               <th style={thStyle}>Quantity</th>
               <th style={thStyle}>Formula</th>
               <th style={thStyle}>Value</th>
+              <th style={thStyle}>Unit</th>
             </tr>
           </thead>
           <tbody>
@@ -622,6 +707,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
                     onReveal={() => reveal(row.key)}
                   />
                 </td>
+                <td style={tdStyle(index === rows.length - 1)}>{row.unit}</td>
               </tr>
             ))}
           </tbody>
@@ -879,6 +965,7 @@ const HallCoefficientSimulation = () => {
             <TogglePill label="Current On/Off" active={currentOn} onClick={() => setCurrentOn((prev) => !prev)} />
           </div>
           <HallCanvas2D
+            matType={mat.type}
             BOn={fieldOn}
             currentOn={currentOn}
             showVh={showVh}
