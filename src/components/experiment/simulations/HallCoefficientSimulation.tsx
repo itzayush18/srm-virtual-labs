@@ -175,17 +175,16 @@ function SliderRow({ label, id, min, max, step, value, onChange, display }) {
   );
 }
 
-function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
+function HallPlate3D({ mat, B, Vh, thickness, I_mA, showVh }) {
   const isN = mat.type === 'n';
   const carrierColor = isN ? '#1E63A7' : '#D86A2F';
-  const carrierSign = isN ? 'e-' : 'h+';
   const strongField = Math.abs(B) > 0.002;
 
   const depth = 18 + ((thickness - 0.1) / 4.9) * 42;
-  const frontX = 160;
-  const frontY = 112;
-  const width = 156;
-  const height = 90;
+  const frontX = 168;
+  const frontY = 118;
+  const width = 150;
+  const height = 86;
   const dx = depth;
   const dy = -depth * 0.55;
 
@@ -203,48 +202,54 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
   };
 
   const flowingCarriers = Array.from({ length: flowingCarrierCount }, (_, i) => ({
-    x: frontX + 14 + seededRnd(i + 1) * (width - 28),
-    y: frontY + 16 + seededRnd(i + 11) * (height - 32),
+    x: frontX + 12 + seededRnd(i + 1) * (width - 24),
+    y: frontY + 14 + seededRnd(i + 11) * (height - 28),
     dur: (1.6 + seededRnd(i + 31) * 1.3).toFixed(2),
     delay: (-seededRnd(i + 47) * 2.4).toFixed(2),
   }));
 
   const buildupCharges = Array.from({ length: buildupCount }, (_, i) => ({
-    x: frontX + 18 + seededRnd(i + 71) * (width - 32),
+    x: frontX + 16 + seededRnd(i + 71) * (width - 28),
     yTop: frontY + 6 + seededRnd(i + 83) * 12,
     yBottom: frontY + height - 6 - seededRnd(i + 97) * 12,
   }));
+
+  const meterValue = showVh ? fmtVh(Vh) : '---';
 
   return (
     <svg width="100%" viewBox="0 0 520 330" style={{ display: 'block', background: 'transparent' }}>
       <defs>
         <linearGradient id="bgGlow" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#F9FBFF" />
-          <stop offset="100%" stopColor="#EEF5FB" />
+          <stop offset="0%" stopColor="#FAFCFF" />
+          <stop offset="100%" stopColor="#EEF4FA" />
         </linearGradient>
         <linearGradient id="supplyBodyWarm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FBFCFE" />
-          <stop offset="100%" stopColor="#E8EEF4" />
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#E7EEF5" />
         </linearGradient>
         <linearGradient id="supplyBodyCool" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FDFEFF" />
-          <stop offset="100%" stopColor="#E5EEF8" />
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#E4EEF9" />
         </linearGradient>
         <linearGradient id="meterScreen" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#13241B" />
-          <stop offset="100%" stopColor="#1C3327" />
+          <stop offset="0%" stopColor="#0D1D2A" />
+          <stop offset="100%" stopColor="#162B3A" />
         </linearGradient>
         <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#E7F1FB" />
-          <stop offset="100%" stopColor="#D7E7F7" />
+          <stop offset="0%" stopColor="#EDF4FB" />
+          <stop offset="100%" stopColor="#D9E7F6" />
         </linearGradient>
         <linearGradient id="topFaceFill" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#F4F8FC" />
-          <stop offset="100%" stopColor="#DCEAF8" />
+          <stop offset="0%" stopColor="#F6FAFE" />
+          <stop offset="100%" stopColor="#DDEAF7" />
         </linearGradient>
         <linearGradient id="sideFaceFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#CFE0F0" />
-          <stop offset="100%" stopColor="#BDD2E6" />
+          <stop offset="0%" stopColor="#D3E1EE" />
+          <stop offset="100%" stopColor="#BFCFE0" />
+        </linearGradient>
+        <linearGradient id="magnetBody" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#4D5864" />
+          <stop offset="100%" stopColor="#2F3944" />
         </linearGradient>
         <marker id="arrowCurrent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
           <path d="M2 1L8 5L2 9" fill="none" stroke="#D86A2F" strokeWidth="1.5" strokeLinecap="round" />
@@ -267,78 +272,79 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
       <rect x="12" y="12" width="496" height="306" rx="18" fill="url(#bgGlow)" />
 
       <g filter="url(#shadow)">
-        <rect x="22" y="36" width="92" height="62" rx="10" fill="url(#supplyBodyWarm)" stroke="#B85030" strokeWidth="1.1" />
-        <rect x="30" y="46" width="44" height="18" rx="4" fill="#1F2933" />
-        <text x="52" y="58" fontSize="9" fontWeight="700" textAnchor="middle" fill="#FF7D55">
-          {coilI.toFixed(1)} A
-        </text>
-        <circle cx="88" cy="54" r="7" fill="#D86A2F" opacity="0.9" />
-        <circle cx="88" cy="54" r="2.4" fill="#fff" />
-        <circle cx="48" cy="83" r="4" fill="#C33A2A" />
-        <circle cx="68" cy="83" r="4" fill="#4F5660" />
+        <rect x="22" y="46" width="74" height="44" rx="12" fill="url(#supplyBodyWarm)" stroke="#B85030" strokeWidth="1.1" />
+        <circle cx="42" cy="68" r="10" fill="#F4F7FB" stroke="#B85030" strokeWidth="1.1" />
+        <line x1="42" y1="68" x2="49" y2="62" stroke="#B85030" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M52 54H78" stroke="#B85030" strokeWidth="1.3" strokeLinecap="round" />
       </g>
-      <text x="68" y="111" fontSize="10" fontWeight="700" textAnchor="middle" fill="#B85030">
+      <text
+        x="59"
+        y="110"
+        textAnchor="middle"
+        fill="#8E4A31"
+        fontSize="9.5"
+        fontWeight="700"
+        letterSpacing="0.02em"
+        fontFamily="Segoe UI, Arial, sans-serif"
+      >
         DC supply for electromagnet
       </text>
 
       <g filter="url(#shadow)">
-        <rect x="24" y="182" width="90" height="60" rx="10" fill="url(#supplyBodyCool)" stroke="#1E63A7" strokeWidth="1.1" />
-        <rect x="32" y="192" width="40" height="16" rx="4" fill="#182534" />
-        <text x="52" y="203" fontSize="8.5" fontWeight="700" textAnchor="middle" fill="#85E1FF">
-          {I_mA} mA
-        </text>
-        <circle cx="87" cy="199" r="8" fill="#1E63A7" opacity="0.95" />
-        <circle cx="87" cy="199" r="2.4" fill="#fff" />
-        <circle cx="48" cy="226" r="4" fill="#C33A2A" />
-        <circle cx="68" cy="226" r="4" fill="#4F5660" />
+        <rect x="22" y="184" width="74" height="44" rx="12" fill="url(#supplyBodyCool)" stroke="#1E63A7" strokeWidth="1.1" />
+        <circle cx="42" cy="206" r="10" fill="#F4F9FF" stroke="#1E63A7" strokeWidth="1.1" />
+        <line x1="42" y1="206" x2="49" y2="200" stroke="#1E63A7" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M52 192H78" stroke="#1E63A7" strokeWidth="1.3" strokeLinecap="round" />
       </g>
-      <text x="69" y="255" fontSize="10" fontWeight="700" textAnchor="middle" fill="#1E63A7">
+      <text
+        x="59"
+        y="248"
+        textAnchor="middle"
+        fill="#235E8D"
+        fontSize="9.5"
+        fontWeight="700"
+        letterSpacing="0.02em"
+        fontFamily="Segoe UI, Arial, sans-serif"
+      >
         DC supply for sample
       </text>
 
-      <line x1="114" y1="66" x2="138" y2="66" stroke="#B85030" strokeWidth="1.4" />
-      <line x1="114" y1="208" x2={frontX - 18} y2="208" stroke="#D86A2F" strokeWidth="1.8" markerEnd="url(#arrowCurrent)" />
-
-      <g filter="url(#shadow)">
-        <rect x="130" y="42" width="216" height="24" rx="8" fill="#D8EBDD" stroke="#156F59" strokeWidth="1.2" />
-        <rect x="130" y="234" width="216" height="24" rx="8" fill="#D8EBDD" stroke="#156F59" strokeWidth="1.2" />
-        <text x="146" y="58" fontSize="10" fontWeight="700" fill="#156F59">
-          N pole
-        </text>
-        <text x="146" y="250" fontSize="10" fontWeight="700" fill="#156F59">
-          S pole
-        </text>
-      </g>
-
-      <g filter="url(#shadow)">
-        <rect x="348" y="72" width="54" height="150" rx="14" fill="#D67A43" stroke="#9A4F24" strokeWidth="1.5" />
-        {Array.from({ length: 8 }, (_, i) => {
-          const y = 84 + i * 16;
-          return <ellipse key={`coil-${i}`} cx="375" cy={y} rx="21" ry="6.5" fill="none" stroke="#8B3F1D" strokeWidth="2.4" />;
-        })}
-      </g>
-      <text x="375" y="241" fontSize="10" fontWeight="700" textAnchor="middle" fill="#9A4F24">
-        Electromagnet coil
+      <line x1="96" y1="68" x2="138" y2="68" stroke="#B85030" strokeWidth="1.4" />
+      <line x1="96" y1="206" x2={frontX - 24} y2="206" stroke="#D86A2F" strokeWidth="1.8" markerEnd="url(#arrowCurrent)" />
+      <text x={frontX - 35} y="199" fontSize="13" fontWeight="700" fill="#D86A2F" fontFamily="Segoe UI, Arial, sans-serif">
+        I
       </text>
 
-      {Array.from({ length: 6 }, (_, i) => {
-        const x = 175 + i * 25;
-        const sweep = 18 + i * 2;
+      <g filter="url(#shadow)">
+        <path
+          d="M 386 58 H 430 C 447 58 456 67 456 83 V 195 C 456 209 448 217 435 217 H 406 V 196 H 432 C 436 196 438 194 438 190 V 87 C 438 83 435 80 431 80 H 386"
+          fill="url(#magnetBody)"
+        />
+        <rect x="370" y="58" width="28" height="34" rx="10" fill="#D8EBDD" stroke="#2E7D68" strokeWidth="1.1" />
+        <rect x="370" y="178" width="28" height="34" rx="10" fill="#E5F0F8" stroke="#1E63A7" strokeWidth="1.1" />
+        <text x="384" y="79" textAnchor="middle" fill="#156F59" fontSize="12" fontWeight="800" fontFamily="Segoe UI, Arial, sans-serif">
+          N
+        </text>
+        <text x="384" y="200" textAnchor="middle" fill="#1E63A7" fontSize="12" fontWeight="800" fontFamily="Segoe UI, Arial, sans-serif">
+          S
+        </text>
+      </g>
+
+      {Array.from({ length: 5 }, (_, i) => {
+        const x = 205 + i * 26;
+        const sweep = 16 + i * 2;
         return (
-          <g key={`field-${i}`} opacity={0.45 + i / 10}>
+          <g key={`field-${i}`} opacity={0.42 + i / 11}>
             <path
-              d={`M ${x} 66 C ${x - sweep} 94, ${x - sweep} 138, ${x} 166 C ${x + sweep} 194, ${x + sweep} 216, ${x} 234`}
+              d={`M ${x} 78 C ${x - sweep} 104, ${x - sweep} 128, ${x} 154 C ${x + sweep} 180, ${x + sweep} 202, ${x} 224`}
               fill="none"
               stroke="#156F59"
-              strokeWidth="1.8"
+              strokeWidth="1.7"
               markerEnd="url(#arrowField)"
             />
           </g>
         );
       })}
-      <text x="364" y="60" fontSize="10" fill="#156F59">
-        Magnetic field rays
-      </text>
 
       <polygon points={topFace} fill="url(#topFaceFill)" stroke="#6E94BA" strokeWidth="1" />
       <polygon points={sideFace} fill="url(#sideFaceFill)" stroke="#6E94BA" strokeWidth="1" />
@@ -348,14 +354,8 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
       <line x1={frontX + width} y1={frontY} x2={frontX + width + dx} y2={frontY + dy} stroke="#6E94BA" strokeWidth="1" />
       <line x1={frontX + width} y1={frontY + height} x2={frontX + width + dx} y2={frontY + height + dy} stroke="#6E94BA" strokeWidth="1" />
 
-      <text x={frontX + 10} y={frontY - 16} fontSize="11" fontWeight="700" fill="#345A7C">
+      <text x={frontX + 10} y={frontY - 15} fontSize="11" fontWeight="700" fill="#345A7C" fontFamily="Segoe UI, Arial, sans-serif">
         {mat.name} plate ({mat.type}-type)
-      </text>
-      <text x={frontX + width + dx - 2} y={frontY + height + dy + 20} fontSize="10" textAnchor="end" fill="#5C6F80">
-        Thickness = {thickness.toFixed(1)} mm
-      </text>
-      <text x={frontX + 10} y={frontY + height + 18} fontSize="10" fill="#5C6F80">
-        Current enters from left and flows through the plate
       </text>
 
       {Array.from({ length: currentArrowCount }, (_, i) => {
@@ -377,7 +377,7 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
 
       {flowingCarriers.map((p, i) => (
         <g key={`carrier-${i}`} filter="url(#softGlow)">
-          <circle cx={p.x} cy={p.y} r="3.4" fill={carrierColor}>
+          <circle cx={p.x} cy={p.y} r="3.1" fill={carrierColor}>
             <animateTransform
               attributeName="transform"
               type="translate"
@@ -388,71 +388,36 @@ function HallPlate3D({ mat, B, Vh, thickness, I_mA, coilI }) {
               repeatCount="indefinite"
             />
           </circle>
-          <text x={p.x} y={p.y + 0.5} fontSize="5.8" textAnchor="middle" dominantBaseline="middle" fill="#fff">
-            {isN ? '-' : '+'}
-            <animateTransform
-              attributeName="transform"
-              type="translate"
-              from="-24 0"
-              to="24 0"
-              dur={`${p.dur}s`}
-              begin={`${p.delay}s`}
-              repeatCount="indefinite"
-            />
-          </text>
         </g>
       ))}
 
       {strongField &&
         buildupCharges.map((p, i) => (
           <g key={`buildup-${i}`}>
-            <circle cx={p.x} cy={topChargeDominant ? p.yTop : p.yBottom} r="4.2" fill={carrierColor} opacity="0.95" />
-            <text
-              x={p.x}
-              y={(topChargeDominant ? p.yTop : p.yBottom) + 0.5}
-              fontSize="7"
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#fff"
-            >
-              {isN ? '-' : '+'}
-            </text>
+            <circle cx={p.x} cy={topChargeDominant ? p.yTop : p.yBottom} r="4" fill={carrierColor} opacity="0.95" />
           </g>
         ))}
 
-      <line x1={frontX + width + dx + 2} y1={frontY + 12} x2="417" y2="98" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
-      <line x1={frontX + width + dx + 2} y1={frontY + height - 12} x2="417" y2="174" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
+      <line x1={frontX + width + dx + 2} y1={frontY + 12} x2="414" y2="104" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
+      <line x1={frontX + width + dx + 2} y1={frontY + height - 12} x2="414" y2="176" stroke="#0E7A61" strokeWidth="1" strokeDasharray="4 3" />
 
       <g filter="url(#shadow)">
-        <rect x="416" y="104" width="82" height="70" rx="10" fill="#ECF5F0" stroke="#0E7A61" strokeWidth="1.2" />
-        <rect x="426" y="116" width="62" height="22" rx="5" fill="url(#meterScreen)" />
-        <text x="457" y="131" fontSize="11" fontWeight="700" textAnchor="middle" fill="#9BFFCC">
-          {fmtVh(Vh)}
+        <rect x="410" y="108" width="74" height="56" rx="12" fill="#F4FBF7" stroke="#0E7A61" strokeWidth="1.1" />
+        <rect x="421" y="120" width="52" height="18" rx="5" fill="url(#meterScreen)" />
+        <text x="447" y="133" fontSize="10.5" fontWeight="700" textAnchor="middle" fill="#9BFFCC" fontFamily="Segoe UI, Arial, sans-serif">
+          {meterValue}
         </text>
-        <text x="457" y="152" fontSize="10" fontWeight="700" textAnchor="middle" fill="#0E7A61">
+        <text x="447" y="153" fontSize="9.5" fontWeight="700" textAnchor="middle" fill="#0E7A61" fontFamily="Segoe UI, Arial, sans-serif">
           Hall voltmeter
         </text>
       </g>
 
-      <text x="414" y="44" fontSize="10" fill="#156F59">
-        B = {fmtB(B)}
-      </text>
-      <text x="414" y="60" fontSize="10" fill="#B85030">
-        Coil current = {coilI.toFixed(1)} A, turns = {FIXED_COIL_TURNS}
-      </text>
-      <text x="414" y="198" fontSize="10" fill="#D86A2F">
-        Sample current = {I_mA} mA
-      </text>
-      <text x="414" y="214" fontSize="10" fill={carrierColor}>
-        Mobile carriers: {carrierSign}
-      </text>
-      <text x="360" y="266" fontSize="10" fill={carrierColor}>
+      <text x="336" y="260" fontSize="10.5" fill={carrierColor} fontFamily="Segoe UI, Arial, sans-serif">
         {strongField
-          ? `${isN ? 'Electrons' : 'Holes'} collect at the ${topChargeDominant ? 'top' : 'bottom'} edge`
-          : 'Increase magnetic field to see charge separation clearly'}
-      </text>
-      <text x="360" y="282" fontSize="10" fill="#5C6F80">
-        Opposite edge develops equal and opposite Hall polarity
+          ? isN
+            ? 'Electrons collect at the bottom edge. Opposite edge develops equal and opposite Hall polarity.'
+            : 'Holes collect at the top edge. Opposite edge develops equal and opposite Hall polarity.'
+          : 'Increase magnetic field to observe charge separation.'}
       </text>
     </svg>
   );
@@ -682,6 +647,7 @@ const HallCoefficientSimulation = () => {
   const Vh = ((materialState.rh * I * B) / t) * 1e3;
   const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
   const muH = Math.abs(materialState.rh) * materialState.sigma;
+  const showVh = mat.type === 'p' || Boolean(studentValues.hallVoltage && studentValues.hallVoltage.trim());
 
   useEffect(() => {
     setAnswerState({});
@@ -863,7 +829,7 @@ const HallCoefficientSimulation = () => {
             overflow: 'hidden',
           }}
         >
-          <HallPlate3D mat={mat} B={B} Vh={Vh} thickness={thickness} I_mA={I_mA} coilI={coilI} />
+          <HallPlate3D mat={mat} B={B} Vh={Vh} thickness={thickness} I_mA={I_mA} showVh={showVh} />
         </div>
 
         <ExerciseNote />
