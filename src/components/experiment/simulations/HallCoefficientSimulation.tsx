@@ -122,24 +122,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawArrow(ctx, x1, y1, x2, y2, color, width = 2) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  const size = 7;
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = width;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
-}
-
 function SourceCard({ color, title, subtitle, children }) {
   return (
     <div
@@ -294,9 +276,8 @@ function ExerciseNote() {
         color: 'var(--color-text-secondary)',
       }}
     >
-      The 3D plate shows the carrier flow along the horizontal axis, magnetic field upward from bottom to top, and
-      Hall accumulation along the direction perpendicular to both. For n-type the charge buildup is out of the page
-      toward the viewer. For p-type the charge buildup is into the page.
+      Exercise: compare n-type and p-type results. Note the sign of Hall voltage and identify the majority carrier.
+      Then repeat the experiment with a larger thickness and observe that Hall voltage decreases as thickness increases.
     </div>
   );
 }
@@ -351,7 +332,13 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
   const isPTypeExercise = mat.type === 'p';
 
   const rows = [
-    { key: 'bField', label: 'Magnetic field B', formula: 'B = μ0 × N × Icoil / L', value: fmtBValue(data.B), unit: 'T' },
+    {
+      key: 'bField',
+      label: 'Magnetic field B',
+      formula: 'B = μ0 × N × Icoil / L',
+      value: fmtBValue(data.B),
+      unit: 'T',
+    },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
@@ -387,7 +374,13 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
       value: fmtSciValue(data.mobility),
       unit: 'm²/V·s',
     },
-    { key: 'conductivity', label: 'Conductivity σ', formula: 'σ = q × n × μ', value: fmtSciValue(data.sigma), unit: 'S/m' },
+    {
+      key: 'conductivity',
+      label: 'Conductivity σ',
+      formula: 'σ = q × n × μ',
+      value: fmtSciValue(data.sigma),
+      unit: 'S/m',
+    },
   ];
 
   const reveal = (key) => setAnswerState((prev) => ({ ...prev, [key]: true }));
@@ -474,7 +467,7 @@ function tdStyle(isLast) {
   };
 }
 
-function HallPlateCanvas({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
+function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -484,35 +477,34 @@ function HallPlateCanvas({ matType, BOn, currentOn, B, showVh, hallVoltageText }
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
 
-    const width = 980;
-    const height = 360;
-    canvas.width = width;
-    canvas.height = height;
-
     let animationFrame = 0;
     let lastTime = performance.now();
     const particles = [];
-    const topFieldMarks = [];
-    const lineCount = 12;
+    const fieldLines = [];
+    const lineCount = 10;
+    const width = 940;
+    const height = 320;
+    canvas.width = width;
+    canvas.height = height;
 
     for (let i = 0; i < lineCount; i += 1) {
-      topFieldMarks.push({
-        x: 180 + i * 56,
+      fieldLines.push({
+        x: 160 + i * 70,
         phase: Math.random() * Math.PI * 2,
-        speed: 1.1 + Math.random() * 0.8,
+        speed: 1.2 + Math.random() * 0.7,
       });
     }
 
     const resetParticle = (particle, offset = 0) => {
-      particle.x = 790 + Math.random() * 110 - offset;
-      particle.y = 185 + (Math.random() - 0.5) * 16;
-      particle.vx = -(72 + Math.random() * 28);
+      particle.x = 860 + Math.random() * 70 - offset;
+      particle.y = 160 + (Math.random() - 0.5) * 18;
+      particle.vx = -(70 + Math.random() * 36);
       particle.vy = 0;
     };
 
     for (let i = 0; i < 24; i += 1) {
       const particle = {};
-      resetParticle(particle, i * 20);
+      resetParticle(particle, i * 22);
       particles.push(particle);
     }
 
@@ -523,6 +515,24 @@ function HallPlateCanvas({ matType, BOn, currentOn, B, showVh, hallVoltageText }
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const drawArrow = (x1, y1, x2, y2, color) => {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const size = 7;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
       ctx.fill();
     };
 
@@ -539,243 +549,213 @@ function HallPlateCanvas({ matType, BOn, currentOn, B, showVh, hallVoltageText }
       ctx.fillRect(0, 0, width, height);
 
       ctx.fillStyle = '#D9E4EE';
-      ctx.fillRect(0, 0, width, 22);
-      ctx.fillStyle = '#6C849D';
-      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('3D Hall plate with field, current, and charge separation directions', 86, 16);
+      ctx.fillRect(0, 0, width, 20);
 
-      const isN = matType === 'n';
-      const sideAccumTowardViewer = isN;
-      const carrierColor = isN ? '32, 111, 212' : '221, 125, 45';
-      const oppositeColor = isN ? '221, 125, 45' : '32, 111, 212';
-      const accumulationStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.2 + Math.abs(B) * 120)) : 0;
+      ctx.save();
+      ctx.translate(120, 98);
 
-      const plateX = 150;
-      const plateY = 112;
-      const plateW = 620;
-      const plateH = 108;
-      const plateDepth = 30;
-
-      // background ground shadow
-      ctx.fillStyle = 'rgba(56, 88, 121, 0.10)';
-      ctx.beginPath();
-      ctx.ellipse(470, 250, 230, 22, 0, 0, Math.PI * 2);
+      const bodyGradient = ctx.createLinearGradient(0, 0, 0, 122);
+      bodyGradient.addColorStop(0, '#F9FCFF');
+      bodyGradient.addColorStop(1, '#DDEBF8');
+      ctx.fillStyle = bodyGradient;
+      roundRect(ctx, 0, 0, 700, 122, 18);
       ctx.fill();
-
-      // field area
-      if (BOn) {
-        for (const mark of topFieldMarks) {
-          mark.phase += delta * mark.speed;
-          const x = mark.x + Math.sin(mark.phase + time / 280) * 4;
-          const y1 = 70;
-          const y2 = 92;
-
-          drawArrow(ctx, x, y2, x, y1, 'rgba(22, 124, 74, 0.92)', 2);
-
-          ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
-          ctx.font = '700 10px Segoe UI, Arial, sans-serif';
-          ctx.fillText('B', x - 3, 64);
-        }
-
-        ctx.fillStyle = '#16642D';
-        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Magnetic field direction: bottom -> top', 84, 54);
-      } else {
-        ctx.fillStyle = '#7B8FA3';
-        ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Magnetic field is off', 84, 54);
-      }
-
-      // plate
-      const topGradient = ctx.createLinearGradient(plateX, plateY, plateX, plateY + plateH);
-      topGradient.addColorStop(0, '#FBFEFF');
-      topGradient.addColorStop(1, '#DDEBF8');
-      ctx.fillStyle = topGradient;
-      roundRect(ctx, plateX, plateY, plateW, plateH, 18);
-      ctx.fill();
-      ctx.strokeStyle = '#86A4C1';
+      ctx.strokeStyle = '#8BA7C3';
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
-      const sideGradient = ctx.createLinearGradient(plateX + plateW, plateY, plateX + plateW + plateDepth, plateY + plateH);
-      sideGradient.addColorStop(0, '#BFD0E2');
-      sideGradient.addColorStop(1, '#97B0CA');
-      ctx.beginPath();
-      ctx.moveTo(plateX + plateW, plateY);
-      ctx.lineTo(plateX + plateW + plateDepth, plateY - plateDepth * 0.45);
-      ctx.lineTo(plateX + plateW + plateDepth, plateY + plateH - plateDepth * 0.45);
-      ctx.lineTo(plateX + plateW, plateY + plateH);
-      ctx.closePath();
-      ctx.fillStyle = sideGradient;
+      const conductorGradient = ctx.createLinearGradient(0, 0, 700, 0);
+      conductorGradient.addColorStop(0, '#FFFFFF');
+      conductorGradient.addColorStop(0.5, '#FBFDFF');
+      conductorGradient.addColorStop(1, '#F2F7FC');
+      ctx.fillStyle = conductorGradient;
+      roundRect(ctx, 88, 44, 524, 38, 18);
       ctx.fill();
-      ctx.strokeStyle = '#86A4C1';
+      ctx.strokeStyle = '#8BB2D9';
       ctx.stroke();
 
-      const topFaceGradient = ctx.createLinearGradient(plateX, plateY - 8, plateX, plateY + 8);
-      topFaceGradient.addColorStop(0, '#FDFEFF');
-      topFaceGradient.addColorStop(1, '#E8F1F9');
-      ctx.beginPath();
-      ctx.moveTo(plateX, plateY);
-      ctx.lineTo(plateX + plateDepth, plateY - plateDepth * 0.45);
-      ctx.lineTo(plateX + plateW + plateDepth, plateY - plateDepth * 0.45);
-      ctx.lineTo(plateX + plateW, plateY);
-      ctx.closePath();
-      ctx.fillStyle = topFaceGradient;
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      roundRect(ctx, 92, 55, 516, 16, 8);
       ctx.fill();
-      ctx.strokeStyle = '#8DA8C4';
-      ctx.stroke();
 
-      // title on plate
-      ctx.fillStyle = '#314E6A';
-      ctx.font = '700 13px Segoe UI, Arial, sans-serif';
-      ctx.fillText('Hall plate', plateX + 228, plateY - 12);
+      ctx.fillStyle = '#3C5875';
+      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Thin Hall conductor', 248, 38);
 
-      // axes labels
-      const axesY = 282;
-      ctx.fillStyle = '#5F7890';
-      ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('x axis: carrier flow', 182, axesY);
-      ctx.fillText('y axis: B direction', 392, axesY);
-      ctx.fillText('z axis: Hall field / accumulation', 602, axesY);
+      const isN = matType === 'n';
+      const hallSign = isN ? 1 : -1;
+      const forceTowardTop = !isN;
+      const edgeYTop = 51;
+      const edgeYBottom = 77;
+      const centerY = 64;
+      const trackMinY = 47;
+      const trackMaxY = 81;
+      const carrierColor = isN ? '32, 111, 212' : '221, 125, 45';
+      const oppositeColor = isN ? '221, 125, 45' : '32, 111, 212';
+      const chargeEdgeY = forceTowardTop ? edgeYTop : edgeYBottom;
+      const accumulationStrength = BOn && currentOn ? Math.min(1, Math.max(0, 0.25 + Math.abs(B) * 120)) : 0;
 
-      // current flow on the plate
-      if (currentOn) {
-        const currentY = plateY + 58;
-        const startX = isN ? plateX + plateW - 40 : plateX + 40;
-        const endX = isN ? plateX + 84 : plateX + plateW - 84;
-        drawArrow(
-          ctx,
-          startX,
-          currentY,
-          endX,
-          currentY,
-          'rgba(24, 95, 165, 0.92)',
-          3
-        );
-        ctx.fillStyle = '#185FA5';
-        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillText(isN ? 'Electron flow: right -> left' : 'Hole flow: left -> right', plateX + 134, plateY + 24);
-        ctx.fillText('Current direction in the plate', plateX + 238, plateY + 76);
-
-        for (let i = 0; i < 4; i += 1) {
-          const x = isN
-            ? plateX + plateW - 96 - i * 86 - ((time / 18) % 1) * 28
-            : plateX + 96 + i * 86 + ((time / 18) % 1) * 28;
-          const y = currentY + Math.sin(time / 120 + i) * 2;
-          drawGlow(x, y, 14, carrierColor, 0.10);
-          ctx.fillStyle = `rgba(${carrierColor}, 0.94)`;
+      if (BOn) {
+        const fieldTop = 18;
+        const fieldBottom = 102;
+        for (const line of fieldLines) {
+          line.phase += delta * line.speed;
+          const wobble = Math.sin(line.phase + time / 260) * 6;
+          const x = line.x + wobble;
+          const grad = ctx.createLinearGradient(x, fieldTop, x, fieldBottom);
+          grad.addColorStop(0, 'rgba(22, 124, 74, 0.06)');
+          grad.addColorStop(0.45, 'rgba(22, 124, 74, 0.88)');
+          grad.addColorStop(1, 'rgba(22, 124, 74, 0.06)');
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(x, y, 4.1, 0, Math.PI * 2);
+          ctx.moveTo(x, fieldTop);
+          ctx.lineTo(x, fieldBottom);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(22, 124, 74, 0.85)';
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldTop + 7);
+          ctx.lineTo(x + 4, fieldTop + 7);
+          ctx.lineTo(x, fieldTop);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x - 4, fieldBottom - 7);
+          ctx.lineTo(x + 4, fieldBottom - 7);
+          ctx.lineTo(x, fieldBottom);
+          ctx.closePath();
           ctx.fill();
         }
-      } else {
-        ctx.fillStyle = '#8B9DAD';
-        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Current is off', plateX + 240, plateY + 66);
       }
 
-      // Hall accumulation area
+      if (currentOn) {
+        for (const particle of particles) {
+          particle.x += particle.vx * delta;
+
+          if (BOn) {
+            particle.vy += hallSign * 95 * delta;
+          particle.vy += (chargeEdgeY - particle.y) * 0.055 * delta;
+        } else {
+            particle.vy += (centerY - particle.y) * 0.12 * delta;
+          }
+
+          particle.y += particle.vy * delta;
+          particle.vy *= 0.98;
+
+          if (particle.x < 88) resetParticle(particle, 0);
+          if (currentOn && !BOn) {
+            particle.y = centerY;
+            particle.vy = 0;
+          } else {
+            if (particle.y < trackMinY) particle.y = trackMinY;
+            if (particle.y > trackMaxY) particle.y = trackMaxY;
+          }
+        }
+      }
+
+      if (currentOn) {
+        for (let i = 0; i < 5; i += 1) {
+          const x = 120 + ((time / 18 + i * 130) % 450);
+          const y = 63 + Math.sin(time / 180 + i) * 2;
+          drawArrow(x, y, x + 42, y, 'rgba(24, 95, 165, 0.45)');
+        }
+      }
+
+      for (const particle of particles) {
+        const centerBias = BOn && currentOn ? 1 - Math.min(1, Math.abs(particle.y - chargeEdgeY) / 18) : 0;
+        drawGlow(particle.x, particle.y, 14, carrierColor, 0.08 + centerBias * 0.14);
+        ctx.fillStyle = `rgba(${carrierColor}, ${currentOn ? 0.96 : 0.25})`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 4.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (currentOn && !BOn) {
+        ctx.strokeStyle = 'rgba(24, 95, 165, 0.28)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath();
+        ctx.moveTo(92, centerY);
+        ctx.lineTo(612, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
       if (BOn && currentOn) {
-        const hallEdgeX = isN ? plateX + plateW + 18 : plateX + plateW / 2 + 24;
-        const hallEdgeY = plateY + 44;
+        const topDensity = forceTowardTop ? accumulationStrength : Math.max(0.18, 0.55 - accumulationStrength * 0.25);
+        const bottomDensity = forceTowardTop ? Math.max(0.18, 0.55 - accumulationStrength * 0.25) : accumulationStrength;
 
-        // show the Hall direction as out of plane or into plane
-        ctx.fillStyle = 'rgba(24, 142, 91, 0.95)';
+        ctx.fillStyle = 'rgba(37,165,104,0.18)';
+        roundRect(ctx, 598, 36, 120, 24, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(37,165,104,0.40)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#15935A';
         ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillText(
-          sideAccumTowardViewer ? 'Charge accumulation: toward viewer' : 'Charge accumulation: into the plane',
-          plateX + 150,
-          plateY + 103
-        );
+        ctx.fillText('Hall Voltage', 618, 53);
 
-        const labelX = isN ? plateX + plateW + 35 : plateX + plateW + 18;
-        const labelY = plateY + 30;
-
-        // z-axis guide
-        ctx.save();
-        ctx.setLineDash([6, 6]);
-        drawArrow(
-          ctx,
-          plateX + plateW + 2,
-          plateY + 56,
-          plateX + plateW + 62,
-          plateY + 56,
-          'rgba(24, 142, 91, 0.75)',
-          2
-        );
-        ctx.restore();
-        ctx.fillStyle = '#188E5B';
-        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText(sideAccumTowardViewer ? 'out of plane' : 'into plane', labelX, labelY);
-
-        // accumulation dots for positive/negative charges
-        for (let i = 0; i < 10; i += 1) {
-          const y = plateY + 24 + i * 7;
-          const x = plateX + plateW - 22 + Math.sin(time / 180 + i) * 2;
-          const strength = 0.22 + accumulationStrength * 0.55;
-          drawGlow(x, y, 13, sideAccumTowardViewer ? carrierColor : oppositeColor, 0.06 + strength * 0.22);
-          ctx.fillStyle = sideAccumTowardViewer
-            ? `rgba(${carrierColor}, ${0.22 + strength})`
-            : `rgba(${oppositeColor}, ${0.22 + strength})`;
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.sin(time / 220 + i) * 2;
+          const y = forceTowardTop ? edgeYTop : edgeYBottom;
+          drawGlow(x, y, 15, forceTowardTop ? oppositeColor : carrierColor, 0.11 + accumulationStrength * 0.12);
+          ctx.fillStyle = forceTowardTop
+            ? `rgba(${oppositeColor}, ${0.28 + topDensity * 0.50})`
+            : `rgba(${carrierColor}, ${0.28 + bottomDensity * 0.50})`;
           ctx.beginPath();
           ctx.arc(x, y, 3.2, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // Hall electric field arrow: from bottom to top
-        drawArrow(ctx, plateX + 40, plateY + 92, plateX + 40, plateY + 24, 'rgba(27, 142, 91, 0.96)', 3);
-        ctx.fillStyle = '#16764A';
-        ctx.font = '700 12px Segoe UI, Arial, sans-serif';
-        ctx.fillText('E_H', plateX + 28, plateY + 18);
-
-        // label field relation
-        ctx.fillStyle = '#344E68';
-        ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('Perpendicular to both current and B', plateX + 216, plateY + 126);
-
-        // z-direction marker: dot means toward viewer, X means into the page
-        const markerX = plateX + plateW + 20;
-        const markerY = plateY + 58;
-        ctx.beginPath();
-        ctx.arc(markerX, markerY, 11, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.82)';
-        ctx.fill();
-        ctx.strokeStyle = sideAccumTowardViewer ? 'rgba(32,111,212,0.95)' : 'rgba(221,125,45,0.95)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        if (sideAccumTowardViewer) {
+        for (let i = 0; i < 11; i += 1) {
+          const x = 92 + i * 48 + Math.cos(time / 260 + i) * 2;
+          const y = forceTowardTop ? edgeYBottom : edgeYTop;
+          drawGlow(x, y, 10, forceTowardTop ? carrierColor : oppositeColor, 0.07 + (1 - accumulationStrength) * 0.08);
+          ctx.fillStyle = `rgba(${forceTowardTop ? carrierColor : oppositeColor}, ${0.22 + (1 - accumulationStrength) * 0.30})`;
           ctx.beginPath();
-          ctx.arc(markerX, markerY, 3.4, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(32,111,212,0.95)';
+          ctx.arc(x, y, 2.1, 0, Math.PI * 2);
           ctx.fill();
-        } else {
-          ctx.strokeStyle = 'rgba(221,125,45,0.95)';
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.moveTo(markerX - 4.5, markerY - 4.5);
-          ctx.lineTo(markerX + 4.5, markerY + 4.5);
-          ctx.moveTo(markerX - 4.5, markerY + 4.5);
-          ctx.lineTo(markerX + 4.5, markerY - 4.5);
-          ctx.stroke();
         }
+
+        const fx = 332;
+        const fy = forceTowardTop ? 52 : 72;
+        drawArrow(fx, 63, fx, fy, 'rgba(27, 142, 91, 0.9)');
+        ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText('F_L', fx + 8, forceTowardTop ? 56 : 76);
+      } else if (BOn) {
+        drawGlow(322, 47, 54, '37, 165, 104', 0.14);
+        drawGlow(322, 77, 54, '37, 165, 104', 0.14);
       }
 
-      // static guide labels
-      ctx.fillStyle = '#3D5874';
+      ctx.strokeStyle = '#C5D6E7';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(90, 63);
+      ctx.lineTo(82, 63);
+      ctx.stroke();
+
+      ctx.fillStyle = '#6C849D';
       ctx.font = '600 11px Segoe UI, Arial, sans-serif';
-      ctx.fillText('x', plateX + 18, plateY + 77);
-      ctx.fillText('y', plateX + 20, plateY + 8);
-      ctx.fillText('z', plateX + plateW + 44, plateY + 18);
+      ctx.fillText('I', 88, 39);
+      ctx.fillText('B', 170, 24);
+
+      if (currentOn && BOn) {
+        ctx.fillStyle = 'rgba(24, 142, 91, 0.92)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText(forceTowardTop ? 'Lorentz force upward' : 'Lorentz force downward', 390, 38);
+      }
 
       if (BOn && currentOn && showVh) {
-        ctx.fillStyle = '#188E5B';
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText(hallVoltageText, plateX + 540, plateY + 108);
-        const barW = 82 + accumulationStrength * 62;
-        const gradient = ctx.createLinearGradient(plateX + 518, plateY + 88, plateX + 518 + barW, plateY + 88);
+        ctx.fillStyle = '#188E5B';
+        ctx.fillText(hallVoltageText, 620, 72);
+        const barW = 68 + accumulationStrength * 58;
+        const gradient = ctx.createLinearGradient(612, 102, 612 + barW, 102);
         gradient.addColorStop(0, 'rgba(29, 168, 104, 0.12)');
-        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.90)');
-        roundRect(ctx, plateX + 518, plateY + 66, barW, 22, 11);
+        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.88)');
+        roundRect(ctx, 612, 82, barW, 22, 11);
         ctx.fillStyle = gradient;
         ctx.fill();
         ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
@@ -783,14 +763,16 @@ function HallPlateCanvas({ matType, BOn, currentOn, B, showVh, hallVoltageText }
       }
 
       if (currentOn) {
-        ctx.fillStyle = 'rgba(27, 142, 91, 0.90)';
+        ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText(
-          isN ? 'n-type: electron flow right -> left' : 'p-type: hole flow left -> right',
-          84,
-          332
-        );
+        ctx.fillText(BOn ? 'Charge flow shifts to edge' : 'Charge flow at center', 116, 86);
       }
+
+      ctx.restore();
+
+      ctx.fillStyle = '#3A536D';
+      ctx.font = '600 11px Segoe UI, Arial, sans-serif';
+      ctx.fillText('Magnetic field: animated vertical lines while B is on', 84, 24);
 
       animationFrame = requestAnimationFrame(render);
     };
@@ -1028,7 +1010,7 @@ const HallCoefficientSimulation = () => {
             <TogglePill label="Magnetic Field On/Off" active={fieldOn} onClick={() => setFieldOn((prev) => !prev)} />
             <TogglePill label="Current On/Off" active={currentOn} onClick={() => setCurrentOn((prev) => !prev)} />
           </div>
-          <HallPlateCanvas
+          <HallCanvas2D
             matType={mat.type}
             BOn={fieldOn}
             currentOn={currentOn}
