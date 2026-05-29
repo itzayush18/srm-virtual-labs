@@ -497,7 +497,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
 
     const resetParticle = (particle, offset = 0) => {
       particle.x = matType === 'p' ? 88 - offset : 860 + Math.random() * 70 - offset;
-      particle.y = 160 + (Math.random() - 0.5) * 18;
+      particle.y = 64 + (matType === 'p' ? (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 18);
       particle.vx = (matType === 'p' ? 1 : -1) * (70 + Math.random() * 36);
       particle.vy = 0;
     };
@@ -657,6 +657,9 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
             particle.y = centerY;
             particle.vy = 0;
           } else {
+            if (matType === 'p' && BOn) {
+              particle.y = Math.min(particle.y, centerY + 1);
+            }
             if (particle.y < trackMinY) particle.y = trackMinY;
             if (particle.y > trackMaxY) particle.y = trackMaxY;
           }
