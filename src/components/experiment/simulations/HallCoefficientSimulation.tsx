@@ -650,6 +650,45 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       ctx.fill();
     };
 
+    const drawHandGuide = (x, y, scale, isPType) => {
+      const handColor = isPType ? 'rgba(221, 125, 45, 0.95)' : 'rgba(32, 111, 212, 0.95)';
+      const accentColor = 'rgba(27, 142, 91, 0.95)';
+      const palmWidth = 24 * scale;
+      const palmHeight = 18 * scale;
+      const fingerLength = 18 * scale;
+      const thumbLength = 15 * scale;
+      const thumbDirection = isPType ? 1 : -1;
+      const middleDirection = isPType ? -1 : 1;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = handColor;
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      ctx.lineWidth = Math.max(1.5, 2 * scale);
+
+      roundRect(ctx, -palmWidth / 2, -palmHeight / 2, palmWidth, palmHeight, 5 * scale);
+      ctx.fill();
+      ctx.stroke();
+
+      drawArrow(0, -palmHeight / 2 - 3 * scale, 0, -palmHeight / 2 - fingerLength, handColor);
+      drawArrow(6 * scale, -palmHeight / 2 - 1 * scale, 6 * scale, -palmHeight / 2 - fingerLength, accentColor);
+      drawArrow(-6 * scale, -palmHeight / 2 - 1 * scale, -6 * scale, -palmHeight / 2 + fingerLength * middleDirection, 'rgba(24, 95, 165, 0.95)');
+      drawArrow(-palmWidth / 2, 0, -palmWidth / 2 + thumbLength * thumbDirection, -thumbLength * 0.65, handColor);
+
+      ctx.fillStyle = 'rgba(90, 108, 128, 0.98)';
+      ctx.font = `${10 * scale}px Segoe UI, Arial, sans-serif`;
+      ctx.fillText(isPType ? 'Right hand rule' : 'Left hand rule', -palmWidth / 2, palmHeight + 14 * scale);
+
+      ctx.fillStyle = 'rgba(221, 125, 45, 0.95)';
+      ctx.fillText(isPType ? 'Thumb = +x current' : 'Thumb = e- velocity (-x)', -palmWidth / 2, palmHeight + 26 * scale);
+      ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
+      ctx.fillText('Index = B (+z)', -palmWidth / 2, palmHeight + 38 * scale);
+      ctx.fillStyle = 'rgba(24, 95, 165, 0.95)';
+      ctx.fillText(isPType ? 'Middle = F_L (-y)' : 'Middle = F_L (+y)', -palmWidth / 2, palmHeight + 50 * scale);
+
+      ctx.restore();
+    };
+
     const render = (time) => {
       const delta = Math.min(0.032, (time - lastTime) / 1000);
       lastTime = time;
@@ -695,6 +734,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       ctx.fillStyle = '#3C5875';
       ctx.font = '600 13px Segoe UI, Arial, sans-serif';
       ctx.fillText('Thin Hall conductor', 248, 38);
+      drawHandGuide(585, 24, 0.82, matType === 'p');
 
       const isN = matType === 'n';
       const hallSign = isN ? 1 : -1;
