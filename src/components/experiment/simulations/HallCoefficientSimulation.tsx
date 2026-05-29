@@ -496,7 +496,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
     }
 
     const resetParticle = (particle, offset = 0) => {
-      particle.x = 860 + Math.random() * 70 - offset;
+      particle.x = matType === 'p' ? 88 - offset : 860 + Math.random() * 70 - offset;
       particle.y = 160 + (Math.random() - 0.5) * 18;
       particle.vx = (matType === 'p' ? 1 : -1) * (70 + Math.random() * 36);
       particle.vy = 0;
@@ -627,6 +627,11 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
           ctx.closePath();
           ctx.fill();
         }
+
+        drawArrow(196, 94, 196, 30, 'rgba(22, 124, 74, 0.9)');
+        ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
+        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
+        ctx.fillText('B', 206, 40);
       }
 
       if (currentOn) {
@@ -635,15 +640,19 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
 
           if (BOn) {
             particle.vy += hallSign * 95 * delta;
-          particle.vy += (chargeEdgeY - particle.y) * 0.055 * delta;
-        } else {
+            particle.vy += (chargeEdgeY - particle.y) * 0.095 * delta;
+          } else {
             particle.vy += (centerY - particle.y) * 0.12 * delta;
           }
 
           particle.y += particle.vy * delta;
           particle.vy *= 0.98;
 
-          if (particle.x < 88) resetParticle(particle, 0);
+          if (matType === 'p') {
+            if (particle.x > 612) resetParticle(particle, 0);
+          } else if (particle.x < 88) {
+            resetParticle(particle, 0);
+          }
           if (currentOn && !BOn) {
             particle.y = centerY;
             particle.vy = 0;
