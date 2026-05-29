@@ -498,7 +498,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
     const resetParticle = (particle, offset = 0) => {
       particle.x = 860 + Math.random() * 70 - offset;
       particle.y = 160 + (Math.random() - 0.5) * 18;
-      particle.vx = -(70 + Math.random() * 36);
+      particle.vx = (matType === 'p' ? 1 : -1) * (70 + Math.random() * 36);
       particle.vy = 0;
     };
 
