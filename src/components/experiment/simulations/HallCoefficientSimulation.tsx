@@ -282,6 +282,120 @@ function ExerciseNote() {
   );
 }
 
+function getVectorGuide(matType) {
+  if (matType === 'p') {
+    return {
+      hand: 'Right Hand',
+      thumb: 'Thumb: +x (hole / electric flow)',
+      index: 'Index: +z (magnetic field)',
+      middle: 'Middle: -y (Lorentz force)',
+      vectors: 'v_hole = +x, B = +z, F_L = q(v × B) = -y',
+      ascii: [
+        '        +z',
+        '         ↑  B',
+        '         |',
+        '   Thumb → +x',
+        '         |',
+        ' Middle → -y',
+      ].join('\n'),
+    };
+  }
+
+  return {
+    hand: 'Left Hand',
+    thumb: 'Thumb: -x (electron velocity)',
+    index: 'Index: +z (magnetic field)',
+    middle: 'Middle: +y (Lorentz force)',
+    vectors: 'v_e = -x, B = +z, F_L = q(v × B) = +y',
+    ascii: [
+      '        +z',
+      '         ↑  B',
+      '         |',
+      '   Thumb ← -x',
+      '         |',
+      ' Middle → +y',
+    ].join('\n'),
+  };
+}
+
+function HandGuideCard({ matType }) {
+  const guide = getVectorGuide(matType);
+
+  return (
+    <div
+      style={{
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)',
+        border: '1px solid var(--color-border-tertiary)',
+        borderRadius: 12,
+        padding: 14,
+        color: 'var(--color-text-secondary)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)' }}>Hand Rule Guide</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 3 }}>
+            {guide.hand} mapping for the active semiconductor type
+          </div>
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: matType === 'p' ? '#D97706' : '#185FA5',
+            background: matType === 'p' ? 'rgba(217,119,6,0.10)' : 'rgba(24,95,165,0.10)',
+            border: `1px solid ${matType === 'p' ? 'rgba(217,119,6,0.25)' : 'rgba(24,95,165,0.25)'}`,
+            borderRadius: 999,
+            padding: '6px 10px',
+          }}
+        >
+          {guide.hand}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 12 }}>
+        <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+          <div><strong>{guide.thumb}</strong></div>
+          <div><strong>{guide.index}</strong></div>
+          <div><strong>{guide.middle}</strong></div>
+        </div>
+
+        <div
+          style={{
+            border: '1px dashed var(--color-border-secondary)',
+            borderRadius: 10,
+            background: 'var(--color-background-primary)',
+            padding: 12,
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
+            Vector relation
+          </div>
+          <div style={{ fontSize: 12, lineHeight: 1.7, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+            {guide.vectors}
+          </div>
+        </div>
+
+        <pre
+          style={{
+            margin: 0,
+            padding: 12,
+            borderRadius: 10,
+            background: 'var(--color-background-primary)',
+            border: '1px solid var(--color-border-secondary)',
+            color: 'var(--color-text-secondary)',
+            fontSize: 12,
+            lineHeight: 1.5,
+            overflowX: 'auto',
+          }}
+        >
+{guide.ascii}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
   if (isPType) {
     if (revealed) {
@@ -780,6 +894,19 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
         ctx.fillText(BOn ? 'Charge flow shifts to edge' : 'Charge flow at center', 116, 86);
       }
 
+      const handLabel = matType === 'p' ? 'RIGHT HAND' : 'LEFT HAND';
+      const handBadgeColor = matType === 'p' ? 'rgba(217,119,6,0.14)' : 'rgba(24,95,165,0.14)';
+      const handBadgeBorder = matType === 'p' ? 'rgba(217,119,6,0.32)' : 'rgba(24,95,165,0.32)';
+      const handBadgeText = matType === 'p' ? 'rgba(180,83,9,0.96)' : 'rgba(24,95,165,0.96)';
+      ctx.fillStyle = handBadgeColor;
+      roundRect(ctx, 576, 10, 126, 22, 11);
+      ctx.fill();
+      ctx.strokeStyle = handBadgeBorder;
+      ctx.stroke();
+      ctx.fillStyle = handBadgeText;
+      ctx.font = '800 10px Segoe UI, Arial, sans-serif';
+      ctx.fillText(handLabel, 589, 25);
+
       ctx.restore();
 
       ctx.fillStyle = '#3A536D';
@@ -1033,6 +1160,8 @@ const HallCoefficientSimulation = () => {
         </div>
 
         <ExerciseNote />
+
+        <HandGuideCard matType={mat.type} />
 
         <MeasurementTable
           mat={mat}
