@@ -335,49 +335,49 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
     {
       key: 'bField',
       label: 'Magnetic field B',
-      formula: 'B = mu0 * N * Icoil / L',
+      formula: 'B = \u03bc0 \u00d7 N \u00d7 Icoil / L',
       value: fmtBValue(data.B),
       unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
-      formula: 'V_H = R_H * I * B / t',
+      formula: 'V_H = R_H \u00d7 I \u00d7 B / t',
       value: fmtVhValue(data.Vh),
       unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
-      formula: 'R_H = V_H * t / (I * B)',
+      formula: 'R_H = V_H \u00d7 t / (I \u00d7 B)',
       value: fmtSciValue(data.measuredRh),
-      unit: 'm^3/C',
+      unit: 'm\u00b3/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityValue(data.carrierDensity),
-      unit: 'cm^-3 / m^-3',
+      unit: 'cm\u207b\u00b3 / m\u207b\u00b3',
     },
     {
       key: 'hallMobility',
-      label: 'Hall mobility mu_H',
-      formula: 'mu_H = |R_H| * sigma',
+      label: 'Hall mobility \u03bc_H',
+      formula: '\u03bc_H = |R_H| \u00d7 \u03c3',
       value: fmtSciValue(data.muH),
-      unit: 'm^2/(V*s)',
+      unit: 'm\u00b2/(V\u00b7s)',
     },
     {
       key: 'mobility',
-      label: 'Carrier mobility mu',
-      formula: 'mu(T) from material model',
+      label: 'Carrier mobility \u03bc',
+      formula: '\u03bc(T) from material model',
       value: fmtSciValue(data.mobility),
-      unit: 'm^2/(V*s)',
+      unit: 'm\u00b2/(V\u00b7s)',
     },
     {
       key: 'conductivity',
-      label: 'Conductivity sigma',
-      formula: 'sigma = q * n * mu',
+      label: 'Conductivity \u03c3',
+      formula: '\u03c3 = q \u00d7 n \u00d7 \u03bc',
       value: fmtSciValue(data.sigma),
       unit: 'S/m',
     },
@@ -763,21 +763,6 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
         ctx.fillStyle = '#188E5B';
         ctx.fillText(hallVoltageText, 620, 72);
-        const barW = 68 + accumulationStrength * 58;
-        const gradient = ctx.createLinearGradient(612, 102, 612 + barW, 102);
-        gradient.addColorStop(0, 'rgba(29, 168, 104, 0.12)');
-        gradient.addColorStop(1, 'rgba(29, 168, 104, 0.88)');
-        roundRect(ctx, 612, 82, barW, 22, 11);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(29, 168, 104, 0.55)';
-        ctx.stroke();
-      }
-
-      if (currentOn) {
-        ctx.fillStyle = 'rgba(27, 142, 91, 0.9)';
-        ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText(BOn ? 'Charge flow shifts to edge' : 'Charge flow at center', 116, 86);
       }
 
       ctx.restore();
@@ -948,7 +933,7 @@ const HallCoefficientSimulation = () => {
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>{FIXED_COIL_TURNS}</span>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Magnetic field: B = mu0 * N * Icoil / L
+            Magnetic field: B = \u03bc0 \u00d7 N \u00d7 Icoil / L
           </div>
         </SourceCard>
 
