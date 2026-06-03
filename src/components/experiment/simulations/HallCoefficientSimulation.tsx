@@ -628,10 +628,10 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
           ctx.fill();
         }
 
-        drawArrow(196, 77, 196, 52, 'rgba(22, 124, 74, 0.9)');
+        drawArrow(220, 73, 220, 50, 'rgba(22, 124, 74, 0.9)');
         ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('B', 206, 57);
+        ctx.fillText('B', 230, 58);
       }
 
       if (currentOn) {
@@ -810,7 +810,9 @@ const HallCoefficientSimulation = () => {
   const Vh = ((materialState.rh * I * B) / t) * 1e3;
   const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
   const muH = Math.abs(materialState.rh) * materialState.sigma;
-  const showVh = mat.type === 'p' || Boolean(studentValues.hallVoltage && studentValues.hallVoltage.trim());
+  const studentHallVoltage = (studentValues.hallVoltage || '').trim();
+  const showVh = mat.type === 'p' || Boolean(studentHallVoltage);
+  const hallVoltageDisplay = mat.type === 'n' ? studentHallVoltage || '---' : `${fmtVhValue(Vh)} mV`;
 
   useEffect(() => {
     setAnswerState({});
@@ -1013,7 +1015,7 @@ const HallCoefficientSimulation = () => {
             currentOn={currentOn}
             B={B}
             showVh={showVh}
-            hallVoltageText={showVh ? `${fmtVhValue(Vh)} mV` : '---'}
+            hallVoltageText={hallVoltageDisplay}
           />
         </div>
 
