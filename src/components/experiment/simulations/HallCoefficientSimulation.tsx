@@ -42,17 +42,17 @@ function toSup(n) {
     .map(
       (c) =>
         ({
-          '0': '⁰',
-          '1': '¹',
-          '2': '²',
-          '3': '³',
-          '4': '⁴',
-          '5': '⁵',
-          '6': '⁶',
-          '7': '⁷',
-          '8': '⁸',
-          '9': '⁹',
-          '-': '⁻',
+          '0': 'â°',
+          '1': 'Â¹',
+          '2': 'Â²',
+          '3': 'Â³',
+          '4': 'â´',
+          '5': 'âµ',
+          '6': 'â¶',
+          '7': 'â·',
+          '8': 'â¸',
+          '9': 'â¹',
+          '-': 'â»',
         }[c] || c)
     )
     .join('');
@@ -63,7 +63,7 @@ function fmtSciValue(v) {
   if (v === 0) return '0';
   const e = Math.floor(Math.log10(Math.abs(v)));
   const m = (v / Math.pow(10, e)).toFixed(2);
-  return `${m}×10${toSup(e)}`;
+  return `${m}Ã—10${toSup(e)}`;
 }
 
 function fmtVhValue(v) {
@@ -282,120 +282,6 @@ function ExerciseNote() {
   );
 }
 
-function getVectorGuide(matType) {
-  if (matType === 'p') {
-    return {
-      hand: 'Right Hand',
-      thumb: 'Thumb: +x (hole / electric flow)',
-      index: 'Index: +z (magnetic field)',
-      middle: 'Middle: -y (Lorentz force)',
-      vectors: 'v_hole = +x, B = +z, F_L = q(v × B) = -y',
-      ascii: [
-        '        +z',
-        '         ↑  B',
-        '         |',
-        '   Thumb → +x',
-        '         |',
-        ' Middle → -y',
-      ].join('\n'),
-    };
-  }
-
-  return {
-    hand: 'Left Hand',
-    thumb: 'Thumb: -x (electron velocity)',
-    index: 'Index: +z (magnetic field)',
-    middle: 'Middle: +y (Lorentz force)',
-    vectors: 'v_e = -x, B = +z, F_L = q(v × B) = +y',
-    ascii: [
-      '        +z',
-      '         ↑  B',
-      '         |',
-      '   Thumb ← -x',
-      '         |',
-      ' Middle → +y',
-    ].join('\n'),
-  };
-}
-
-function HandGuideCard({ matType }) {
-  const guide = getVectorGuide(matType);
-
-  return (
-    <div
-      style={{
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)',
-        border: '1px solid var(--color-border-tertiary)',
-        borderRadius: 12,
-        padding: 14,
-        color: 'var(--color-text-secondary)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)' }}>Hand Rule Guide</div>
-          <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-            {guide.hand} mapping for the active semiconductor type
-          </div>
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            color: matType === 'p' ? '#D97706' : '#185FA5',
-            background: matType === 'p' ? 'rgba(217,119,6,0.10)' : 'rgba(24,95,165,0.10)',
-            border: `1px solid ${matType === 'p' ? 'rgba(217,119,6,0.25)' : 'rgba(24,95,165,0.25)'}`,
-            borderRadius: 999,
-            padding: '6px 10px',
-          }}
-        >
-          {guide.hand}
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 12 }}>
-        <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-          <div><strong>{guide.thumb}</strong></div>
-          <div><strong>{guide.index}</strong></div>
-          <div><strong>{guide.middle}</strong></div>
-        </div>
-
-        <div
-          style={{
-            border: '1px dashed var(--color-border-secondary)',
-            borderRadius: 10,
-            background: 'var(--color-background-primary)',
-            padding: 12,
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-            Vector relation
-          </div>
-          <div style={{ fontSize: 12, lineHeight: 1.7, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
-            {guide.vectors}
-          </div>
-        </div>
-
-        <pre
-          style={{
-            margin: 0,
-            padding: 12,
-            borderRadius: 10,
-            background: 'var(--color-background-primary)',
-            border: '1px solid var(--color-border-secondary)',
-            color: 'var(--color-text-secondary)',
-            fontSize: 12,
-            lineHeight: 1.5,
-            overflowX: 'auto',
-          }}
-        >
-{guide.ascii}
-        </pre>
-      </div>
-    </div>
-  );
-}
-
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
   if (isPType) {
     if (revealed) {
@@ -449,49 +335,49 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
     {
       key: 'bField',
       label: 'Magnetic field B',
-      formula: 'B = μ0 × N × Icoil / L',
+      formula: 'B = Î¼0 Ã— N Ã— Icoil / L',
       value: fmtBValue(data.B),
       unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
-      formula: 'V_H = R_H × I × B / t',
+      formula: 'V_H = R_H Ã— I Ã— B / t',
       value: fmtVhValue(data.Vh),
       unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
-      formula: 'R_H = V_H × t / (I × B)',
+      formula: 'R_H = V_H Ã— t / (I Ã— B)',
       value: fmtSciValue(data.measuredRh),
-      unit: 'm³/C',
+      unit: 'mÂ³/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityValue(data.carrierDensity),
-      unit: 'cm⁻³ / m⁻³',
+      unit: 'cmâ»Â³ / mâ»Â³',
     },
     {
       key: 'hallMobility',
-      label: 'Hall mobility μ_H',
-      formula: 'μ_H = |R_H| × σ',
+      label: 'Hall mobility Î¼_H',
+      formula: 'Î¼_H = |R_H| Ã— Ïƒ',
       value: fmtSciValue(data.muH),
-      unit: 'm²/V·s',
+      unit: 'mÂ²/VÂ·s',
     },
     {
       key: 'mobility',
-      label: 'Carrier mobility μ',
-      formula: 'μ(T) from material model',
+      label: 'Carrier mobility Î¼',
+      formula: 'Î¼(T) from material model',
       value: fmtSciValue(data.mobility),
-      unit: 'm²/V·s',
+      unit: 'mÂ²/VÂ·s',
     },
     {
       key: 'conductivity',
-      label: 'Conductivity σ',
-      formula: 'σ = q × n × μ',
+      label: 'Conductivity Ïƒ',
+      formula: 'Ïƒ = q Ã— n Ã— Î¼',
       value: fmtSciValue(data.sigma),
       unit: 'S/m',
     },
@@ -650,45 +536,6 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       ctx.fill();
     };
 
-    const drawHandGuide = (x, y, scale, isPType) => {
-      const handColor = isPType ? 'rgba(221, 125, 45, 0.95)' : 'rgba(32, 111, 212, 0.95)';
-      const accentColor = 'rgba(27, 142, 91, 0.95)';
-      const palmWidth = 24 * scale;
-      const palmHeight = 18 * scale;
-      const fingerLength = 18 * scale;
-      const thumbLength = 15 * scale;
-      const thumbDirection = isPType ? 1 : -1;
-      const middleDirection = isPType ? -1 : 1;
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.strokeStyle = handColor;
-      ctx.fillStyle = 'rgba(255,255,255,0.82)';
-      ctx.lineWidth = Math.max(1.5, 2 * scale);
-
-      roundRect(ctx, -palmWidth / 2, -palmHeight / 2, palmWidth, palmHeight, 5 * scale);
-      ctx.fill();
-      ctx.stroke();
-
-      drawArrow(0, -palmHeight / 2 - 3 * scale, 0, -palmHeight / 2 - fingerLength, handColor);
-      drawArrow(6 * scale, -palmHeight / 2 - 1 * scale, 6 * scale, -palmHeight / 2 - fingerLength, accentColor);
-      drawArrow(-6 * scale, -palmHeight / 2 - 1 * scale, -6 * scale, -palmHeight / 2 + fingerLength * middleDirection, 'rgba(24, 95, 165, 0.95)');
-      drawArrow(-palmWidth / 2, 0, -palmWidth / 2 + thumbLength * thumbDirection, -thumbLength * 0.65, handColor);
-
-      ctx.fillStyle = 'rgba(90, 108, 128, 0.98)';
-      ctx.font = `${10 * scale}px Segoe UI, Arial, sans-serif`;
-      ctx.fillText(isPType ? 'Right hand rule' : 'Left hand rule', -palmWidth / 2, palmHeight + 14 * scale);
-
-      ctx.fillStyle = 'rgba(221, 125, 45, 0.95)';
-      ctx.fillText(isPType ? 'Thumb = +x current' : 'Thumb = e- velocity (-x)', -palmWidth / 2, palmHeight + 26 * scale);
-      ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
-      ctx.fillText('Index = B (+z)', -palmWidth / 2, palmHeight + 38 * scale);
-      ctx.fillStyle = 'rgba(24, 95, 165, 0.95)';
-      ctx.fillText(isPType ? 'Middle = F_L (-y)' : 'Middle = F_L (+y)', -palmWidth / 2, palmHeight + 50 * scale);
-
-      ctx.restore();
-    };
-
     const render = (time) => {
       const delta = Math.min(0.032, (time - lastTime) / 1000);
       lastTime = time;
@@ -734,7 +581,6 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
       ctx.fillStyle = '#3C5875';
       ctx.font = '600 13px Segoe UI, Arial, sans-serif';
       ctx.fillText('Thin Hall conductor', 248, 38);
-      drawHandGuide(585, 24, 0.82, matType === 'p');
 
       const isN = matType === 'n';
       const hallSign = isN ? 1 : -1;
@@ -934,19 +780,6 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
         ctx.fillText(BOn ? 'Charge flow shifts to edge' : 'Charge flow at center', 116, 86);
       }
 
-      const handLabel = matType === 'p' ? 'RIGHT HAND' : 'LEFT HAND';
-      const handBadgeColor = matType === 'p' ? 'rgba(217,119,6,0.14)' : 'rgba(24,95,165,0.14)';
-      const handBadgeBorder = matType === 'p' ? 'rgba(217,119,6,0.32)' : 'rgba(24,95,165,0.32)';
-      const handBadgeText = matType === 'p' ? 'rgba(180,83,9,0.96)' : 'rgba(24,95,165,0.96)';
-      ctx.fillStyle = handBadgeColor;
-      roundRect(ctx, 576, 10, 126, 22, 11);
-      ctx.fill();
-      ctx.strokeStyle = handBadgeBorder;
-      ctx.stroke();
-      ctx.fillStyle = handBadgeText;
-      ctx.font = '800 10px Segoe UI, Arial, sans-serif';
-      ctx.fillText(handLabel, 589, 25);
-
       ctx.restore();
 
       ctx.fillStyle = '#3A536D';
@@ -1115,7 +948,7 @@ const HallCoefficientSimulation = () => {
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>{FIXED_COIL_TURNS}</span>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Magnetic field: B = μ0 × N × Icoil / L
+            Magnetic field: B = Î¼0 Ã— N Ã— Icoil / L
           </div>
         </SourceCard>
 
@@ -1201,8 +1034,6 @@ const HallCoefficientSimulation = () => {
 
         <ExerciseNote />
 
-        <HandGuideCard matType={mat.type} />
-
         <MeasurementTable
           mat={mat}
           data={{
@@ -1225,3 +1056,4 @@ const HallCoefficientSimulation = () => {
 };
 
 export default HallCoefficientSimulation;
+
