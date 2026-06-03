@@ -42,17 +42,17 @@ function toSup(n) {
     .map(
       (c) =>
         ({
-          '0': 'â°',
-          '1': 'Â¹',
-          '2': 'Â²',
-          '3': 'Â³',
-          '4': 'â´',
-          '5': 'âµ',
-          '6': 'â¶',
-          '7': 'â·',
-          '8': 'â¸',
-          '9': 'â¹',
-          '-': 'â»',
+          '0': '⁰',
+          '1': '¹',
+          '2': '²',
+          '3': '³',
+          '4': '⁴',
+          '5': '⁵',
+          '6': '⁶',
+          '7': '⁷',
+          '8': '⁸',
+          '9': '⁹',
+          '-': '⁻',
         }[c] || c)
     )
     .join('');
@@ -63,7 +63,7 @@ function fmtSciValue(v) {
   if (v === 0) return '0';
   const e = Math.floor(Math.log10(Math.abs(v)));
   const m = (v / Math.pow(10, e)).toFixed(2);
-  return `${m}Ã—10${toSup(e)}`;
+  return `${m}×10${toSup(e)}`;
 }
 
 function fmtVhValue(v) {
@@ -335,49 +335,49 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
     {
       key: 'bField',
       label: 'Magnetic field B',
-      formula: 'B = Î¼0 Ã— N Ã— Icoil / L',
+      formula: 'B = mu0 * N * Icoil / L',
       value: fmtBValue(data.B),
       unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
-      formula: 'V_H = R_H Ã— I Ã— B / t',
+      formula: 'V_H = R_H * I * B / t',
       value: fmtVhValue(data.Vh),
       unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
-      formula: 'R_H = V_H Ã— t / (I Ã— B)',
+      formula: 'R_H = V_H * t / (I * B)',
       value: fmtSciValue(data.measuredRh),
-      unit: 'mÂ³/C',
+      unit: 'm^3/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityValue(data.carrierDensity),
-      unit: 'cmâ»Â³ / mâ»Â³',
+      unit: 'cm^-3 / m^-3',
     },
     {
       key: 'hallMobility',
-      label: 'Hall mobility Î¼_H',
-      formula: 'Î¼_H = |R_H| Ã— Ïƒ',
+      label: 'Hall mobility mu_H',
+      formula: 'mu_H = |R_H| * sigma',
       value: fmtSciValue(data.muH),
-      unit: 'mÂ²/VÂ·s',
+      unit: 'm^2/(V*s)',
     },
     {
       key: 'mobility',
-      label: 'Carrier mobility Î¼',
-      formula: 'Î¼(T) from material model',
+      label: 'Carrier mobility mu',
+      formula: 'mu(T) from material model',
       value: fmtSciValue(data.mobility),
-      unit: 'mÂ²/VÂ·s',
+      unit: 'm^2/(V*s)',
     },
     {
       key: 'conductivity',
-      label: 'Conductivity Ïƒ',
-      formula: 'Ïƒ = q Ã— n Ã— Î¼',
+      label: 'Conductivity sigma',
+      formula: 'sigma = q * n * mu',
       value: fmtSciValue(data.sigma),
       unit: 'S/m',
     },
@@ -628,10 +628,10 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
           ctx.fill();
         }
 
-        drawArrow(196, 94, 196, 30, 'rgba(22, 124, 74, 0.9)');
+        drawArrow(196, 77, 196, 52, 'rgba(22, 124, 74, 0.9)');
         ctx.fillStyle = 'rgba(22, 124, 74, 0.95)';
         ctx.font = '700 11px Segoe UI, Arial, sans-serif';
-        ctx.fillText('B', 206, 40);
+        ctx.fillText('B', 206, 57);
       }
 
       if (currentOn) {
@@ -948,7 +948,7 @@ const HallCoefficientSimulation = () => {
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>{FIXED_COIL_TURNS}</span>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Magnetic field: B = Î¼0 Ã— N Ã— Icoil / L
+            Magnetic field: B = mu0 * N * Icoil / L
           </div>
         </SourceCard>
 
@@ -1056,4 +1056,3 @@ const HallCoefficientSimulation = () => {
 };
 
 export default HallCoefficientSimulation;
-
