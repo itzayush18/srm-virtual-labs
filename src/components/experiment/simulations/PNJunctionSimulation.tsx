@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +40,7 @@ const snapTemperature = (value: number) => {
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 
 const formatForwardCurrentMilliAmps = (valueA: number) => `${(valueA * 1e3).toFixed(3)} mA`;
-const formatReverseCurrentMicroAmps = (valueA: number) => `${(valueA * 1e6).toFixed(3)} µA`;
+const formatReverseCurrentMicroAmps = (valueA: number) => `${(valueA * 1e6).toFixed(3)} uA`;
 const formatCurrentForSelectedVoltage = (valueA: number) =>
   Math.abs(valueA) >= 1e-3
     ? `${(valueA * 1e3).toFixed(3)} mA`
@@ -333,13 +333,20 @@ const PNJunctionSimulation = () => {
     return preBreakdownCurrent - breakdownExcess;
   };
 
+  const plottedOnceRef = useRef(false);
+
   const resetPlots = () => {
     setForwardData([]);
     setReverseData([]);
+    plottedOnceRef.current = false;
   };
 
   useEffect(() => {
-    resetPlots();
+    if (plottedOnceRef.current) {
+      generateCurves();
+    }
+    // Intentionally replot existing data when temperature changes so the curve updates live.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [temperature]);
 
   const currentValue = calculateCurrent(voltage, temperature);
@@ -388,7 +395,7 @@ const PNJunctionSimulation = () => {
     });
   };
 
-  const generateCurves = () => {
+  const generateCurves = useCallback(() => {
     const nextForward: DataPoint[] = [];
     const nextReverse: DataPoint[] = [];
 
@@ -415,7 +422,8 @@ const PNJunctionSimulation = () => {
 
     setForwardData(nextForward);
     setReverseData(nextReverse);
-  };
+    plottedOnceRef.current = true;
+  }, [temperature]);
 
   const liveTableData = [...reverseData, ...forwardData].sort((a, b) => a.voltage - b.voltage);
   const forwardYMaxMilliAmps =
@@ -519,7 +527,7 @@ const PNJunctionSimulation = () => {
                   </div>
                 ) : (
                   <div className="mt-1 text-xs text-gray-500">
-                    Reverse current is displayed in µA
+                    Reverse current is displayed in uA
                   </div>
                 )}
               </div>
@@ -580,8 +588,8 @@ const PNJunctionSimulation = () => {
                     domain={[reverseYMinMicroAmps, 0]}
                     width={94}
                     tickMargin={10}
-                    tickFormatter={value => `${Number(value).toFixed(2)} µA`}
-                    label={{ value: 'Reverse Current (µA)', angle: -90, position: 'insideLeft', offset: -10 }}
+                    tickFormatter={value => `${Number(value).toFixed(2)} uA`}
+                    label={{ value: 'Reverse Current (uA)', angle: -90, position: 'insideLeft', offset: -10 }}
                   />
                   <Tooltip
                     formatter={(_, __, item) => [
