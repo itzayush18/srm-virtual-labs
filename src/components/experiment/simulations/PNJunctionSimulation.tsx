@@ -39,9 +39,13 @@ const snapTemperature = (value: number) => {
 
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
 
-const formatCurrent = (value: number) => `${value.toExponential(4)} A`;
-const formatForwardCurrentMilliAmps = (value: number) => `${(value * 1e3).toFixed(3)} mA`;
-const formatReverseCurrentMicroAmps = (value: number) => `${(Math.abs(value) * 1e6).toFixed(3)} uA`;
+const formatForwardCurrentMilliAmps = (valueA: number) => `${(valueA * 1e3).toFixed(3)} mA`;
+const formatReverseCurrentMicroAmps = (valueA: number) => `${(valueA * 1e6).toFixed(3)} µA`;
+const formatCurrentForSelectedVoltage = (valueA: number) =>
+  Math.abs(valueA) >= 1e-3
+    ? `${(valueA * 1e3).toFixed(3)} mA`
+    : `${(valueA * 1e6).toFixed(3)} µA`;
+
 const FORWARD_SERIES_RESISTANCE = 1000;
 const FORWARD_IDEALITY = 1.5;
 const FORWARD_SATURATION_CURRENT = 1e-12;
@@ -253,9 +257,7 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
         <div className="mt-1 text-xs text-gray-600">
           V = {voltage.toFixed(2)} V | T = {temperature} K
         </div>
-        <div className="mt-1 text-xs text-gray-600">
-          Carrier density increases with temperature
-        </div>
+        <div className="mt-1 text-xs text-gray-600">Carrier density increases with temperature</div>
       </div>
     </div>
   );
@@ -303,22 +305,32 @@ const PNJunctionSimulation = () => {
     const kB = 1.380649e-23;
     const q = 1.60217663e-19;
     const n = 1.5;
-    const bandgapEnergy = 1.1;
     const thermalVoltage = (kB * t) / q;
-    const saturationCurrent =
-      1e-12 * Math.pow(t / 300, 3) * Math.exp((-bandgapEnergy * q) / (n * kB * t));
 
     if (v >= 0) {
       return solveForwardBiasPoint(v, t).diodeCurrent;
     }
 
-    const reverseLeakageCurrent = -saturationCurrent * (1 - Math.exp(v / (n * thermalVoltage)));
+    // Reverse leakage is intentionally scaled to make temperature differences visible
+    // in the educational plot while still keeping the values in microamps.
+    const leakageMagnitude =
+      8e-8 *
+      Math.pow(t / 300, 2.8) *
+      Math.exp((t - 300) / 55) *
+      (1 + 0.35 * Math.abs(v) / 0.6);
+
+    const preBreakdownCurrent = -leakageMagnitude;
+
     if (v > -0.4) {
-      return reverseLeakageCurrent;
+      return preBreakdownCurrent;
     }
 
-    const breakdownStrength = 2.5e-6 * Math.exp((Math.abs(v) - 0.4) * 18);
-    return reverseLeakageCurrent - breakdownStrength;
+    const breakdownExcess =
+      4.5e-7 *
+      Math.exp((Math.abs(v) - 0.4) * 11) *
+      (1 + (t - 300) / 180);
+
+    return preBreakdownCurrent - breakdownExcess;
   };
 
   const resetPlots = () => {
@@ -336,12 +348,14 @@ const PNJunctionSimulation = () => {
   const addDataPoint = () => {
     if (voltage >= 0) {
       if (!forwardOperatingPoint) return;
+
       const newPoint: DataPoint = {
         sourceVoltage: Number(voltage.toFixed(2)),
         voltage: Number(forwardOperatingPoint.diodeVoltage.toFixed(4)),
         current: forwardOperatingPoint.diodeCurrent,
         temperature,
       };
+
       setForwardData(prevData => {
         const filtered = prevData.filter(
           point =>
@@ -361,6 +375,7 @@ const PNJunctionSimulation = () => {
       current: currentValue,
       temperature,
     };
+
     setReverseData(prevData => {
       const filtered = prevData.filter(
         point =>
@@ -403,20 +418,25 @@ const PNJunctionSimulation = () => {
   };
 
   const liveTableData = [...reverseData, ...forwardData].sort((a, b) => a.voltage - b.voltage);
-  const yMax = forwardData.length > 0 ? Math.max(...forwardData.map(point => point.current * 1e3), 0.001) : 0.001;
+  const forwardYMaxMilliAmps =
+    forwardData.length > 0
+      ? Math.max(...forwardData.map(point => point.current * 1e3), 0.001)
+      : 0.001;
+
   const reverseBiasChartData = reverseData
     .map(point => ({
       reverseVoltage: Math.abs(point.voltage),
-      reverseCurrentMicroamps: Math.abs(point.current) * 1e6,
+      reverseCurrentMicroamps: point.current * 1e6,
       actualVoltage: point.voltage,
       actualCurrent: point.current,
       temperature: point.temperature,
     }))
     .sort((a, b) => a.reverseVoltage - b.reverseVoltage);
-  const reverseYMax =
+
+  const reverseYMinMicroAmps =
     reverseBiasChartData.length > 0
-      ? Math.max(...reverseBiasChartData.map(point => point.reverseCurrentMicroamps), 0.001)
-      : 0.001;
+      ? Math.min(...reverseBiasChartData.map(point => point.reverseCurrentMicroamps), 0)
+      : -1;
 
   return (
     <div className="space-y-6">
@@ -490,12 +510,18 @@ const PNJunctionSimulation = () => {
             <div className="rounded-md bg-gray-50 p-3">
               <div className="text-center">
                 <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
-                <div className="text-2xl font-bold text-lab-teal">{formatCurrent(currentValue)}</div>
+                <div className="text-2xl font-bold text-lab-teal">
+                  {formatCurrentForSelectedVoltage(currentValue)}
+                </div>
                 {forwardOperatingPoint ? (
                   <div className="mt-1 text-xs text-gray-500">
                     Forward diode voltage: {forwardOperatingPoint.diodeVoltage.toFixed(4)} V
                   </div>
-                ) : null}
+                ) : (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Reverse current is displayed in µA
+                  </div>
+                )}
               </div>
             </div>
 
@@ -529,7 +555,7 @@ const PNJunctionSimulation = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={reverseBiasChartData}
-                  margin={{ top: 28, right: 20, bottom: 28, left: 30 }}
+                  margin={{ top: 28, right: 20, bottom: 40, left: 42 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <ReferenceLine
@@ -542,20 +568,26 @@ const PNJunctionSimulation = () => {
                     type="number"
                     dataKey="reverseVoltage"
                     domain={[0, 0.6]}
-                    ticks={[0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]}
+                    ticks={[0, 0.2, 0.4, 0.6]}
                     tickFormatter={value => (value === 0 ? '0' : `-${Number(value).toFixed(1)}`)}
-                    label={{ value: 'Reverse Voltage (V_R)', position: 'insideBottom', offset: -12 }}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={8}
+                    height={48}
+                    label={{ value: 'Reverse Voltage (V)', position: 'insideBottom', offset: -12 }}
                   />
                   <YAxis
                     type="number"
-                    domain={[0, reverseYMax]}
-                    width={88}
+                    domain={[reverseYMinMicroAmps, 0]}
+                    width={94}
                     tickMargin={10}
-                    tickFormatter={value => Number(value).toFixed(2)}
-                    label={{ value: 'Reverse Current (uA)', angle: -90, position: 'insideLeft', offset: -8 }}
+                    tickFormatter={value => `${Number(value).toFixed(2)} µA`}
+                    label={{ value: 'Reverse Current (µA)', angle: -90, position: 'insideLeft', offset: -10 }}
                   />
                   <Tooltip
-                    formatter={(_, __, item) => [formatReverseCurrentMicroAmps(item.payload.actualCurrent), 'Current']}
+                    formatter={(_, __, item) => [
+                      formatReverseCurrentMicroAmps(item.payload.actualCurrent),
+                      'Current',
+                    ]}
                     labelFormatter={label =>
                       `Reverse Voltage: ${label === 0 ? '0.00' : `-${Number(label).toFixed(2)}`} V`
                     }
@@ -585,7 +617,7 @@ const PNJunctionSimulation = () => {
           <div className="h-72">
             {forwardData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={forwardData} margin={{ top: 16, right: 12, bottom: 24, left: 24 }}>
+                <LineChart data={forwardData} margin={{ top: 16, right: 12, bottom: 28, left: 34 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <ReferenceLine
                     x={0.7}
@@ -597,15 +629,17 @@ const PNJunctionSimulation = () => {
                     type="number"
                     dataKey="voltage"
                     domain={[0, 1]}
-                    label={{ value: 'Diode Voltage V_D (V)', position: 'insideBottom', offset: -10 }}
+                    tick={{ fontSize: 11 }}
+                    tickMargin={8}
+                    label={{ value: 'Diode Voltage (V)', position: 'insideBottom', offset: -10 }}
                   />
                   <YAxis
                     type="number"
-                    domain={[0, yMax]}
-                    width={88}
+                    domain={[0, forwardYMaxMilliAmps]}
+                    width={94}
                     tickMargin={10}
-                    tickFormatter={value => Number(value).toFixed(3)}
-                    label={{ value: 'Forward Current (mA)', angle: -90, position: 'insideLeft', offset: -8 }}
+                    tickFormatter={value => `${Number(value).toFixed(3)} mA`}
+                    label={{ value: 'Forward Current (mA)', angle: -90, position: 'insideLeft', offset: -10 }}
                   />
                   <Tooltip
                     formatter={(value: number) => [formatForwardCurrentMilliAmps(value / 1e3), 'Current']}
