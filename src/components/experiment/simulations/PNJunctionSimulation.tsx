@@ -304,31 +304,43 @@ const PNJunctionSimulation = () => {
   const calculateCurrent = (v: number, t: number) => {
     const kB = 1.380649e-23;
     const q = 1.60217663e-19;
-    const n = 1.5;
     const thermalVoltage = (kB * t) / q;
 
     if (v >= 0) {
       return solveForwardBiasPoint(v, t).diodeCurrent;
     }
 
-    // Reverse leakage is intentionally scaled to make temperature differences visible
-    // in the educational plot while still keeping the values in microamps.
+    const reverseVoltage = Math.abs(v);
+    const temperatureRatio = t / 300;
+
+    // Make temperature affect both the leakage level and the curve shape.
+    // This keeps the reverse plot educational: higher temperature means more
+    // leakage, a softer knee, and an earlier breakdown onset.
     const leakageMagnitude =
-      8e-8 *
-      Math.pow(t / 300, 2.8) *
-      Math.exp((t - 300) / 55) *
-      (1 + 0.35 * Math.abs(v) / 0.6);
+      4e-8 *
+      Math.pow(temperatureRatio, 3.4) *
+      Math.exp((t - 300) / 42) *
+      (1 + 1.8 * Math.pow(reverseVoltage / 0.6, 1.2));
 
-    const preBreakdownCurrent = -leakageMagnitude;
+    const curvatureFactor =
+      1 +
+      (0.55 + 0.003 * (t - 300)) *
+        Math.pow(reverseVoltage / 0.6, 1.4) *
+        (1 + 0.5 * (temperatureRatio - 1));
 
-    if (v > -0.4) {
+    const preBreakdownCurrent = -leakageMagnitude * curvatureFactor;
+
+    const breakdownVoltage = clamp(0.42 - 0.0007 * (t - 300), 0.3, 0.44);
+
+    if (reverseVoltage <= breakdownVoltage) {
       return preBreakdownCurrent;
     }
 
+    const breakdownDistance = reverseVoltage - breakdownVoltage;
     const breakdownExcess =
-      4.5e-7 *
-      Math.exp((Math.abs(v) - 0.4) * 11) *
-      (1 + (t - 300) / 180);
+      2.8e-7 *
+      Math.exp(breakdownDistance * (9.5 + 0.02 * (t - 300))) *
+      (1 + 0.8 * (temperatureRatio - 1));
 
     return preBreakdownCurrent - breakdownExcess;
   };
