@@ -7,9 +7,9 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-lg font-bold mb-4">Semiconductor Physics VLab</h3>
+            <h3 className="text-lg font-bold mb-4"> Physics Virtual Lab</h3>
             <p className="text-gray-300 mb-2">
-              An interactive virtual laboratory for semiconductor physics experiments.
+              An interactive virtual laboratory for physics experiments.
             </p>
             <div className="flex items-start space-x-4 mt-2">
               <div className="text-gray-300 text-sm">
