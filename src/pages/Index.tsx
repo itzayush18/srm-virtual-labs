@@ -16,7 +16,7 @@ const Index = () => {
   const labCategories = [
     {
       id: 'semiconductor',
-      title: 'Semiconductor Physics Lab',
+      title: 'Physics Virtual Lab',
       description: 'Interactive experiments on semiconductor materials and devices',
       experimentsCount: 12,
       imagePath: '/researchlab2.jpg',
@@ -30,7 +30,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-extrabold mb-6 animate-fade-in">
-              Virtual Semiconductor Physics Laboratory
+              Virtual Physics Laboratory
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
               Explore the fundamentals of semiconductor physics through interactive, virtual
