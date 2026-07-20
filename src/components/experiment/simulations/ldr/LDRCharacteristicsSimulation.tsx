@@ -13,6 +13,7 @@ import {
 const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
 const DISTANCES = [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30];
 const GRAPH_DISTANCES = [5, 10, 15];
+const INTENSITY_LEVELS = [0, 20, 40, 60, 80, 100];
 
 const MAX_SOURCE_VOLTAGE = 12.5;
 const REFERENCE_DISTANCE = 2.5;
@@ -145,6 +146,12 @@ export default function App() {
     return clamp(illuminatedResistance, 0.5, darkResistance);
   };
 
+  const computeResistanceForIntensity = (intensityPercent, generationFactor = 1) => {
+    const normalizedIntensity = clamp(intensityPercent, 0, 100) / 100;
+    const illuminatedResistance = darkResistance / (1 + 8 * normalizedIntensity * generationFactor);
+    return clamp(illuminatedResistance, 0.5, darkResistance);
+  };
+
   const lightIntensityPercent = useMemo(
     () => computeLightIntensityPercent(sourceVoltage, distance, lightSource),
     [sourceVoltage, distance, lightSource]
@@ -169,6 +176,16 @@ export default function App() {
         resistance: Number(computeResistance(sourceVoltage, d, lightSource).toFixed(2)),
       })),
     [sourceVoltage, darkResistance, lightSource]
+  );
+
+  const intensityResistanceData = useMemo(
+    () =>
+      INTENSITY_LEVELS.map((intensity) => ({
+        intensity,
+        generation1: Number(computeResistanceForIntensity(intensity, 1).toFixed(2)),
+        generation2: Number(computeResistanceForIntensity(intensity, 2).toFixed(2)),
+      })),
+    [darkResistance]
   );
 
   const manualCarrierGraphData = useMemo(
@@ -765,6 +782,10 @@ export default function App() {
                     <li>
                       Enter the calculated values in the table and observe how the graph is plotted.
                     </li>
+                    <li>
+                      Plot the graph between light intensity (%) on the x-axis and resistance (kOhm)
+                      on the y-axis for carrier generation values 1 and 2.
+                    </li>
                   </ol>
                 </div>
               </section>
@@ -864,6 +885,104 @@ export default function App() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section style={{ ...cardStyle, marginBottom: 24 }}>
+          <h2 style={sectionTitleStyle}>Intensity vs Resistance Exercise</h2>
+          <p style={{ marginTop: 0, color: '#475569', lineHeight: 1.6 }}>
+            This exercise compares carrier generation values 1 and 2. The x-axis is light intensity
+            (%) and the y-axis is resistance (kOhm). The values below are calculated from the same
+            empirical LDR model used in the simulation.
+          </p>
+
+          <div style={{ overflowX: 'auto', marginBottom: 18 }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: 14,
+                minWidth: 760,
+              }}
+            >
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                    Light Intensity (%)
+                  </th>
+                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                    Resistance at Carrier Generation 1 (kOhm)
+                  </th>
+                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                    Resistance at Carrier Generation 2 (kOhm)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {intensityResistanceData.map((row) => (
+                  <tr key={row.intensity}>
+                    <td style={{ border: '1px solid #d7deea', padding: 10, fontWeight: 700 }}>
+                      {row.intensity}
+                    </td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.generation1}</td>
+                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.generation2}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ width: '100%', height: 360 }}>
+            <ResponsiveContainer>
+              <LineChart data={intensityResistanceData} margin={chartMargins}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#dbe4f0" />
+                <XAxis
+                  dataKey="intensity"
+                  tick={{ fill: '#475569', fontSize: 12 }}
+                  label={{
+                    value: 'Light Intensity (%)',
+                    position: 'bottom',
+                    offset: 12,
+                    fill: '#334155',
+                  }}
+                />
+                <YAxis
+                  width={86}
+                  tick={{ fill: '#475569', fontSize: 12 }}
+                  label={{
+                    value: 'Resistance (kOhm)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    dx: -20,
+                    fill: '#334155',
+                  }}
+                />
+                <Tooltip
+                  formatter={(value) =>
+                    typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
+                  }
+                />
+                <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 8 }} />
+                <Line
+                  type="monotone"
+                  dataKey="generation1"
+                  stroke="#f97316"
+                  strokeWidth={3}
+                  name="Carrier Generation 1"
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="generation2"
+                  stroke="#0ea5e9"
+                  strokeWidth={3}
+                  name="Carrier Generation 2"
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </section>
 
