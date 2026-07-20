@@ -13,7 +13,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
       <div className="container mx-auto py-4 px-4 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-lab-blue font-bold text-xl">Semiconductor Physics VLab</span>
+          <span className="text-lab-blue font-bold text-xl"> Physics Virtual Lab</span>
         </Link>
 
         {isMobile ? (
