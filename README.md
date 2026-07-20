@@ -1,4 +1,4 @@
-# Semiconductor Virtual Labs
+# Virtual Physics Labs
 
 Welcome to the **Semiconductor Virtual Labs** – an interactive platform designed to simulate and explore key semiconductor experiments in a visually rich and intuitive way. This project aims to make complex physics concepts accessible through dynamic visualizations, interactive UI, and real-time feedback.
 
