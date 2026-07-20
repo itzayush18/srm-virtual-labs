@@ -784,7 +784,7 @@ export default function App() {
                     </li>
                     <li>
                       Plot the graph between light intensity (%) on the x-axis and resistance (kOhm)
-                      on the y-axis for carrier generation values 1 and 2.
+                      on the y-axis.
                     </li>
                   </ol>
                 </div>
