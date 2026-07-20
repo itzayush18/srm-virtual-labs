@@ -11,12 +11,12 @@ import {
 } from 'recharts';
 
 const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
-const DISTANCES = [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20];
+const DISTANCES = [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30];
 const GRAPH_DISTANCES = [5, 10, 15];
 
 const MAX_SOURCE_VOLTAGE = 12.5;
 const REFERENCE_DISTANCE = 2.5;
-const MAX_DISTANCE = 20;
+const MAX_DISTANCE = 30;
 
 const LIGHT_SOURCES = {
   incandescent: {
@@ -35,7 +35,7 @@ const LIGHT_SOURCES = {
     glowOuter: 'rgba(59, 130, 246, 0.42)',
     beamColor: 'rgba(96, 165, 250, 0.32)',
     panel: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-    summary: 'Focused cool white light that produces slightly higher useful flux at the LDR.',
+    summary: 'Focused cool white light that produces a slightly stronger response in the model.',
   },
   sunlight: {
     label: 'Sunlight',
@@ -131,26 +131,22 @@ export default function App() {
     return darkVoltmeterReading / darkAmmeterReading;
   }, [darkVoltmeterReading, darkAmmeterReading]);
 
-  const computeLightFlux = (lampVoltage, ldrDistance, source = lightSource) => {
+  const computeLightIntensityPercent = (lampVoltage, ldrDistance, source = lightSource) => {
     const voltageFactor = lampVoltage / MAX_SOURCE_VOLTAGE;
     const distanceFactor = Math.pow(REFERENCE_DISTANCE / ldrDistance, 2);
-    return voltageFactor * distanceFactor * LIGHT_SOURCES[source].multiplier;
-  };
-
-  const computeCarrierGeneration = (lampVoltage, ldrDistance, source = lightSource) => {
-    const flux = computeLightFlux(lampVoltage, ldrDistance, source);
-    return flux * 100;
+    const rawIntensity = 100 * voltageFactor * distanceFactor * LIGHT_SOURCES[source].multiplier;
+    return clamp(rawIntensity, 0, 100);
   };
 
   const computeResistance = (lampVoltage, ldrDistance, source = lightSource) => {
-    const carriers = computeCarrierGeneration(lampVoltage, ldrDistance, source);
-    const normalizedCarriers = carriers / 100;
-    const illuminatedResistance = darkResistance / (1 + 8 * normalizedCarriers);
+    const intensityPercent = computeLightIntensityPercent(lampVoltage, ldrDistance, source);
+    const normalizedIntensity = intensityPercent / 100;
+    const illuminatedResistance = darkResistance / (1 + 8 * normalizedIntensity);
     return clamp(illuminatedResistance, 0.5, darkResistance);
   };
 
-  const lightFlux = useMemo(
-    () => computeLightFlux(sourceVoltage, distance, lightSource),
+  const lightIntensityPercent = useMemo(
+    () => computeLightIntensityPercent(sourceVoltage, distance, lightSource),
     [sourceVoltage, distance, lightSource]
   );
 
@@ -210,14 +206,13 @@ export default function App() {
   const beamOpacity = clamp(0.12 + voltageFactor * 0.52 + closenessFactor * 0.24, 0.12, 0.92);
   const beamBlur = clamp(6 + voltageFactor * 10 - normalizedDistance * 2, 5, 16);
   const sourceGlow = clamp(18 + voltageFactor * 38, 18, 56);
-  const sensorGlow = clamp(0.18 + lightFlux * 3.6, 0.18, 1);
+  const sensorGlow = clamp(0.18 + lightIntensityPercent / 100 * 3.6, 0.18, 1);
 
-  const ldrLeft = clamp(250 + normalizedDistance * 220, 250, 470);
+  const ldrLeft = clamp(250 + normalizedDistance * 300, 250, 550);
   const sourceCenterX = 102;
   const sensorCenterX = ldrLeft + 45;
   const coneLeft = sourceCenterX + 12;
   const coneWidth = Math.max(70, sensorCenterX - coneLeft + 20);
-  const coneTop = 88;
   const coneHeight = clamp(78 + voltageFactor * 22 + closenessFactor * 14, 78, 120);
   const innerConeHeight = clamp(coneHeight * 0.45, 28, 56);
 
@@ -243,10 +238,12 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 24,
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#92400e',
             }}
           >
-            💡
+            BULB
           </div>
           <div
             style={{
@@ -286,10 +283,12 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 24,
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#92400e',
             }}
           >
-            ☀️
+            SUN
           </div>
         </div>
       );
@@ -372,10 +371,12 @@ export default function App() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 22,
+            fontSize: 16,
+            fontWeight: 700,
+            color: '#6b21a8',
           }}
         >
-          🌈
+          RGB
         </div>
       </div>
     );
@@ -398,8 +399,8 @@ export default function App() {
         </h1>
         <p style={{ marginTop: 0, marginBottom: 24, color: '#334155', lineHeight: 1.7 }}>
           Select a light source, tune the source voltage and distance, and watch how the LDR
-          conductivity changes in real time. Students can calculate carrier generation from the
-          formula and enter values in the table to plot the graph for 5 cm, 10 cm, and 15 cm.
+          conductivity changes in real time. The simulation now uses light intensity in percent
+          instead of relative light flux, which is easier for students to interpret.
         </p>
 
         <div
@@ -451,7 +452,7 @@ export default function App() {
                 <input
                   type="range"
                   min={2.5}
-                  max={20}
+                  max={30}
                   step={2.5}
                   value={distance}
                   onChange={(e) => setDistance(Number(e.target.value))}
@@ -480,8 +481,8 @@ export default function App() {
                 }}
               >
                 <div>
-                  <label style={labelStyle}>Relative Light Flux</label>
-                  <input value={lightFlux.toFixed(3)} readOnly style={readOnlyStyle} />
+                  <label style={labelStyle}>Light Intensity (%)</label>
+                  <input value={`${lightIntensityPercent.toFixed(1)}%`} readOnly style={readOnlyStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Resistance (kOhm)</label>
@@ -505,7 +506,7 @@ export default function App() {
                 }}
               >
                 <p style={{ marginTop: 0, marginBottom: 12, color: '#334155', lineHeight: 1.7 }}>
-                  Students should calculate carrier generation using:
+                  Students should calculate light intensity using:
                 </p>
                 <div
                   style={{
@@ -519,15 +520,17 @@ export default function App() {
                     textAlign: 'center',
                   }}
                 >
-                  Carrier Generation = 100 × (Vs / 12.5) × (2.5 / d)^2 × S
+                  Light Intensity (%) = 100 x (Vs / 12.5) x (2.5 / d)^2 x S
                 </div>
                 <div style={{ marginTop: 12, color: '#475569', lineHeight: 1.7, fontSize: 14 }}>
                   <div>`Vs` = Source voltage of the light source</div>
                   <div>`d` = Distance between source and LDR in cm</div>
                   <div>`S` = Source multiplier for the selected light source</div>
                   <div>
-                    For <strong>{selectedLightSource.label}</strong>, `S ={' '}
-                    {selectedLightSource.multiplier}`
+                    For <strong>{selectedLightSource.label}</strong>, S = {selectedLightSource.multiplier}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    The simulation caps the displayed light intensity at 100% for easier teaching.
                   </div>
                 </div>
               </div>
@@ -577,6 +580,7 @@ export default function App() {
                   <div style={{ fontSize: 14, fontWeight: 700 }}>Source: {selectedLightSource.label}</div>
                   <div style={{ fontSize: 14 }}>Voltage: {sourceVoltage.toFixed(1)} V</div>
                   <div style={{ fontSize: 14 }}>Distance: {distance.toFixed(1)} cm</div>
+                  <div style={{ fontSize: 14 }}>Intensity: {lightIntensityPercent.toFixed(1)}%</div>
                 </div>
 
                 <div
@@ -584,7 +588,7 @@ export default function App() {
                     position: 'absolute',
                     top: 18,
                     right: 18,
-                    width: 160,
+                    width: 170,
                     padding: 12,
                     borderRadius: 14,
                     background: 'rgba(15,23,42,0.88)',
