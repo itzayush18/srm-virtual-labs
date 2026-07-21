@@ -92,6 +92,13 @@ export default function App() {
   const [distance, setDistance] = useState(10);
   const [biasVoltage, setBiasVoltage] = useState(5);
   const [lightSource, setLightSource] = useState('incandescent');
+  const [observationVoltages, setObservationVoltages] = useState([
+    2.5,
+    5,
+    7.5,
+    10,
+    12.5,
+  ]);
 
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
@@ -135,6 +142,37 @@ export default function App() {
     }
     return biasVoltage / resistance;
   }, [biasVoltage, resistance]);
+
+  const observationRows = useMemo(
+    () =>
+      observationVoltages.map((voltage, index) => {
+        const safeVoltage = Number.isFinite(voltage) ? voltage : 0;
+        const rowIntensity = computeLightIntensityPercent(safeVoltage, distance, lightSource);
+        const rowResistance = computeResistance(safeVoltage, distance, lightSource);
+        const rowCurrent = rowResistance > 0 ? biasVoltage / rowResistance : 0;
+
+        return {
+          sno: index + 1,
+          voltage: safeVoltage,
+          intensity: rowIntensity,
+          current: rowCurrent,
+          resistance: rowResistance,
+        };
+      }),
+    [observationVoltages, distance, lightSource, biasVoltage, darkResistance]
+  );
+
+  const handleObservationVoltageChange = (index, value) => {
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+
+    setObservationVoltages((prev) => {
+      const next = [...prev];
+      next[index] = value === '' ? '' : Number(value);
+      return next;
+    });
+  };
 
   const voltageFactor = sourceVoltage / MAX_SOURCE_VOLTAGE;
   const normalizedDistance = (distance - REFERENCE_DISTANCE) / (MAX_DISTANCE - REFERENCE_DISTANCE);
@@ -726,6 +764,85 @@ export default function App() {
               <p style={{ marginBottom: 0, marginTop: 12, color: '#64748b', lineHeight: 1.6 }}>
                 Dark resistance formula: Rdark = V / I
               </p>
+            </section>
+
+            <section style={compactCardStyle}>
+              <h2 style={sectionTitleStyle}>Observation Table</h2>
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: '#f8fafc',
+                  border: '1px solid #d7deea',
+                  color: '#334155',
+                  fontWeight: 700,
+                }}
+              >
+                Distance set: {distance.toFixed(1)} cm
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    minWidth: 760,
+                    fontSize: 14,
+                  }}
+                >
+                  <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                      <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                        S.No
+                      </th>
+                      <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                        Voltage (V)
+                      </th>
+                      <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                        Light Intensity (%)
+                      </th>
+                      <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                        Current (mA)
+                      </th>
+                      <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
+                        R (kOhm)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {observationRows.map((row) => (
+                      <tr key={row.sno}>
+                        <td style={{ border: '1px solid #d7deea', padding: 10, fontWeight: 700 }}>
+                          {row.sno}
+                        </td>
+                        <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="12.5"
+                            value={observationVoltages[row.sno - 1]}
+                            onChange={(e) =>
+                              handleObservationVoltageChange(row.sno - 1, e.target.value)
+                            }
+                            style={inputStyle}
+                          />
+                        </td>
+                        <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                          {row.intensity.toFixed(1)}
+                        </td>
+                        <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                          {row.current.toFixed(3)}
+                        </td>
+                        <td style={{ border: '1px solid #d7deea', padding: 10 }}>
+                          {row.resistance.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
         </div>
