@@ -786,11 +786,7 @@ export default function App() {
 
             <section style={compactCardStyle}>
               <h2 style={sectionTitleStyle}>Observation Table</h2>
-              <div
-                style={{
-                  overflowX: 'auto',
-                </div>
-              >
+              <div style={{ overflowX: 'auto' }}>
                 <table
                   style={{
                     width: '100%',
