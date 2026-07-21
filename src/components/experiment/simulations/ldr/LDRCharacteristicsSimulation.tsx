@@ -1,19 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-
-const SOURCE_VOLTAGES = [2.5, 5, 7.5, 10, 12.5];
-const DISTANCES = [2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30];
-const GRAPH_DISTANCES = [5, 10, 15];
-const INTENSITY_LEVELS = [0, 20, 40, 60, 80, 100];
 
 const MAX_SOURCE_VOLTAGE = 12.5;
 const REFERENCE_DISTANCE = 2.5;
@@ -102,16 +87,6 @@ const readOnlyStyle = {
   background: '#f8fafc',
 };
 
-const chartMargins = { top: 18, right: 28, bottom: 40, left: 34 };
-
-const createInitialCarrierInputs = () => {
-  const initial = {};
-  SOURCE_VOLTAGES.forEach((voltage) => {
-    initial[voltage] = { 5: '', 10: '', 15: '' };
-  });
-  return initial;
-};
-
 export default function App() {
   const [sourceVoltage, setSourceVoltage] = useState(7.5);
   const [distance, setDistance] = useState(10);
@@ -120,8 +95,6 @@ export default function App() {
 
   const [darkVoltmeterReading, setDarkVoltmeterReading] = useState(5);
   const [darkAmmeterReading, setDarkAmmeterReading] = useState(0.05);
-
-  const [carrierInputs, setCarrierInputs] = useState(createInitialCarrierInputs);
 
   const selectedLightSource = LIGHT_SOURCES[lightSource];
 
@@ -146,12 +119,6 @@ export default function App() {
     return clamp(illuminatedResistance, 0.5, darkResistance);
   };
 
-  const computeResistanceForIntensity = (intensityPercent, generationFactor = 1) => {
-    const normalizedIntensity = clamp(intensityPercent, 0, 100) / 100;
-    const illuminatedResistance = darkResistance / (1 + 8 * normalizedIntensity * generationFactor);
-    return clamp(illuminatedResistance, 0.5, darkResistance);
-  };
-
   const lightIntensityPercent = useMemo(
     () => computeLightIntensityPercent(sourceVoltage, distance, lightSource),
     [sourceVoltage, distance, lightSource]
@@ -169,53 +136,6 @@ export default function App() {
     return biasVoltage / resistance;
   }, [biasVoltage, resistance]);
 
-  const distanceResistanceData = useMemo(
-    () =>
-      DISTANCES.map((d) => ({
-        distance: d,
-        resistance: Number(computeResistance(sourceVoltage, d, lightSource).toFixed(2)),
-      })),
-    [sourceVoltage, darkResistance, lightSource]
-  );
-
-  const intensityResistanceData = useMemo(
-    () =>
-      INTENSITY_LEVELS.map((intensity) => ({
-        intensity,
-        generation1: Number(computeResistanceForIntensity(intensity, 1).toFixed(2)),
-        generation2: Number(computeResistanceForIntensity(intensity, 2).toFixed(2)),
-      })),
-    [darkResistance]
-  );
-
-  const manualCarrierGraphData = useMemo(
-    () =>
-      SOURCE_VOLTAGES.map((voltage) => {
-        const row = carrierInputs[voltage] || {};
-        return {
-          sourceVoltage: voltage,
-          carriers5: row[5] === '' ? null : Number(row[5]),
-          carriers10: row[10] === '' ? null : Number(row[10]),
-          carriers15: row[15] === '' ? null : Number(row[15]),
-        };
-      }),
-    [carrierInputs]
-  );
-
-  const handleCarrierInputChange = (voltage, distanceValue, value) => {
-    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
-      return;
-    }
-
-    setCarrierInputs((prev) => ({
-      ...prev,
-      [voltage]: {
-        ...prev[voltage],
-        [distanceValue]: value,
-      },
-    }));
-  };
-
   const voltageFactor = sourceVoltage / MAX_SOURCE_VOLTAGE;
   const normalizedDistance = (distance - REFERENCE_DISTANCE) / (MAX_DISTANCE - REFERENCE_DISTANCE);
   const closenessFactor = 1 - normalizedDistance;
@@ -223,7 +143,7 @@ export default function App() {
   const beamOpacity = clamp(0.12 + voltageFactor * 0.52 + closenessFactor * 0.24, 0.12, 0.92);
   const beamBlur = clamp(6 + voltageFactor * 10 - normalizedDistance * 2, 5, 16);
   const sourceGlow = clamp(18 + voltageFactor * 38, 18, 56);
-  const sensorGlow = clamp(0.18 + lightIntensityPercent / 100 * 3.6, 0.18, 1);
+  const sensorGlow = clamp(0.18 + (lightIntensityPercent / 100) * 3.6, 0.18, 1);
 
   const ldrLeft = clamp(250 + normalizedDistance * 300, 250, 550);
   const sourceCenterX = 102;
@@ -540,11 +460,18 @@ export default function App() {
                   Light Intensity (%) = 100 x (Vs / 12.5) x (2.5 / d)^2 x S
                 </div>
                 <div style={{ marginTop: 12, color: '#475569', lineHeight: 1.7, fontSize: 14 }}>
-                  <div>`Vs` = Source voltage of the light source</div>
-                  <div>`d` = Distance between source and LDR in cm</div>
-                  <div>`S` = Source multiplier for the selected light source</div>
                   <div>
-                    For <strong>{selectedLightSource.label}</strong>, S = {selectedLightSource.multiplier}
+                    <code>Vs</code> = Source voltage of the light source
+                  </div>
+                  <div>
+                    <code>d</code> = Distance between source and LDR in cm
+                  </div>
+                  <div>
+                    <code>S</code> = Source multiplier for the selected light source
+                  </div>
+                  <div>
+                    For <strong>{selectedLightSource.label}</strong>, S ={' '}
+                    {selectedLightSource.multiplier}
                   </div>
                   <div style={{ marginTop: 8 }}>
                     The simulation caps the displayed light intensity at 100% for easier teaching.
@@ -583,40 +510,53 @@ export default function App() {
                   style={{
                     position: 'absolute',
                     top: 18,
-                    left: 18,
-                    width: 180,
-                    padding: 12,
-                    borderRadius: 14,
-                    background: 'rgba(255,255,255,0.9)',
-                    border: '1px solid #dbe4f0',
-                    boxShadow: '0 8px 18px rgba(15,23,42,0.08)',
-                    zIndex: 5,
+                    left: 20,
+                    right: 20,
+                    display: 'flex',
+                    gap: 14,
+                    flexWrap: 'wrap',
+                    zIndex: 3,
                   }}
                 >
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>Input</div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>Source: {selectedLightSource.label}</div>
-                  <div style={{ fontSize: 14 }}>Voltage: {sourceVoltage.toFixed(1)} V</div>
-                  <div style={{ fontSize: 14 }}>Distance: {distance.toFixed(1)} cm</div>
-                  <div style={{ fontSize: 14 }}>Intensity: {lightIntensityPercent.toFixed(1)}%</div>
-                </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 18,
-                    right: 18,
-                    width: 170,
-                    padding: 12,
-                    borderRadius: 14,
-                    background: 'rgba(15,23,42,0.88)',
-                    color: '#f8fafc',
-                    boxShadow: '0 10px 22px rgba(15,23,42,0.2)',
-                    zIndex: 5,
-                  }}
-                >
-                  <div style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 4 }}>Output</div>
-                  <div style={{ fontSize: 14 }}>Resistance: {resistance.toFixed(2)} kOhm</div>
-                  <div style={{ fontSize: 14 }}>Current: {current.toFixed(3)} mA</div>
+                  <div
+                    style={{
+                      background: 'rgba(255,255,255,0.9)',
+                      border: '1px solid #dbe4f0',
+                      borderRadius: 999,
+                      padding: '8px 14px',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#334155',
+                    }}
+                  >
+                    Intensity: {lightIntensityPercent.toFixed(1)}%
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(255,255,255,0.9)',
+                      border: '1px solid #dbe4f0',
+                      borderRadius: 999,
+                      padding: '8px 14px',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#334155',
+                    }}
+                  >
+                    Resistance: {resistance.toFixed(2)} kOhm
+                  </div>
+                  <div
+                    style={{
+                      background: 'rgba(255,255,255,0.9)',
+                      border: '1px solid #dbe4f0',
+                      borderRadius: 999,
+                      padding: '8px 14px',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#334155',
+                    }}
+                  >
+                    Current: {current.toFixed(3)} mA
+                  </div>
                 </div>
 
                 <div style={{ position: 'relative', height: 220, marginTop: 26, zIndex: 3 }}>
@@ -754,353 +694,40 @@ export default function App() {
               </div>
             </section>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 20,
-                alignItems: 'stretch',
-              }}
-            >
-              <section style={compactCardStyle}>
-                <h2 style={sectionTitleStyle}>Student Exercises</h2>
-                <div
-                  style={{
-                    background: selectedLightSource.panel,
-                    border: `1px solid ${selectedLightSource.accent}33`,
-                    borderRadius: 14,
-                    padding: 14,
-                    maxWidth: '100%',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <ol style={{ margin: 0, paddingLeft: 20, color: '#334155', lineHeight: 1.7 }}>
-                    <li>
-                      Calculate carrier generation for 2.5 V, 5 V, 7.5 V, 10 V, and 12.5 V at
-                      distances 5 cm, 10 cm, and 15 cm.
-                    </li>
-                    <li>
-                      Enter the calculated values in the table and observe how the graph is plotted.
-                    </li>
-                    <li>
-                      Plot the graph between light intensity (%) on the x-axis and resistance (kOhm)
-                      on the y-axis.
-                    </li>
-                  </ol>
+            <section style={compactCardStyle}>
+              <h2 style={sectionTitleStyle}>Dark Resistance Measurement</h2>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Voltmeter Reading (V)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={darkVoltmeterReading}
+                    onChange={(e) => setDarkVoltmeterReading(Number(e.target.value))}
+                    style={inputStyle}
+                  />
                 </div>
-              </section>
-
-              <section style={compactCardStyle}>
-                <h2 style={sectionTitleStyle}>Dark Resistance Measurement</h2>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div>
-                    <label style={labelStyle}>Voltmeter Reading (V)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={darkVoltmeterReading}
-                      onChange={(e) => setDarkVoltmeterReading(Number(e.target.value))}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Ammeter Reading (mA)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={darkAmmeterReading}
-                      onChange={(e) => setDarkAmmeterReading(Number(e.target.value))}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Dark Resistance (kOhm)</label>
-                    <input value={darkResistance.toFixed(2)} readOnly style={readOnlyStyle} />
-                  </div>
+                <div>
+                  <label style={labelStyle}>Ammeter Reading (mA)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={darkAmmeterReading}
+                    onChange={(e) => setDarkAmmeterReading(Number(e.target.value))}
+                    style={inputStyle}
+                  />
                 </div>
+                <div>
+                  <label style={labelStyle}>Dark Resistance (kOhm)</label>
+                  <input value={darkResistance.toFixed(2)} readOnly style={readOnlyStyle} />
+                </div>
+              </div>
 
-                <p style={{ marginBottom: 0, marginTop: 12, color: '#64748b', lineHeight: 1.6 }}>
-                  Dark resistance formula: Rdark = V / I
-                </p>
-              </section>
-            </div>
+              <p style={{ marginBottom: 0, marginTop: 12, color: '#64748b', lineHeight: 1.6 }}>
+                Dark resistance formula: Rdark = V / I
+              </p>
+            </section>
           </div>
-        </div>
-
-        <section style={{ ...cardStyle, marginBottom: 24 }}>
-          <h2 style={sectionTitleStyle}>Carrier Generation Observation Table</h2>
-          <p style={{ marginTop: 0, color: '#475569', lineHeight: 1.6 }}>
-            Students should calculate the values manually from the formula and enter them below.
-            The graph will be plotted automatically after entry.
-          </p>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: 14,
-                minWidth: 760,
-              }}
-            >
-              <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Source Voltage (V)
-                  </th>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Carrier Generation at 5 cm
-                  </th>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Carrier Generation at 10 cm
-                  </th>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Carrier Generation at 15 cm
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {SOURCE_VOLTAGES.map((voltage) => (
-                  <tr key={voltage}>
-                    <td style={{ border: '1px solid #d7deea', padding: 10, fontWeight: 700 }}>
-                      {voltage.toFixed(1)}
-                    </td>
-                    {GRAPH_DISTANCES.map((graphDistance) => (
-                      <td
-                        key={`${voltage}-${graphDistance}`}
-                        style={{ border: '1px solid #d7deea', padding: 10 }}
-                      >
-                        <input
-                          type="text"
-                          value={carrierInputs[voltage][graphDistance]}
-                          onChange={(e) =>
-                            handleCarrierInputChange(voltage, graphDistance, e.target.value)
-                          }
-                          placeholder="Enter value"
-                          style={inputStyle}
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section style={{ ...cardStyle, marginBottom: 24 }}>
-          <h2 style={sectionTitleStyle}>Intensity vs Resistance Exercise</h2>
-          <p style={{ marginTop: 0, color: '#475569', lineHeight: 1.6 }}>
-            This exercise compares carrier generation values 1 and 2. The x-axis is light intensity
-            (%) and the y-axis is resistance (kOhm). The values below are calculated from the same
-            empirical LDR model used in the simulation.
-          </p>
-
-          <div style={{ overflowX: 'auto', marginBottom: 18 }}>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: 14,
-                minWidth: 760,
-              }}
-            >
-              <thead>
-                <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Light Intensity (%)
-                  </th>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Resistance at Carrier Generation 1 (kOhm)
-                  </th>
-                  <th style={{ border: '1px solid #d7deea', padding: 10, textAlign: 'left' }}>
-                    Resistance at Carrier Generation 2 (kOhm)
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {intensityResistanceData.map((row) => (
-                  <tr key={row.intensity}>
-                    <td style={{ border: '1px solid #d7deea', padding: 10, fontWeight: 700 }}>
-                      {row.intensity}
-                    </td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.generation1}</td>
-                    <td style={{ border: '1px solid #d7deea', padding: 10 }}>{row.generation2}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ width: '100%', height: 360 }}>
-            <ResponsiveContainer>
-              <LineChart data={intensityResistanceData} margin={chartMargins}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#dbe4f0" />
-                <XAxis
-                  dataKey="intensity"
-                  tick={{ fill: '#475569', fontSize: 12 }}
-                  label={{
-                    value: 'Light Intensity (%)',
-                    position: 'bottom',
-                    offset: 12,
-                    fill: '#334155',
-                  }}
-                />
-                <YAxis
-                  width={86}
-                  tick={{ fill: '#475569', fontSize: 12 }}
-                  label={{
-                    value: 'Resistance (kOhm)',
-                    angle: -90,
-                    position: 'insideLeft',
-                    dx: -20,
-                    fill: '#334155',
-                  }}
-                />
-                <Tooltip
-                  formatter={(value) =>
-                    typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
-                  }
-                />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 8 }} />
-                <Line
-                  type="monotone"
-                  dataKey="generation1"
-                  stroke="#f97316"
-                  strokeWidth={3}
-                  name="Carrier Generation 1"
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="generation2"
-                  stroke="#0ea5e9"
-                  strokeWidth={3}
-                  name="Carrier Generation 2"
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
-            gap: 24,
-          }}
-        >
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Carrier Generation vs Source Voltage</h2>
-            <p style={{ marginTop: 0, color: '#475569', lineHeight: 1.6 }}>
-              The graph will plot after the student enters carrier generation values in the table.
-            </p>
-            <div style={{ width: '100%', height: 360 }}>
-              <ResponsiveContainer>
-                <LineChart data={manualCarrierGraphData} margin={chartMargins}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#dbe4f0" />
-                  <XAxis
-                    dataKey="sourceVoltage"
-                    tick={{ fill: '#475569', fontSize: 12 }}
-                    label={{
-                      value: 'Source Voltage (V)',
-                      position: 'bottom',
-                      offset: 12,
-                      fill: '#334155',
-                    }}
-                  />
-                  <YAxis
-                    width={82}
-                    domain={[0, 'auto']}
-                    tick={{ fill: '#475569', fontSize: 12 }}
-                    label={{
-                      value: 'Carrier Generation',
-                      angle: -90,
-                      position: 'insideLeft',
-                      dx: -18,
-                      fill: '#334155',
-                    }}
-                  />
-                  <Tooltip />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 8 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="carriers5"
-                    stroke="#f59e0b"
-                    strokeWidth={2.5}
-                    name="5 cm"
-                    connectNulls={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="carriers10"
-                    stroke="#2563eb"
-                    strokeWidth={2.5}
-                    name="10 cm"
-                    connectNulls={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="carriers15"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    name="15 cm"
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
-
-          <section style={cardStyle}>
-            <h2 style={sectionTitleStyle}>Distance vs Resistance</h2>
-            <div style={{ width: '100%', height: 360 }}>
-              <ResponsiveContainer>
-                <LineChart data={distanceResistanceData} margin={chartMargins}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#dbe4f0" />
-                  <XAxis
-                    dataKey="distance"
-                    tick={{ fill: '#475569', fontSize: 12 }}
-                    label={{
-                      value: 'Distance (cm)',
-                      position: 'bottom',
-                      offset: 12,
-                      fill: '#334155',
-                    }}
-                  />
-                  <YAxis
-                    width={86}
-                    tick={{ fill: '#475569', fontSize: 12 }}
-                    label={{
-                      value: 'Resistance (kOhm)',
-                      angle: -90,
-                      position: 'insideLeft',
-                      dx: -20,
-                      fill: '#334155',
-                    }}
-                  />
-                  <Tooltip
-                    formatter={(value) =>
-                      typeof value === 'number' ? `${value.toFixed(2)} kOhm` : value
-                    }
-                  />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 8 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="resistance"
-                    stroke={selectedLightSource.accent}
-                    strokeWidth={3}
-                    name="Resistance"
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
         </div>
       </div>
     </div>
