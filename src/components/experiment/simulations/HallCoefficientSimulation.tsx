@@ -36,34 +36,10 @@ const E_CHARGE = 1.602176634e-19;
 const ROOM_TEMPERATURE_K = 300;
 const FIXED_COIL_TURNS = 800;
 
-function toSup(n) {
-  return String(n)
-    .split('')
-    .map(
-      (c) =>
-        ({
-          '0': 'â°',
-          '1': 'Â¹',
-          '2': 'Â²',
-          '3': 'Â³',
-          '4': 'â´',
-          '5': 'âµ',
-          '6': 'â¶',
-          '7': 'â·',
-          '8': 'â¸',
-          '9': 'â¹',
-          '-': 'â»',
-        }[c] || c)
-    )
-    .join('');
-}
-
 function fmtSciValue(v) {
   if (!Number.isFinite(v)) return '--';
   if (v === 0) return '0';
-  const e = Math.floor(Math.log10(Math.abs(v)));
-  const m = (v / Math.pow(10, e)).toFixed(2);
-  return `${m}Ã—10${toSup(e)}`;
+  return Number(v).toExponential(2).replace('e+', 'e');
 }
 
 function fmtVhValue(v) {
@@ -285,7 +261,17 @@ function ExerciseNote() {
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
   if (isPType) {
     if (revealed) {
-      return <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{row.value}</span>;
+      return (
+        <span
+          style={{
+            fontWeight: 700,
+            color: 'var(--color-text-primary)',
+            fontFamily: 'ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace',
+          }}
+        >
+          {row.value}
+        </span>
+      );
     }
 
     return (
@@ -323,6 +309,7 @@ function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed,
         fontSize: 11,
         background: 'var(--color-background-primary)',
         color: 'var(--color-text-primary)',
+        fontFamily: 'ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace',
       }}
     />
   );
@@ -335,42 +322,42 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
     {
       key: 'bField',
       label: 'Magnetic field B',
-      formula: 'B = 4π × 10^-7 × N × Icoil / L',
+      formula: 'B = 4*pi x 10^-7 x N x Icoil / L',
       value: fmtBValue(data.B),
       unit: 'T',
     },
     {
       key: 'hallVoltage',
       label: 'Hall voltage V_H',
-      formula: 'V_H = R_H × I × B / t',
+      formula: 'V_H = R_H x I x B / t',
       value: fmtVhValue(data.Vh),
       unit: 'mV',
     },
     {
       key: 'hallCoeff',
       label: 'Hall coefficient R_H',
-      formula: 'R_H = V_H × t / (I × B)',
+      formula: 'R_H = V_H x t / (I x B)',
       value: fmtSciValue(data.measuredRh),
-      unit: 'm³/C',
+      unit: 'm^3/C',
     },
     {
       key: 'carrierDensity',
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityValue(data.carrierDensity),
-      unit: 'cm⁻³ / m⁻³',
+      unit: 'cm^-3 / m^-3',
     },
     {
       key: 'mobility',
-      label: 'Carrier mobility μ',
-      formula: 'μ(T) from material model',
+      label: 'Carrier mobility mu',
+      formula: 'mu(T) from material model',
       value: fmtSciValue(data.mobility),
-      unit: 'm²/(V·s)',
+      unit: 'm^2/(V*s)',
     },
     {
       key: 'conductivity',
-      label: 'Conductivity σ',
-      formula: 'σ = q × n × μ',
+      label: 'Conductivity sigma',
+      formula: 'sigma = q x n x mu',
       value: fmtSciValue(data.sigma),
       unit: 'S/m',
     },
@@ -387,7 +374,16 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
         padding: 12,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
+          marginBottom: 10,
+        }}
+      >
         <div>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)' }}>Measurement Table</div>
           <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 3 }}>
@@ -646,6 +642,7 @@ function HallCanvas2D({ matType, BOn, currentOn, B, showVh, hallVoltageText }) {
           } else if (particle.x < 88) {
             resetParticle(particle, 0);
           }
+
           if (currentOn && !BOn) {
             particle.y = centerY;
             particle.vy = 0;
@@ -927,7 +924,7 @@ const HallCoefficientSimulation = () => {
             <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-info)' }}>{FIXED_COIL_TURNS}</span>
           </div>
           <div style={{ marginTop: 8, fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
-            Magnetic field: B = 4π × 10^-7 × N × Icoil / L
+            Magnetic field: B = 4*pi x 10^-7 x N x Icoil / L
           </div>
         </SourceCard>
 
