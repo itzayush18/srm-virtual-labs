@@ -13,8 +13,8 @@ import {
 
 const WAVELENGTH_NM = 650;
 const FIBER_LENGTH_OPTIONS = [1, 5, 10, 20, 50, 100];
-const SCREEN_DISTANCE_OPTIONS = Array.from({ length: 23 }, (_, index) => 10 + index * 5);
-const MAX_NA_READINGS = 5;
+const SCREEN_DISTANCE_OPTIONS = Array.from({ length: 12 }, (_, index) => 10 + index * 10);
+const MAX_NA_READINGS = 12;
 const REFERENCE_LENGTH_M = 1;
 
 const FIBER_TYPES = {
@@ -931,7 +931,7 @@ const OpticalFiberLab = () => {
                       type="range"
                       min="10"
                       max="120"
-                      step="5"
+                      step="10"
                       value={naDistance}
                       onChange={(event) => setNaDistance(Number(event.target.value))}
                       className="w-full accent-blue-600"
