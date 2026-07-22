@@ -39,11 +39,15 @@ const FIBER_TYPES = {
 };
 
 const POWER_OPTIONS = [
-  { value: 5, label: 'Low 1', band: 'low' },
-  { value: 10, label: 'Low 2', band: 'low' },
-  { value: 70, label: 'High 1', band: 'high' },
-  { value: 85, label: 'High 2', band: 'high' },
+  { value: 5, label: '5%' },
+  { value: 10, label: '10%' },
+  { value: 70, label: '70%' },
+  { value: 85, label: '85%' },
 ];
+
+const ATTENUATION_POWER_LEVELS = [5, 10, 70, 85];
+
+const getPowerBand = (powerLevel) => (powerLevel <= 10 ? 'low' : 'high');
 
 const createLengthValueMap = (initialValue = null) =>
   FIBER_LENGTH_OPTIONS.reduce((acc, length) => {
@@ -53,10 +57,10 @@ const createLengthValueMap = (initialValue = null) =>
 
 const createMeasurements = () =>
   Object.keys(FIBER_TYPES).reduce((acc, fiberType) => {
-    acc[fiberType] = {
-      low: createLengthValueMap(),
-      high: createLengthValueMap(),
-    };
+    acc[fiberType] = ATTENUATION_POWER_LEVELS.reduce((powerAcc, powerLevel) => {
+      powerAcc[String(powerLevel)] = createLengthValueMap();
+      return powerAcc;
+    }, {});
     return acc;
   }, {});
 
@@ -89,9 +93,7 @@ const OpticalFiberLab = () => {
   const coreIndex = fiberConfig.coreIndex;
   const claddingIndex = fiberConfig.claddingIndex;
   const selectedPowerOption = POWER_OPTIONS.find((option) => option.value === laserPower) ?? POWER_OPTIONS[0];
-  const powerBand = selectedPowerOption.band;
-  const powerBandLabel = powerBand === 'low' ? 'Low' : 'High';
-  const powerLabel = `${selectedPowerOption.label} (${laserPower}%)`;
+  const powerLabel = selectedPowerOption.label;
 
   const theoreticalNa = Math.sqrt(
     Math.max(coreIndex * coreIndex - claddingIndex * claddingIndex, 0)
@@ -100,37 +102,37 @@ const OpticalFiberLab = () => {
     (Math.asin(Math.min(theoreticalNa, 0.9999)) * 180) / Math.PI;
   const theoreticalAcceptanceConeAngleDeg = theoreticalAcceptanceHalfAngleDeg * 2;
 
-  const getLaunchPowerMw = (band, selectedFiberType) => {
+  const getLaunchPowerMw = (powerLevel, selectedFiberType) => {
     const config = FIBER_TYPES[selectedFiberType];
-    const powerFactor = laserPower / 100;
-    const bandBoost = band === 'low' ? 0.45 : 1;
+    const powerFactor = powerLevel / 100;
+    const bandBoost = getPowerBand(powerLevel) === 'low' ? 0.45 : 1;
     return 1.8 * powerFactor * bandBoost * config.launchEfficiency;
   };
 
-  const getTotalLossDb = (band, length, selectedFiberType) => {
+  const getTotalLossDb = (powerLevel, length, selectedFiberType) => {
     const config = FIBER_TYPES[selectedFiberType];
     const intrinsicLoss = config.attenuationDbPerKm * (length / 1000);
     const couplingPenalty = selectedFiberType === 'singleMode' ? 0.08 : 0.18;
-    const powerPenalty = band === 'high' ? 0.14 : 0.08;
+    const powerPenalty = getPowerBand(powerLevel) === 'high' ? 0.14 : 0.08;
     return intrinsicLoss + couplingPenalty + powerPenalty;
   };
 
-  const calculateMeterOutput = (band, length, selectedFiberType) => {
-    const inputPowerMw = getLaunchPowerMw(band, selectedFiberType);
-    const totalLossDb = getTotalLossDb(band, length, selectedFiberType);
+  const calculateMeterOutput = (powerLevel, length, selectedFiberType) => {
+    const inputPowerMw = getLaunchPowerMw(powerLevel, selectedFiberType);
+    const totalLossDb = getTotalLossDb(powerLevel, length, selectedFiberType);
     return inputPowerMw * Math.pow(10, -totalLossDb / 10);
   };
 
-  const currentMeterReading = isLaserOn ? calculateMeterOutput(powerBand, cableLength, fiberType) : 0;
+  const currentMeterReading = isLaserOn ? calculateMeterOutput(laserPower, cableLength, fiberType) : 0;
 
-  const getRecordedMeasurement = (selectedFiberType, band, length) =>
-    measurements[selectedFiberType][band][String(length)];
+  const getRecordedMeasurement = (selectedFiberType, powerLevel, length) =>
+    measurements[selectedFiberType][String(powerLevel)][String(length)];
 
-  const calculateAttenuation = (selectedFiberType, band, length) => {
+  const calculateAttenuation = (selectedFiberType, powerLevel, length) => {
     if (length === REFERENCE_LENGTH_M) return null;
 
-    const pi = getRecordedMeasurement(selectedFiberType, band, REFERENCE_LENGTH_M);
-    const pf = getRecordedMeasurement(selectedFiberType, band, length);
+    const pi = getRecordedMeasurement(selectedFiberType, powerLevel, REFERENCE_LENGTH_M);
+    const pf = getRecordedMeasurement(selectedFiberType, powerLevel, length);
 
     if (!pi || !pf || pi <= 0 || pf <= 0) return null;
 
@@ -201,8 +203,8 @@ const OpticalFiberLab = () => {
       ...prev,
       [fiberType]: {
         ...prev[fiberType],
-        [powerBand]: {
-          ...prev[fiberType][powerBand],
+        [String(laserPower)]: {
+          ...prev[fiberType][String(laserPower)],
           [String(cableLength)]: Number(currentMeterReading.toFixed(4)),
         },
       },
@@ -248,23 +250,36 @@ const OpticalFiberLab = () => {
       ['Fiber Optics Virtual Lab - Revised Version'],
       [''],
       ['Attenuation Experiment'],
-      ['Fiber type', 'Power band', 'Power level (%)', 'Cable length (m)', 'Output power (mW)', 'Attenuation from 1 m (dB/km)'],
+      [
+        'Fiber type',
+        'Cable length (m)',
+        '5% output (mW)',
+        '5% attenuation (dB/km)',
+        '10% output (mW)',
+        '10% attenuation (dB/km)',
+        '70% output (mW)',
+        '70% attenuation (dB/km)',
+        '85% output (mW)',
+        '85% attenuation (dB/km)',
+      ],
     ];
 
     Object.keys(FIBER_TYPES).forEach((typeKey) => {
-      ['low', 'high'].forEach((band) => {
-        FIBER_LENGTH_OPTIONS.forEach((length) => {
-          const output = measurements[typeKey][band][String(length)];
-          const attenuation = calculateAttenuation(typeKey, band, length);
-          rows.push([
-            FIBER_TYPES[typeKey].label,
-            band === 'low' ? 'Low' : 'High',
-            band === 'low' ? '5% or 10%' : '70% or 85%',
-            length,
+      FIBER_LENGTH_OPTIONS.forEach((length) => {
+        const values = ATTENUATION_POWER_LEVELS.flatMap((powerLevel) => {
+          const output = measurements[typeKey][String(powerLevel)][String(length)];
+          const attenuation = calculateAttenuation(typeKey, powerLevel, length);
+          return [
             output !== null ? output.toFixed(4) : '-',
             attenuation !== null ? attenuation.toFixed(3) : length === 1 ? 'Reference' : 'Incomplete',
-          ]);
+          ];
         });
+
+        rows.push([
+          FIBER_TYPES[typeKey].label,
+          length,
+          ...values,
+        ]);
       });
     });
 
@@ -709,7 +724,6 @@ const OpticalFiberLab = () => {
     laserPower,
     naCableLength,
     naDistance,
-    powerBand,
     powerLabel,
   ]);
 
@@ -853,7 +867,7 @@ const OpticalFiberLab = () => {
                           variant={laserPower === option.value ? 'default' : 'outline'}
                           className={laserPower === option.value ? 'bg-sky-600 hover:bg-sky-700' : ''}
                         >
-                          {option.label}: {option.value}%
+                          {option.label}
                         </Button>
                       ))}
                     </div>
@@ -887,7 +901,7 @@ const OpticalFiberLab = () => {
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     <Activity className="mr-2 h-4 w-4" />
-                    Record {powerBandLabel} Power Reading
+                    Record {powerLabel} Reading
                   </Button>
                 </>
               ) : (
@@ -1002,40 +1016,68 @@ const OpticalFiberLab = () => {
                       <thead className="bg-slate-100">
                         <tr>
                           <th className="border px-4 py-3 text-left">Cable length</th>
-                          <th className="border px-4 py-3 text-left">Low output</th>
-                          <th className="border px-4 py-3 text-left">Low attenuation</th>
-                          <th className="border px-4 py-3 text-left">High output</th>
-                          <th className="border px-4 py-3 text-left">High attenuation</th>
+                          <th className="border px-4 py-3 text-left">5% output</th>
+                          <th className="border px-4 py-3 text-left">5% attenuation</th>
+                          <th className="border px-4 py-3 text-left">10% output</th>
+                          <th className="border px-4 py-3 text-left">10% attenuation</th>
+                          <th className="border px-4 py-3 text-left">70% output</th>
+                          <th className="border px-4 py-3 text-left">70% attenuation</th>
+                          <th className="border px-4 py-3 text-left">85% output</th>
+                          <th className="border px-4 py-3 text-left">85% attenuation</th>
                         </tr>
                       </thead>
                       <tbody>
                         {FIBER_LENGTH_OPTIONS.map((length) => {
-                          const lowOutput = measurements[fiberType].low[String(length)];
-                          const highOutput = measurements[fiberType].high[String(length)];
-                          const lowAttenuation = calculateAttenuation(fiberType, 'low', length);
-                          const highAttenuation = calculateAttenuation(fiberType, 'high', length);
+                          const output5 = measurements[fiberType]['5'][String(length)];
+                          const output10 = measurements[fiberType]['10'][String(length)];
+                          const output70 = measurements[fiberType]['70'][String(length)];
+                          const output85 = measurements[fiberType]['85'][String(length)];
+                          const attenuation5 = calculateAttenuation(fiberType, 5, length);
+                          const attenuation10 = calculateAttenuation(fiberType, 10, length);
+                          const attenuation70 = calculateAttenuation(fiberType, 70, length);
+                          const attenuation85 = calculateAttenuation(fiberType, 85, length);
 
                           return (
                             <tr key={length} className="hover:bg-slate-50">
                               <td className="border px-4 py-3 font-semibold">{length} m</td>
                               <td className="border px-4 py-3">
-                                {lowOutput !== null ? `${lowOutput.toFixed(4)} mW` : 'Not recorded'}
+                                {output5 !== null ? `${output5.toFixed(4)} mW` : 'Not recorded'}
                               </td>
                               <td className="border px-4 py-3 text-sky-700">
                                 {length === 1
                                   ? 'Reference'
-                                  : lowAttenuation !== null
-                                    ? `${lowAttenuation.toFixed(3)} dB/km`
+                                  : attenuation5 !== null
+                                    ? `${attenuation5.toFixed(3)} dB/km`
                                     : 'Incomplete'}
                               </td>
                               <td className="border px-4 py-3">
-                                {highOutput !== null ? `${highOutput.toFixed(4)} mW` : 'Not recorded'}
+                                {output10 !== null ? `${output10.toFixed(4)} mW` : 'Not recorded'}
+                              </td>
+                              <td className="border px-4 py-3 text-sky-700">
+                                {length === 1
+                                  ? 'Reference'
+                                  : attenuation10 !== null
+                                    ? `${attenuation10.toFixed(3)} dB/km`
+                                    : 'Incomplete'}
+                              </td>
+                              <td className="border px-4 py-3">
+                                {output70 !== null ? `${output70.toFixed(4)} mW` : 'Not recorded'}
                               </td>
                               <td className="border px-4 py-3 text-violet-700">
                                 {length === 1
                                   ? 'Reference'
-                                  : highAttenuation !== null
-                                    ? `${highAttenuation.toFixed(3)} dB/km`
+                                  : attenuation70 !== null
+                                    ? `${attenuation70.toFixed(3)} dB/km`
+                                    : 'Incomplete'}
+                              </td>
+                              <td className="border px-4 py-3">
+                                {output85 !== null ? `${output85.toFixed(4)} mW` : 'Not recorded'}
+                              </td>
+                              <td className="border px-4 py-3 text-violet-700">
+                                {length === 1
+                                  ? 'Reference'
+                                  : attenuation85 !== null
+                                    ? `${attenuation85.toFixed(3)} dB/km`
                                     : 'Incomplete'}
                               </td>
                             </tr>
@@ -1083,7 +1125,7 @@ const OpticalFiberLab = () => {
                         Plot output power (mW) on Y-axis and cable length (m) on X-axis.
                       </div>
                       <div className="mt-1">
-                        Use separate curves for low power and high power.
+                        Use separate curves for 5%/10% and 70%/85% readings.
                       </div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
