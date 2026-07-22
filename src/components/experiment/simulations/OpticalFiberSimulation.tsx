@@ -321,7 +321,7 @@ const OpticalFiberLab = () => {
     rows.push(['NA', 'W / sqrt(L^2 + W^2)']);
     rows.push(['Acceptance angle', '2 x sin^-1(NA)']);
     rows.push(['Graph 1', 'Plot attenuation vs laser power levels for different cable lengths']);
-    rows.push(['Graph 3', 'Compare NA across fiber types']);
+    rows.push(['Graph 2', 'Plot NA vs fiber length for both single-mode and multimode fibers']);
 
     const csvData = rows.map((row) => row.join(',')).join('\n');
     const blob = new Blob([csvData], { type: 'text/csv' });
@@ -1226,10 +1226,12 @@ const OpticalFiberLab = () => {
                     <BarChart3 className="h-5 w-5 text-indigo-600" />
                     Student Graph Exercise
                   </h2>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                      <div className="font-semibold">NA Comparison Across Fiber Types</div>
-                      <div className="mt-1">Plot numerical aperture on Y-axis and fiber type on X-axis.</div>
-                      <div className="mt-1">Compare acceptance angle for single-mode and multimode fiber.</div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <div className="font-semibold">NA vs Fiber Length</div>
+                      <div className="mt-1">
+                        Plot the graph between fiber length (x-axis) and NA (y-axis) for both the modes.
+                      </div>
+                      <div className="mt-1">Compare single-mode and multimode fiber readings.</div>
                       <div className="mt-1">Formula used: NA = W / sqrt(L^2 + W^2)</div>
                     </div>
                 </div>
