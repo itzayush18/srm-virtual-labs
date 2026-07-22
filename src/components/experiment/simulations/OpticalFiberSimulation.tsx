@@ -320,7 +320,7 @@ const OpticalFiberLab = () => {
     rows.push(['Formulas']);
     rows.push(['NA', 'W / sqrt(L^2 + W^2)']);
     rows.push(['Acceptance angle', '2 x sin^-1(NA)']);
-    rows.push(['Graph 1', 'Plot output power vs cable length']);
+    rows.push(['Graph 1', 'Plot attenuation vs laser power levels for different cable lengths']);
     rows.push(['Graph 2', 'Plot attenuation vs cable length']);
     rows.push(['Graph 3', 'Compare NA across fiber types']);
 
@@ -1122,10 +1122,10 @@ const OpticalFiberLab = () => {
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                       <div className="font-semibold">Graph 1</div>
                       <div className="mt-1">
-                        Plot output power (mW) on Y-axis and cable length (m) on X-axis.
+                        Plot attenuation (dB/km) on Y-axis and laser power levels on X-axis.
                       </div>
                       <div className="mt-1">
-                        Use separate curves for 5%/10% and 70%/85% readings.
+                        Use separate curves for different cable lengths.
                       </div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
