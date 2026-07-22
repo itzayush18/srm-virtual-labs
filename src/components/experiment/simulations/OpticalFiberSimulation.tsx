@@ -171,7 +171,7 @@ const OpticalFiberLab = () => {
 
   const calculateNaReading = (distance, selectedFiberType, selectedCableLength) => {
     const width = calculateSpotWidth(distance, selectedFiberType, selectedCableLength);
-    const na = width / Math.sqrt(distance * distance + width * width);
+    const na = width / Math.sqrt(4 * distance * distance + width * width);
     const acceptanceAngle = (2 * Math.asin(Math.min(na, 0.9999)) * 180) / Math.PI;
     return {
       distance: Number(distance.toFixed(1)),
@@ -318,7 +318,7 @@ const OpticalFiberLab = () => {
 
     rows.push(['']);
     rows.push(['Formulas']);
-    rows.push(['NA', 'W / sqrt(L^2 + W^2)']);
+    rows.push(['NA', 'W / sqrt(4L^2 + W^2)']);
     rows.push(['Acceptance angle', '2 x sin^-1(NA)']);
     rows.push(['Graph 1', 'Plot attenuation vs laser power levels for different cable lengths']);
     rows.push(['Graph 2', 'Plot NA vs fiber length for both single-mode and multimode fibers']);
@@ -1232,7 +1232,7 @@ const OpticalFiberLab = () => {
                         Plot the graph between fiber length (x-axis) and NA (y-axis) for both the modes.
                       </div>
                       <div className="mt-1">Compare single-mode and multimode fiber readings.</div>
-                      <div className="mt-1">Formula used: NA = W / sqrt(L^2 + W^2)</div>
+                      <div className="mt-1">Formula used: NA = W / sqrt(4L^2 + W^2)</div>
                     </div>
                 </div>
               </>
