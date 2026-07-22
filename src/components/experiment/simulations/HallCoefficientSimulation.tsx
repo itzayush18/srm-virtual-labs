@@ -44,7 +44,7 @@ function fmtSciValue(v) {
 
 function fmtVhValue(v) {
   if (!Number.isFinite(v)) return '--';
-  return v.toFixed(Math.abs(v) < 10 ? 3 : 1);
+  return fmtSciValue(v);
 }
 
 function fmtBValue(v) {
@@ -53,8 +53,7 @@ function fmtBValue(v) {
 }
 
 function fmtDensityValue(v) {
-  const perCm3 = v / 1e6;
-  return `${fmtSciValue(perCm3)} / ${fmtSciValue(v)}`;
+  return fmtSciValue(v);
 }
 
 function calcB(coilI, coilN) {
@@ -267,6 +266,7 @@ function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed,
             fontWeight: 700,
             color: 'var(--color-text-primary)',
             fontFamily: 'ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace',
+            whiteSpace: 'nowrap',
           }}
         >
           {row.value}
@@ -331,7 +331,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
       label: 'Hall voltage V_H',
       formula: 'V_H = R_H x I x B / t',
       value: fmtVhValue(data.Vh),
-      unit: 'mV',
+      unit: 'V',
     },
     {
       key: 'hallCoeff',
@@ -345,7 +345,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
       label: 'Carrier density n',
       formula: 'n(T) from material model',
       value: fmtDensityValue(data.carrierDensity),
-      unit: 'cm^-3 / m^-3',
+      unit: 'm^-3',
     },
     {
       key: 'mobility',
@@ -797,11 +797,11 @@ const HallCoefficientSimulation = () => {
   const B = calcB(coilI, FIXED_COIL_TURNS);
   const I = I_mA / 1e3;
   const t = thickness / 1e3;
-  const Vh = ((materialState.rh * I * B) / t) * 1e3;
-  const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? ((Vh / 1e3) * t) / (I * B) : 0;
+  const Vh = (materialState.rh * I * B) / t;
+  const measuredRh = Math.abs(B) > 1e-9 && Math.abs(I) > 1e-12 ? (Vh * t) / (I * B) : 0;
   const studentHallVoltage = (studentValues.hallVoltage || '').trim();
   const showVh = mat.type === 'p' || Boolean(studentHallVoltage);
-  const hallVoltageDisplay = mat.type === 'n' ? studentHallVoltage || '---' : `${fmtVhValue(Vh)} mV`;
+  const hallVoltageDisplay = mat.type === 'n' ? studentHallVoltage || '---' : `${fmtVhValue(Vh)} V`;
 
   useEffect(() => {
     setAnswerState({});
