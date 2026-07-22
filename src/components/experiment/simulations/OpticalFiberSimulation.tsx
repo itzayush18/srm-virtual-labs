@@ -321,7 +321,6 @@ const OpticalFiberLab = () => {
     rows.push(['NA', 'W / sqrt(L^2 + W^2)']);
     rows.push(['Acceptance angle', '2 x sin^-1(NA)']);
     rows.push(['Graph 1', 'Plot attenuation vs laser power levels for different cable lengths']);
-    rows.push(['Graph 2', 'Plot attenuation vs cable length']);
     rows.push(['Graph 3', 'Compare NA across fiber types']);
 
     const csvData = rows.map((row) => row.join(',')).join('\n');
@@ -1118,7 +1117,7 @@ const OpticalFiberLab = () => {
                     <BarChart3 className="h-5 w-5 text-indigo-600" />
                     Student Graph Exercise
                   </h2>
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-1">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                       <div className="font-semibold">Graph 1</div>
                       <div className="mt-1">
@@ -1127,13 +1126,6 @@ const OpticalFiberLab = () => {
                       <div className="mt-1">
                         Use separate curves for different cable lengths.
                       </div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                      <div className="font-semibold">Graph 2</div>
-                      <div className="mt-1">
-                        Plot attenuation (dB/km) on Y-axis and cable length (m) on X-axis.
-                      </div>
-                      <div className="mt-1">Take 1 meter cable as the reference reading.</div>
                     </div>
                   </div>
                 </div>
