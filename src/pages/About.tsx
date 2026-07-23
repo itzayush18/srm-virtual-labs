@@ -13,11 +13,11 @@ const About = () => {
             <CardContent className="pt-6">
               <h2 className="section-title">Our Mission</h2>
               <p className="mb-4">
-                The Semiconductor Physics Virtual Laboratory aims to provide a comprehensive online
-                platform for students and researchers to conduct semiconductor physics experiments
-                in a virtual environment. Our mission is to make semiconductor physics education
+                The Physics Virtual Laboratory aims to provide a comprehensive online
+                platform for students and researchers to conduct many physics laboratory experiments
+                in a virtual environment. Our mission is to make physics laboratory education
                 more accessible, interactive, and engaging. Through our interactive simulations,
-                users can explore the fundamental principles of semiconductor physics, conduct
+                users can explore the fundamental principles of physics laboratory experiments
                 experiments, collect data, and analyze results, all without the need for physical
                 laboratory equipment.
               </p>
@@ -30,7 +30,7 @@ const About = () => {
               <ul className="list-disc pl-5 space-y-2">
                 <li>
                   <span className="font-semibold">Interactive Simulations:</span> Real-time,
-                  responsive simulations that accurately model semiconductor physics phenomena.
+                  responsive simulations that accurately model physics phenomena.
                 </li>
                 <li>
                   <span className="font-semibold">Educational Content:</span> Comprehensive theory,
