@@ -21,6 +21,8 @@ type Carrier = {
   y: number;
   vx: number;
   vy: number;
+  spawnSide: 'p' | 'n';
+  driftDirection: -1 | 1;
 };
 
 type DataPoint = {
@@ -81,9 +83,15 @@ const createSceneGeometry = (width: number, height: number, voltage: number): Sc
   };
 };
 
+const getCarrierSide = (x: number, centerX: number) => (x < centerX ? 'p' : 'n') as const;
+
+const isMajorityCarrier = (carrier: Carrier, geometry: SceneGeometry) => {
+  const side = getCarrierSide(carrier.x, geometry.centerX);
+  return side === 'p' ? carrier.type === 'hole' : carrier.type === 'electron';
+};
+
 const isMinorityCarrier = (carrier: Carrier, geometry: SceneGeometry) => {
-  const inPRegion = carrier.x < geometry.centerX;
-  return inPRegion ? carrier.type === 'electron' : carrier.type === 'hole';
+  return !isMajorityCarrier(carrier, geometry);
 };
 
 const buildCarrier = (
@@ -91,13 +99,15 @@ const buildCarrier = (
   width: number,
   height: number,
   thermalScale: number,
+  spawnSide?: 'p' | 'n',
 ): Carrier => {
   const preferredPBandEnd = width * 0.43;
   const preferredNBandStart = width * 0.57;
   const speed = 0.32 * thermalScale;
+  const resolvedSide: 'p' | 'n' =
+    spawnSide ?? (type === 'hole' ? (Math.random() < 0.8 ? 'p' : 'n') : Math.random() < 0.8 ? 'n' : 'p');
 
-  const spawnOnP = type === 'hole' ? Math.random() < 0.8 : Math.random() < 0.2;
-  const x = spawnOnP
+  const x = resolvedSide === 'p'
     ? randomBetween(28, preferredPBandEnd)
     : randomBetween(preferredNBandStart, width - 28);
 
@@ -107,6 +117,8 @@ const buildCarrier = (
     y: randomBetween(28, height - 28),
     vx: randomBetween(-speed, speed),
     vy: randomBetween(-speed, speed),
+    spawnSide: resolvedSide,
+    driftDirection: resolvedSide === 'p' ? 1 : -1,
   };
 };
 
@@ -116,11 +128,13 @@ const respawnCarrier = (
   height: number,
   thermalScale: number,
 ) => {
-  const next = buildCarrier(carrier.type, width, height, thermalScale);
+  const next = buildCarrier(carrier.type, width, height, thermalScale, carrier.spawnSide);
   carrier.x = next.x;
   carrier.y = next.y;
   carrier.vx = next.vx;
   carrier.vy = next.vy;
+  carrier.spawnSide = next.spawnSide;
+  carrier.driftDirection = next.driftDirection;
 };
 
 const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
@@ -194,7 +208,6 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
 
       const geometry = createSceneGeometry(canvas.offsetWidth, canvas.offsetHeight, voltage);
       const mobileFieldStrength = voltage >= 0 ? 1 - Math.min(voltage, 1.5) * 0.35 : 1 + Math.abs(voltage) * 1.1;
-      const thermalBoost = 0.004 * (temperature - 300);
 
       ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
@@ -257,30 +270,39 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
       }
 
       carriersRef.current.forEach(carrier => {
-        const inPRegion = carrier.x < geometry.centerX;
-        const minority = isMinorityCarrier(carrier, geometry);
-        const towardJunction = inPRegion ? 1 : -1;
+        const side = getCarrierSide(carrier.x, geometry.centerX);
+        const majority = isMajorityCarrier(carrier, geometry);
+        const minority = !majority;
+        const towardJunction = side === 'p' ? 1 : -1;
         const awayFromJunction = -towardJunction;
-        const junctionProximity = 1 - clamp(Math.abs(carrier.x - geometry.centerX) / (geometry.depletionWidth * 0.8), 0, 1);
-        const injectionBoost = 0.08 + junctionProximity * 0.12;
-        const driftBase = voltage >= 0 ? towardJunction : minority ? towardJunction : awayFromJunction;
+        const junctionProximity =
+          1 - clamp(Math.abs(carrier.x - geometry.centerX) / (geometry.depletionWidth * 0.72), 0, 1);
+        const thermalWiggle = randomBetween(-0.018, 0.018) * thermalScale;
+        const biasPolarity = voltage >= 0 ? 1 : -1;
+        const fieldDirection = carrier.driftDirection * biasPolarity;
+        const crossingBoost = (0.09 + Math.abs(voltage) * 0.18) * (0.7 + junctionProximity * 0.9);
+        const minorityBoost = minority ? (0.04 + Math.abs(voltage) * 0.05) * (0.5 + junctionProximity) : 0;
+        const repulsionBoost =
+          voltage < 0 && majority ? (0.08 + Math.abs(voltage) * 0.14) * (0.5 + junctionProximity) : 0;
 
-        carrier.vx += driftBase * injectionBoost * mobileFieldStrength;
-        carrier.vx += randomBetween(-0.02, 0.02) * thermalScale;
+        carrier.vx += fieldDirection * crossingBoost * mobileFieldStrength;
+        carrier.vx += carrier.driftDirection * minorityBoost;
+        carrier.vx += awayFromJunction * repulsionBoost;
+        carrier.vx += thermalWiggle;
         carrier.vy += randomBetween(-0.02, 0.02) * thermalScale;
 
-        if (voltage > 0) {
-          if (minority) {
-            carrier.vx += towardJunction * (0.05 + 0.03 * voltage) * junctionProximity;
-          }
-        } else if (voltage < 0) {
-          if (minority) {
-            carrier.vx += towardJunction * (0.12 + 0.05 * Math.abs(voltage)) * junctionProximity;
-          }
+        if (voltage > 0 && majority && junctionProximity > 0.15) {
+          carrier.vx += carrier.driftDirection * (0.12 + voltage * 0.22) * junctionProximity;
+        }
+        if (voltage > 0 && minority) {
+          carrier.vx += carrier.driftDirection * (0.06 + voltage * 0.08) * junctionProximity;
+        }
+        if (voltage < 0 && minority) {
+          carrier.vx += carrier.driftDirection * (0.04 + Math.abs(voltage) * 0.06) * junctionProximity;
         }
 
-        carrier.vx *= 0.982;
-        carrier.vy *= 0.982;
+        carrier.vx *= 0.985;
+        carrier.vy *= 0.985;
 
         carrier.x += carrier.vx;
         carrier.y += carrier.vy;
