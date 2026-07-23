@@ -41,10 +41,6 @@ const randomBetween = (min: number, max: number) => min + Math.random() * (max -
 
 const formatForwardCurrentMilliAmps = (valueA: number) => `${(valueA * 1e3).toFixed(3)} mA`;
 const formatReverseCurrentMicroAmps = (valueA: number) => `${(valueA * 1e6).toFixed(3)} uA`;
-const formatCurrentForSelectedVoltage = (valueA: number) =>
-  Math.abs(valueA) >= 1e-3
-    ? `${(valueA * 1e3).toFixed(3)} mA`
-    : `${(valueA * 1e6).toFixed(3)} µA`;
 
 const FORWARD_SERIES_RESISTANCE = 1000;
 const FORWARD_IDEALITY = 1.5;
@@ -524,24 +520,6 @@ const PNJunctionSimulation = () => {
               <div className="text-xs text-gray-500">
                 Allowed values: 300 K, 325 K, 350 K, 375 K, 400 K. Changing temperature resets
                 the existing plots.
-              </div>
-            </div>
-
-            <div className="rounded-md bg-gray-50 p-3">
-              <div className="text-center">
-                <div className="mb-1 text-sm text-gray-500">Calculated Current for Selected Voltage</div>
-                <div className="text-2xl font-bold text-lab-teal">
-                  {formatCurrentForSelectedVoltage(currentValue)}
-                </div>
-                {forwardOperatingPoint ? (
-                  <div className="mt-1 text-xs text-gray-500">
-                    Forward diode voltage: {forwardOperatingPoint.diodeVoltage.toFixed(4)} V
-                  </div>
-                ) : (
-                  <div className="mt-1 text-xs text-gray-500">
-                    Reverse current is displayed in uA
-                  </div>
-                )}
               </div>
             </div>
 
