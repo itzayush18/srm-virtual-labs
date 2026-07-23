@@ -30,6 +30,15 @@ type DataPoint = {
   sourceVoltage: number;
 };
 
+type SceneGeometry = {
+  width: number;
+  height: number;
+  centerX: number;
+  pRegionEnd: number;
+  nRegionStart: number;
+  depletionWidth: number;
+};
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const snapTemperature = (value: number) => {
@@ -44,12 +53,38 @@ const formatReverseCurrentMicroAmps = (valueA: number) => `${(valueA * 1e6).toFi
 const formatCurrentForSelectedVoltage = (valueA: number) =>
   Math.abs(valueA) >= 1e-3
     ? `${(valueA * 1e3).toFixed(3)} mA`
-    : `${(valueA * 1e6).toFixed(3)} µA`;
+    : `${(valueA * 1e6).toFixed(3)} uA`;
 
 const FORWARD_SERIES_RESISTANCE = 1000;
 const FORWARD_IDEALITY = 1.5;
 const FORWARD_SATURATION_CURRENT = 1e-12;
 const BASE_THERMAL_VOLTAGE = 0.0258;
+
+const createSceneGeometry = (width: number, height: number, voltage: number): SceneGeometry => {
+  const baseDepletionWidth = 78;
+  const depletionWidth =
+    voltage >= 0
+      ? Math.max(20, baseDepletionWidth - voltage * 62)
+      : Math.min(width * 0.48, baseDepletionWidth + Math.abs(voltage) * 54);
+
+  const centerX = width / 2;
+  const pRegionEnd = centerX - depletionWidth / 2;
+  const nRegionStart = centerX + depletionWidth / 2;
+
+  return {
+    width,
+    height,
+    centerX,
+    pRegionEnd,
+    nRegionStart,
+    depletionWidth,
+  };
+};
+
+const isMinorityCarrier = (carrier: Carrier, geometry: SceneGeometry) => {
+  const inPRegion = carrier.x < geometry.centerX;
+  return inPRegion ? carrier.type === 'electron' : carrier.type === 'hole';
+};
 
 const buildCarrier = (
   type: CarrierType,
@@ -57,26 +92,42 @@ const buildCarrier = (
   height: number,
   thermalScale: number,
 ): Carrier => {
-  const leftBandEnd = width * 0.42;
-  const rightBandStart = width * 0.58;
-  const speed = 0.35 * thermalScale;
+  const preferredPBandEnd = width * 0.43;
+  const preferredNBandStart = width * 0.57;
+  const speed = 0.32 * thermalScale;
+
+  const spawnOnP = type === 'hole' ? Math.random() < 0.8 : Math.random() < 0.2;
+  const x = spawnOnP
+    ? randomBetween(28, preferredPBandEnd)
+    : randomBetween(preferredNBandStart, width - 28);
 
   return {
     type,
-    x:
-      type === 'hole'
-        ? randomBetween(35, leftBandEnd)
-        : randomBetween(rightBandStart, width - 35),
-    y: randomBetween(35, height - 35),
+    x,
+    y: randomBetween(28, height - 28),
     vx: randomBetween(-speed, speed),
     vy: randomBetween(-speed, speed),
   };
+};
+
+const respawnCarrier = (
+  carrier: Carrier,
+  width: number,
+  height: number,
+  thermalScale: number,
+) => {
+  const next = buildCarrier(carrier.type, width, height, thermalScale);
+  carrier.x = next.x;
+  carrier.y = next.y;
+  carrier.vx = next.vx;
+  carrier.vy = next.vy;
 };
 
 const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperature: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const carriersRef = useRef<Carrier[]>([]);
+  const canvasSizeRef = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,17 +136,46 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    const resizeCanvas = () => {
+      const nextWidth = canvas.offsetWidth;
+      const nextHeight = canvas.offsetHeight;
+      const scale = window.devicePixelRatio || 1;
+
+      canvas.width = Math.max(1, Math.floor(nextWidth * scale));
+      canvas.height = Math.max(1, Math.floor(nextHeight * scale));
+      canvas.style.width = `${nextWidth}px`;
+      canvas.style.height = `${nextHeight}px`;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      canvasSizeRef.current = { width: nextWidth, height: nextHeight };
+    };
+
+    resizeCanvas();
+
+    const handleResize = () => {
+      resizeCanvas();
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight;
 
     const thermalScale = 1 + (temperature - 300) / 100;
-    const carriersPerSide = 18 + Math.round((temperature - 300) / 25) * 3;
-    const targetCount = carriersPerSide * 2;
-    const holeCount = carriersRef.current.filter(carrier => carrier.type === 'hole').length;
+    const majorityPerSide = 16 + Math.round((temperature - 300) / 25) * 2;
+    const minorityPerSide = 7 + Math.round((temperature - 300) / 25);
+    const targetCount = majorityPerSide * 2 + minorityPerSide * 2;
 
     while (carriersRef.current.length < targetCount) {
-      const type: CarrierType = carriersRef.current.length - holeCount < carriersPerSide ? 'hole' : 'electron';
-      carriersRef.current.push(buildCarrier(type, canvas.width, canvas.height, thermalScale));
+      const index = carriersRef.current.length;
+      const type: CarrierType =
+        index < majorityPerSide
+          ? 'hole'
+          : index < majorityPerSide * 2
+            ? 'electron'
+            : index < majorityPerSide * 2 + minorityPerSide
+              ? 'electron'
+              : 'hole';
+      carriersRef.current.push(buildCarrier(type, width, height, thermalScale));
     }
 
     if (carriersRef.current.length > targetCount) {
@@ -103,39 +183,42 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
     }
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const nextWidth = canvas.offsetWidth;
+      const nextHeight = canvas.offsetHeight;
+      if (
+        nextWidth !== canvasSizeRef.current.width ||
+        nextHeight !== canvasSizeRef.current.height
+      ) {
+        resizeCanvas();
+      }
 
-      const baseDepletionWidth = 70;
-      const depletionWidth =
-        voltage >= 0
-          ? Math.max(14, baseDepletionWidth - voltage * 55)
-          : baseDepletionWidth + Math.abs(voltage) * 45;
+      const geometry = createSceneGeometry(canvas.offsetWidth, canvas.offsetHeight, voltage);
+      const mobileFieldStrength = voltage >= 0 ? 1 - Math.min(voltage, 1.5) * 0.35 : 1 + Math.abs(voltage) * 1.1;
+      const thermalBoost = 0.004 * (temperature - 300);
 
-      const centerX = canvas.width / 2;
-      const pRegionEnd = centerX - depletionWidth / 2;
-      const nRegionStart = centerX + depletionWidth / 2;
+      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
-      ctx.fillStyle = 'rgba(74, 144, 226, 0.72)';
-      ctx.fillRect(0, 0, pRegionEnd, canvas.height);
+      ctx.fillStyle = 'rgba(74, 144, 226, 0.28)';
+      ctx.fillRect(0, 0, geometry.pRegionEnd, canvas.offsetHeight);
 
-      ctx.fillStyle = 'rgba(226, 74, 74, 0.72)';
-      ctx.fillRect(nRegionStart, 0, canvas.width - nRegionStart, canvas.height);
+      ctx.fillStyle = 'rgba(226, 74, 74, 0.28)';
+      ctx.fillRect(geometry.nRegionStart, 0, canvas.offsetWidth - geometry.nRegionStart, canvas.offsetHeight);
 
-      const gradient = ctx.createLinearGradient(pRegionEnd, 0, nRegionStart, 0);
-      gradient.addColorStop(0, 'rgba(74, 144, 226, 0.25)');
-      gradient.addColorStop(0.5, 'rgba(210, 210, 210, 0.6)');
-      gradient.addColorStop(1, 'rgba(226, 74, 74, 0.25)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(pRegionEnd, 0, depletionWidth, canvas.height);
+      const depletionGradient = ctx.createLinearGradient(geometry.pRegionEnd, 0, geometry.nRegionStart, 0);
+      depletionGradient.addColorStop(0, 'rgba(74, 144, 226, 0.18)');
+      depletionGradient.addColorStop(0.5, 'rgba(235, 235, 235, 0.92)');
+      depletionGradient.addColorStop(1, 'rgba(226, 74, 74, 0.18)');
+      ctx.fillStyle = depletionGradient;
+      ctx.fillRect(geometry.pRegionEnd, 0, geometry.depletionWidth, canvas.offsetHeight);
 
-      ctx.strokeStyle = voltage > 0 ? '#15803d' : voltage < 0 ? '#b91c1c' : '#6b7280';
+      ctx.strokeStyle = voltage > 0 ? '#0f766e' : voltage < 0 ? '#b91c1c' : '#6b7280';
       ctx.lineWidth = 2;
       const arrowDirection = voltage > 0 ? 1 : -1;
-      const arrowLength = Math.min(Math.abs(voltage) * 34 + 18, 52);
+      const arrowLength = Math.min(Math.abs(voltage) * 36 + 18, 56);
 
-      for (let y = 70; y < canvas.height - 20; y += 54) {
-        const startX = centerX - (arrowLength / 2) * arrowDirection;
-        const endX = centerX + (arrowLength / 2) * arrowDirection;
+      for (let y = 62; y < canvas.offsetHeight - 18; y += 54) {
+        const startX = geometry.centerX - (arrowLength / 2) * arrowDirection;
+        const endX = geometry.centerX + (arrowLength / 2) * arrowDirection;
 
         ctx.beginPath();
         ctx.moveTo(startX, y);
@@ -151,22 +234,48 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
         ctx.fill();
       }
 
+      const ionSpacingX = 18;
+      const ionSpacingY = 16;
+      const ionRadius = 5;
+      for (let x = geometry.pRegionEnd + 10; x < geometry.nRegionStart - 8; x += ionSpacingX) {
+        for (let y = 28; y < canvas.offsetHeight - 20; y += ionSpacingY) {
+          const onPSide = x < geometry.centerX;
+          ctx.beginPath();
+          ctx.arc(x, y, ionRadius, 0, Math.PI * 2);
+          ctx.fillStyle = onPSide ? 'rgba(29, 78, 216, 0.12)' : 'rgba(185, 28, 28, 0.12)';
+          ctx.fill();
+          ctx.strokeStyle = onPSide ? 'rgba(37, 99, 235, 0.32)' : 'rgba(220, 38, 38, 0.32)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = onPSide ? '#1d4ed8' : '#b91c1c';
+          ctx.fillText(onPSide ? '-' : '+', x, y + 0.3);
+        }
+      }
+
       carriersRef.current.forEach(carrier => {
-        const thermalBoost = 0.004 * (temperature - 300);
+        const inPRegion = carrier.x < geometry.centerX;
+        const minority = isMinorityCarrier(carrier, geometry);
+        const towardJunction = inPRegion ? 1 : -1;
+        const awayFromJunction = -towardJunction;
+        const junctionProximity = 1 - clamp(Math.abs(carrier.x - geometry.centerX) / (geometry.depletionWidth * 0.8), 0, 1);
+        const injectionBoost = 0.08 + junctionProximity * 0.12;
+        const driftBase = voltage >= 0 ? towardJunction : minority ? towardJunction : awayFromJunction;
+
+        carrier.vx += driftBase * injectionBoost * mobileFieldStrength;
         carrier.vx += randomBetween(-0.02, 0.02) * thermalScale;
         carrier.vy += randomBetween(-0.02, 0.02) * thermalScale;
 
         if (voltage > 0) {
-          if (carrier.type === 'hole') {
-            carrier.vx += voltage * 0.028 + thermalBoost * 0.2;
-          } else {
-            carrier.vx -= voltage * 0.028 + thermalBoost * 0.2;
+          if (minority) {
+            carrier.vx += towardJunction * (0.05 + 0.03 * voltage) * junctionProximity;
           }
         } else if (voltage < 0) {
-          if (carrier.type === 'hole') {
-            carrier.vx -= Math.abs(voltage) * 0.022 + thermalBoost * 0.15;
-          } else {
-            carrier.vx += Math.abs(voltage) * 0.022 + thermalBoost * 0.15;
+          if (minority) {
+            carrier.vx += towardJunction * (0.12 + 0.05 * Math.abs(voltage)) * junctionProximity;
           }
         }
 
@@ -176,64 +285,71 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
         carrier.x += carrier.vx;
         carrier.y += carrier.vy;
 
-        if (carrier.type === 'hole') {
-          if (carrier.x > canvas.width) {
-            Object.assign(carrier, buildCarrier('hole', canvas.width, canvas.height, thermalScale));
-          }
-          if (carrier.x < 0) {
-            carrier.x = randomBetween(35, canvas.width * 0.42);
-            carrier.vx = randomBetween(-0.4, 0.4) * thermalScale;
-          }
-        } else if (carrier.x < 0 || carrier.x > canvas.width) {
-          Object.assign(carrier, buildCarrier('electron', canvas.width, canvas.height, thermalScale));
+        if (carrier.y < 24) {
+          carrier.y = 24;
+          carrier.vy *= -1;
+        }
+        if (carrier.y > canvas.offsetHeight - 24) {
+          carrier.y = canvas.offsetHeight - 24;
+          carrier.vy *= -1;
         }
 
-        if (carrier.y < 28) {
-          carrier.y = 28;
-          carrier.vy *= -1;
+        if (carrier.x < -20 || carrier.x > canvas.offsetWidth + 20) {
+          respawnCarrier(carrier, canvas.offsetWidth, canvas.offsetHeight, thermalScale);
         }
-        if (carrier.y > canvas.height - 28) {
-          carrier.y = canvas.height - 28;
-          carrier.vy *= -1;
-        }
+
+        const renderMinority = isMinorityCarrier(carrier, geometry);
+        const isElectron = carrier.type === 'electron';
+        const radius = renderMinority ? 3.7 : 5.2;
 
         ctx.beginPath();
-        ctx.arc(carrier.x, carrier.y, 5, 0, Math.PI * 2);
-        if (carrier.type === 'hole') {
-          ctx.fillStyle = '#ffffff';
+        ctx.arc(carrier.x, carrier.y, radius, 0, Math.PI * 2);
+
+        if (isElectron) {
+          ctx.fillStyle = renderMinority ? 'rgba(17, 24, 39, 0.58)' : '#1f2937';
           ctx.fill();
-          ctx.strokeStyle = '#1f2937';
-          ctx.lineWidth = 1;
-          ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(carrier.x - 3, carrier.y);
-          ctx.lineTo(carrier.x + 3, carrier.y);
-          ctx.moveTo(carrier.x, carrier.y - 3);
-          ctx.lineTo(carrier.x, carrier.y + 3);
-          ctx.strokeStyle = '#1f2937';
-          ctx.lineWidth = 2;
+          ctx.moveTo(carrier.x - radius * 0.6, carrier.y);
+          ctx.lineTo(carrier.x + radius * 0.6, carrier.y);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = renderMinority ? 1.4 : 2;
           ctx.stroke();
         } else {
-          ctx.fillStyle = '#1f2937';
+          ctx.fillStyle = renderMinority ? 'rgba(255, 255, 255, 0.72)' : '#ffffff';
           ctx.fill();
+          ctx.strokeStyle = 'rgba(31, 41, 55, 0.88)';
+          ctx.lineWidth = renderMinority ? 0.9 : 1.1;
+          ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(carrier.x - 3, carrier.y);
-          ctx.lineTo(carrier.x + 3, carrier.y);
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
+          ctx.moveTo(carrier.x - radius * 0.6, carrier.y);
+          ctx.lineTo(carrier.x + radius * 0.6, carrier.y);
+          ctx.moveTo(carrier.x, carrier.y - radius * 0.6);
+          ctx.lineTo(carrier.x, carrier.y + radius * 0.6);
+          ctx.strokeStyle = 'rgba(31, 41, 55, 0.94)';
+          ctx.lineWidth = renderMinority ? 1.5 : 2;
+          ctx.stroke();
+        }
+
+        if (renderMinority) {
+          ctx.beginPath();
+          ctx.arc(carrier.x, carrier.y, radius + 2.4, 0, Math.PI * 2);
+          ctx.strokeStyle = isElectron ? 'rgba(59, 130, 246, 0.3)' : 'rgba(249, 115, 22, 0.3)';
+          ctx.lineWidth = 1;
           ctx.stroke();
         }
       });
 
       ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#1e3a8a';
       ctx.fillText('P-type', 18, 28);
       ctx.fillStyle = '#991b1b';
-      ctx.fillText('N-type', canvas.width - 75, 28);
+      ctx.fillText('N-type', canvas.offsetWidth - 75, 28);
 
-      ctx.font = '14px sans-serif';
+      ctx.font = '13px sans-serif';
       ctx.fillStyle = '#4b5563';
-      ctx.fillText('Depletion Region', centerX - 58, canvas.height - 10);
+      ctx.fillText('Depletion region with fixed ions', geometry.centerX - 78, canvas.offsetHeight - 10);
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -241,6 +357,7 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
     animate();
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
       }
@@ -257,7 +374,9 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
         <div className="mt-1 text-xs text-gray-600">
           V = {voltage.toFixed(2)} V | T = {temperature} K
         </div>
-        <div className="mt-1 text-xs text-gray-600">Carrier density increases with temperature</div>
+        <div className="mt-1 text-xs text-gray-600">
+          Minority carriers appear on both sides and are dimmer
+        </div>
       </div>
     </div>
   );
@@ -302,10 +421,6 @@ const PNJunctionSimulation = () => {
   };
 
   const calculateCurrent = (v: number, t: number) => {
-    const kB = 1.380649e-23;
-    const q = 1.60217663e-19;
-    const thermalVoltage = (kB * t) / q;
-
     if (v >= 0) {
       return solveForwardBiasPoint(v, t).diodeCurrent;
     }
@@ -313,9 +428,6 @@ const PNJunctionSimulation = () => {
     const reverseVoltage = Math.abs(v);
     const temperatureRatio = t / 300;
 
-    // Make temperature affect both the leakage level and the curve shape.
-    // This keeps the reverse plot educational: higher temperature means more
-    // leakage, a softer knee, and an earlier breakdown onset.
     const leakageMagnitude =
       4e-8 *
       Math.pow(temperatureRatio, 3.4) *
@@ -438,9 +550,19 @@ const PNJunctionSimulation = () => {
   }, [temperature]);
 
   const liveTableData = [...reverseData, ...forwardData].sort((a, b) => a.voltage - b.voltage);
+
+  const forwardBiasChartData = forwardData
+    .map(point => ({
+      diodeVoltage: point.voltage,
+      currentMilliAmps: point.current * 1e3,
+      sourceVoltage: point.sourceVoltage,
+      temperature: point.temperature,
+    }))
+    .sort((a, b) => a.diodeVoltage - b.diodeVoltage);
+
   const forwardYMaxMilliAmps =
-    forwardData.length > 0
-      ? Math.max(...forwardData.map(point => point.current * 1e3), 0.001)
+    forwardBiasChartData.length > 0
+      ? Math.max(...forwardBiasChartData.map(point => point.currentMilliAmps), 0.001)
       : 0.001;
 
   const reverseBiasChartData = reverseData
@@ -635,9 +757,9 @@ const PNJunctionSimulation = () => {
         <div className="data-panel rounded-lg border bg-white p-4 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-lab-blue">Forward Bias I-V Graph</h3>
           <div className="h-72">
-            {forwardData.length > 0 ? (
+            {forwardBiasChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={forwardData} margin={{ top: 16, right: 12, bottom: 28, left: 34 }}>
+                <LineChart data={forwardBiasChartData} margin={{ top: 16, right: 12, bottom: 28, left: 34 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <ReferenceLine
                     x={0.7}
@@ -647,7 +769,7 @@ const PNJunctionSimulation = () => {
                   />
                   <XAxis
                     type="number"
-                    dataKey="voltage"
+                    dataKey="diodeVoltage"
                     domain={[0, 1]}
                     tick={{ fontSize: 11 }}
                     tickMargin={8}
@@ -668,7 +790,7 @@ const PNJunctionSimulation = () => {
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey={point => point.current * 1e3}
+                    dataKey="currentMilliAmps"
                     name={`Forward Bias at ${temperature} K`}
                     stroke="#00796b"
                     strokeWidth={2}
