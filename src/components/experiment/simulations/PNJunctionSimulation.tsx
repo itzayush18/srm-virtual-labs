@@ -94,6 +94,11 @@ const isMinorityCarrier = (carrier: Carrier, geometry: SceneGeometry) => {
   return !isMajorityCarrier(carrier, geometry);
 };
 
+const getReverseMinorityDirection = (carrier: Carrier, centerX: number) => {
+  const side = getCarrierSide(carrier.x, centerX);
+  return side === 'p' ? 1 : -1;
+};
+
 const buildCarrier = (
   type: CarrierType,
   width: number,
@@ -298,7 +303,13 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
           carrier.vx += carrier.driftDirection * (0.06 + voltage * 0.08) * junctionProximity;
         }
         if (voltage < 0 && minority) {
-          carrier.vx += carrier.driftDirection * (0.04 + Math.abs(voltage) * 0.06) * junctionProximity;
+          const reverseSweepDirection = getReverseMinorityDirection(carrier, geometry.centerX);
+          const crossingStrength = (0.18 + Math.abs(voltage) * 0.32) * (0.55 + junctionProximity);
+          carrier.vx += reverseSweepDirection * crossingStrength;
+          carrier.vx += reverseSweepDirection * (0.08 + Math.abs(voltage) * 0.1) * junctionProximity;
+          if (junctionProximity > 0.08) {
+            carrier.vx += reverseSweepDirection * 0.12 * (1 + Math.abs(voltage));
+          }
         }
 
         carrier.vx *= 0.985;
@@ -316,8 +327,21 @@ const PNJunctionScene = ({ voltage, temperature }: { voltage: number; temperatur
           carrier.vy *= -1;
         }
 
-        if (carrier.x < -20 || carrier.x > canvas.offsetWidth + 20) {
+        const leftExit = carrier.x < -20;
+        const rightExit = carrier.x > canvas.offsetWidth + 20;
+
+        if (leftExit || rightExit) {
           respawnCarrier(carrier, canvas.offsetWidth, canvas.offsetHeight, thermalScale);
+          if (voltage < 0 && minority) {
+            const oppositeSide: 'p' | 'n' = carrier.spawnSide === 'p' ? 'n' : 'p';
+            const next = buildCarrier(carrier.type, canvas.offsetWidth, canvas.offsetHeight, thermalScale, oppositeSide);
+            carrier.x = next.x;
+            carrier.y = next.y;
+            carrier.vx = next.vx;
+            carrier.vy = next.vy;
+            carrier.spawnSide = next.spawnSide;
+            carrier.driftDirection = next.driftDirection;
+          }
         }
 
         const renderMinority = isMinorityCarrier(carrier, geometry);
