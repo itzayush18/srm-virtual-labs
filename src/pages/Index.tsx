@@ -33,8 +33,7 @@ const Index = () => {
               Virtual Physics Laboratory
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
-              Explore the fundamentals of semiconductor physics through interactive, virtual
-              experiments — anytime, anywhere.
+              Experience physics laboratory experiments through interactive virtual simulations — anytime, anywhere.
             </p>
             <p className="text-lg italic text-lab-lightBlue mb-2 animate-fade-in">
               “No lab coats. No limits. Just clicks.”
@@ -131,7 +130,7 @@ const Index = () => {
                   </li>
                   <li>Educators looking for supplementary teaching resources</li>
                   <li>Researchers who want to validate concepts before physical experimentation</li>
-                  <li>Self-learners interested in semiconductor physics</li>
+                  <li>Self-learners interested in physics laboratory experiments</li>
                   <li>
                     Educational institutions with limited access to physical laboratory equipment
                   </li>
@@ -161,8 +160,7 @@ const Index = () => {
                     Interactive Simulations
                   </h3>
                   <p className="text-gray-600">
-                    Real-time, responsive simulations that accurately model semiconductor physics
-                    phenomena.
+                    Real-time, responsive simulations that accurately model a physical laboratory.
                   </p>
                 </div>
 
@@ -279,7 +277,7 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Explore Our Virtual Lab?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Start your journey into semiconductor physics with our interactive experiments.
+            Start your journey into the physics laboratory with our interactive experiments.
           </p>
           <Button asChild size="lg" className="bg-white text-lab-teal hover:bg-gray-100">
             <Link to="/lab">
