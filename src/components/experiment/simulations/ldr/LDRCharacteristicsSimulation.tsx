@@ -481,7 +481,7 @@ export default function App() {
                 }}
               >
                 <p style={{ marginTop: 0, marginBottom: 12, color: '#334155', lineHeight: 1.7 }}>
-                  Students should calculate light intensity using:
+                  The light intensity can be calculated using:
                 </p>
                 <div
                   style={{
