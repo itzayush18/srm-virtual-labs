@@ -529,7 +529,7 @@ export default function App() {
                   fontWeight: 600,
                 }}
               >
-                Exercise, Plot the graph Light intensity vs Resistance for any 3 distance
+                Exercise, Plot the graph between Light intensity-X axis vs Resistance-Y axis  for any 3 distances
                 <div style={{ marginTop: 12, fontWeight: 700, color: '#0f172a' }}>
                   Distance set: {distance.toFixed(1)} cm
                 </div>
