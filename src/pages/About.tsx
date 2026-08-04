@@ -75,13 +75,13 @@ const About = () => {
             <CardContent className="pt-6">
               <h2 className="section-title">Development Team:</h2>
               <p className="mb-4">
-                This virtual laboratory was developed as a mini project under an open education initiative. The CSE-Core students contributed to the webpage development and design, helping create an engaging and accessible webpage. Dr. Rajaboopathi Mani, Research Assistant Professor, Department of Physics and Nanotechnology, SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed the simulation using an AI coding agent, along with the theory and procedures..
+                This virtual laboratory was developed as a mini project under an open education initiative. The CSE-Core students contributed to the webpage development and design, helping create an engaging and accessible webpage. [Dr. Rajaboopathi Mani](https://www.srmist.edu.in/faculty/dr-rajaboopathi-m/), Research Assistant Professor, Department of Physics and Nanotechnology, SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed the simulation using an AI coding agent, along with the theory and procedures.
               </p>
               <p>
                 Meet the team:
                 <br />
                 Atharv Tamboli, Ayush Kumar Sharma, Aman Kumar Chouhan, Ayush Kesarwani, Daksh
-                Gupta, Kushagr Joshi, Dr. Rajaboopathi Mani*
+                Gupta, Kushagr Joshi, **[Dr. Rajaboopathi Mani]***(https://www.linkedin.com/in/rajaboopathi-mani-phd-67851865/)
               </p>
             </CardContent>
           </Card>
