@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
+  const [visitorCount, setVisitorCount] = useState(null);
+
+  useEffect(() => {
+    // Fetch and increment page views for your site domain
+    fetch('https://api.counterapi.dev/v1/srm-virtual-labs/visits/up')
+      .then((res) => res.json())
+      .then((data) => setVisitorCount(data.count))
+      .catch((err) => console.error('Error fetching visitor count:', err));
+  }, []);
+
   return (
     <footer className="bg-lab-blue text-white py-8">
       <div className="container mx-auto px-4">
@@ -66,10 +76,17 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
+        {/* --- COPYRIGHT AND VISITOR COUNTER SECTION --- */}
+        <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-gray-400 gap-2">
           <p>
-            © {new Date().getFullYear()} Physics Virtual Laboratory. All rights
-            reserved.
+            © {new Date().getFullYear()} Physics Virtual Laboratory. All rights reserved.
+          </p>
+
+          <p className="text-gray-300 font-medium">
+            Total Visits:{' '}
+            <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-700">
+              {visitorCount !== null ? visitorCount.toLocaleString() : 'Loading...'}
+            </span>
           </p>
         </div>
       </div>
