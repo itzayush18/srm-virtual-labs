@@ -60,7 +60,7 @@ const Footer = () => {
                 href="mailto:hod.phynano.ktr.et@srmist.edu.in"
                 className="block text-white hover:underline mt-1"
               >
-                support@semiconducovlab.edu
+                hod.phynano.ktr.et@srmist.edu.in
               </a>
             </p>
           </div>
