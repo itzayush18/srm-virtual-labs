@@ -81,12 +81,16 @@ export const experimentsList: Experiment[] = [
 `,
 
       procedure: [
-        'Select the semiconductor material from the available options',
-        'Set the desired current through the sample using the slider',
-        'Apply a magnetic field perpendicular to the current using the field strength slider',
-        'Observe the Hall voltage reading on the digital display',
-        'Calculate the Hall coefficient using the formula: R_H = V_H × t / (I × B), where t is the sample thickness',
-        'Determine the carrier type based on the sign of the Hall coefficient',
+        'Select the type of material as N-type',
+        'Set the coil current in DC Source 1 to the required value, for e.g., 5 A',
+        'Set the Hall sample current in DC Source 2 to the required value, for e.g., 5 mA',
+        'Select the sample thickness, starting with 1.0 mm',
+        'Record the corresponding Hall voltage displayed in the virtual lab',
+        'Calculate the Hall coefficient for the selected sample thickness and enter the values in the observation table',
+        'Repeat Steps 4 to 6 for different sample thickness values, such as 1.5 mm, 2.0 mm, 2.5 mm, and so on up to 5.0 mm',
+        'Tabulate the Hall voltage and Hall coefficient values for each sample thickness',
+        'Plot a graph with sample thickness on the X-axis and Hall coefficient on the Y-axis',
+        'Analyze the graph and observe the variation of Hall coefficient with sample thickness',
       ],
       selfEvaluation: [
         {
