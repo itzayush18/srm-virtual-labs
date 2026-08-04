@@ -1187,30 +1187,37 @@ Where:<br>
 </p>
 </div>`,
       procedure: [
-  'Exp 1: Attenuation Measurement of Optical Fiber',
-
-  'Select the type of optical fiber, for example, single-mode fiber.',
-  'Select the reference optical fiber length as 1 m.',
-  'Turn on the laser light source.',
-  'Set the laser power level to 5% and record the corresponding output power for the 1 m fiber.',
-  'Select the 5 m optical fiber cable and record the output power for the same laser power level.',
-  'Calculate the attenuation by comparing the output power of the 5 m fiber with the 1 m reference fiber.',
-  'Repeat Steps 4 to 6 for different laser power levels, such as 10%, 70%, 85%, and other available values.',
-  'Tabulate the laser power level, output power, and attenuation values.',
-  'Plot a graph with laser power level on the X-axis and attenuation on the Y-axis.',
-  'Repeat the procedure for different optical fiber cable lengths, keeping the 1 m fiber as the reference, and calculate the attenuation for each length (optional).',
-
-  '**Exp 2: Numerical Aperture and Acceptance Angle of Optical Fiber**',
-
-  'Select the optical fiber mode as single-mode.',
-  'Select the optical fiber length, starting with 1 m.',
-  'Set the distance between the fiber source and the screen. Increase the distance in steps of 10 mm up to 102 mm.',
-  'Turn on the laser light source.',
-  'Record the numerical aperture and acceptance angle for the selected fiber length.',
-  'Repeat Steps 2 to 5 for different fiber lengths, such as 5 m, 10 m, 20 m, 50 m, and 100 m.',
-  'Repeat Steps 1 to 6 by selecting multimode optical fiber.',
-  'Plot a graph with fiber length on the X-axis and numerical aperture on the Y-axis for both single-mode and multimode optical fibers.',
-  'Compare the numerical aperture values for the two fiber modes and observe the variation with fiber length.',
+  {
+    label: 'Exp 1',
+    title: 'Attenuation Measurement of Optical Fiber',
+    steps: [
+      'Select the type of optical fiber, for example, single-mode fiber.',
+      'Select the reference optical fiber length as 1 m.',
+      'Turn on the laser light source.',
+      'Set the laser power level to 5% and record the corresponding output power for the 1 m fiber.',
+      'Select the 5 m optical fiber cable and record the output power for the same laser power level.',
+      'Calculate the attenuation by comparing the output power of the 5 m fiber with the 1 m reference fiber.',
+      'Repeat Steps 4 to 6 for different laser power levels, such as 10%, 70%, 85%, and other available values.',
+      'Tabulate the laser power level, output power, and attenuation values.',
+      'Plot a graph with laser power level on the X-axis and attenuation on the Y-axis.',
+      'Repeat the procedure for different optical fiber cable lengths, keeping the 1 m fiber as the reference, and calculate the attenuation for each length (optional).',
+    ],
+  },
+  {
+    label: 'Exp 2',
+    title: 'Numerical Aperture and Acceptance Angle of Optical Fiber',
+    steps: [
+      'Select the optical fiber mode as single-mode.',
+      'Select the optical fiber length, starting with 1 m.',
+      'Set the distance between the fiber source and the screen. Increase the distance in steps of 10 mm up to 102 mm.',
+      'Turn on the laser light source.',
+      'Record the numerical aperture and acceptance angle for the selected fiber length.',
+      'Repeat Steps 2 to 5 for different fiber lengths, such as 5 m, 10 m, 20 m, 50 m, and 100 m.',
+      'Repeat Steps 1 to 6 by selecting multimode optical fiber.',
+      'Plot a graph with fiber length on the X-axis and numerical aperture on the Y-axis for both single-mode and multimode optical fibers.',
+      'Compare the numerical aperture values for the two fiber modes and observe the variation with fiber length.',
+    ],
+  },
 ],
       selfEvaluation: [
         {
