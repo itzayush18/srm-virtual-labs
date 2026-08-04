@@ -55,7 +55,7 @@ const About = () => {
                   rel="noopener noreferrer"
                   className="text-lab-blue underline font-semibold"
                 >
-                  Dr. Rajaboopathi Mani
+                  Dr. Rajaboopathi Mani*
                 </a>
               </p>
             </CardContent>
