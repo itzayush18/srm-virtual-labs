@@ -7,81 +7,56 @@ const About = () => {
     <Layout>
       <div className="container mx-auto py-12 px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-lab-blue">About Our Virtual Laboratory</h1>
+          <h1 className="text-3xl font-bold mb-8 text-lab-blue">
+            About Our Virtual Laboratory
+          </h1>
 
           <Card className="mb-8">
             <CardContent className="pt-6">
               <h2 className="section-title">Our Mission</h2>
               <p className="mb-4">
                 The Physics Virtual Laboratory aims to provide a comprehensive online
-                platform for students and researchers to conduct many physics laboratory experiments
-                in a virtual environment. Our mission is to make physics laboratory education
-                more accessible, interactive, and engaging. Through our interactive simulations,
-                users can explore the fundamental principles of physics laboratory experiments
-                experiments, collect data, and analyze results, all without the need for physical
-                laboratory equipment.
+                platform for students and researchers to conduct many physics laboratory
+                experiments in a virtual environment. Our mission is to make physics
+                laboratory education more accessible, interactive, and engaging.
               </p>
             </CardContent>
           </Card>
 
           <Card className="mb-8">
             <CardContent className="pt-6">
-              <h2 className="section-title">Key Features</h2>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>
-                  <span className="font-semibold">Interactive Simulations:</span> Real-time,
-                  responsive simulations that accurately model physics phenomena.
-                </li>
-                <li>
-                  <span className="font-semibold">Educational Content:</span> Comprehensive theory,
-                  procedures, and references for each experiment.
-                </li>
-                <li>
-                  <span className="font-semibold">Self-Assessment:</span> Built-in quizzes to test
-                  understanding of key concepts.
-                </li>
-                <li>
-                  <span className="font-semibold">Data Collection & Analysis:</span> Tools for
-                  gathering and visualizing experimental data.
-                </li>
-                <li>
-                  <span className="font-semibold">Accessibility:</span> Available anywhere with an
-                  internet connection, on any device.
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <h2 className="section-title">Intended Audience</h2>
-              <p className="mb-4">Our virtual laboratory is designed for:</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>
-                  Undergraduate and graduate students in physics, electrical engineering, and
-                  materials science
-                </li>
-                <li>Educators looking for supplementary teaching resources</li>
-                <li>Researchers who want to validate concepts before physical experimentation</li>
-                <li>Self-learners interested in semiconductor physics</li>
-                <li>
-                  Educational institutions with limited access to physical laboratory equipment
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <h2 className="section-title">Development Team:</h2>
+              <h2 className="section-title">Development Team</h2>
               <p className="mb-4">
-                This virtual laboratory was developed as a mini project under an open education initiative. The CSE-Core students contributed to the webpage development and design, helping create an engaging and accessible webpage. [Dr. Rajaboopathi Mani](https://www.srmist.edu.in/faculty/dr-rajaboopathi-m/), Research Assistant Professor, Department of Physics and Nanotechnology, SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed the simulation using an AI coding agent, along with the theory and procedures.
+                This virtual laboratory was developed as a mini project under an open
+                education initiative. The CSE-Core students contributed to the webpage
+                development and design, helping create an engaging and accessible webpage.
+                {' '}
+                <a
+                  href="https://www.srmist.edu.in/faculty/dr-rajaboopathi-m/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lab-blue underline"
+                >
+                  Dr. Rajaboopathi Mani
+                </a>
+                , Research Assistant Professor, Department of Physics and Nanotechnology,
+                SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed
+                the simulation using an AI coding agent, along with the theory and procedures.
               </p>
+
               <p>
                 Meet the team:
                 <br />
-                Atharv Tamboli, Ayush Kumar Sharma, Aman Kumar Chouhan, Ayush Kesarwani, Daksh
-                Gupta, Kushagr Joshi, **[Dr. Rajaboopathi Mani]***(https://www.linkedin.com/in/rajaboopathi-mani-phd-67851865/)
+                Atharv Tamboli, Ayush Kumar Sharma, Aman Kumar Chouhan, Ayush Kesarwani,
+                Daksh Gupta, Kushagr Joshi,{' '}
+                <a
+                  href="https://www.linkedin.com/in/rajaboopathi-mani-phd-67851865/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lab-blue underline font-semibold"
+                >
+                  Dr. Rajaboopathi Mani
+                </a>
               </p>
             </CardContent>
           </Card>
