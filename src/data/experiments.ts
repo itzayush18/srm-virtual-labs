@@ -458,13 +458,12 @@ export const experimentsList: Experiment[] = [
       </div>
       `,
       procedure: [
-        'Connect the LDR to the circuit setup with variable voltage source',
-        'Set the light source at a specific intensity using the control slider',
-        'Vary the applied voltage in small increments and record the corresponding current',
-        'Repeat the measurements for different light intensities',
-        'Plot the V-I curves for each light intensity',
-        'Calculate the resistance at each operating point using R = V/I',
-        'Plot the resistance vs. illumination curve to determine the sensitivity of the LDR',
+        'Select the light source. The bias voltage is fixed at 5.0 V',
+        'Set the distance between the light source and the LDR',
+        'Adjust the light source voltage to obtain different light intensity values, and record the corresponding resistance of the LDR',
+        'Repeat Steps 2 to 3 for different distances between the light source and the LDR',
+        'Plot a graph with light intensity on the X-axis and resistance on the Y-axis',
+        'Analyze the graph and observe the variation of LDR resistance with light intensity',
       ],
       selfEvaluation: [
         {
@@ -683,14 +682,14 @@ export const experimentsList: Experiment[] = [
       </div>
       `,
       procedure: [
-        'Connect the diode to the circuit setup with variable voltage source',
-        'Start with zero bias and gradually increase the forward bias voltage',
-        'Record the current at each voltage step',
-        'Reverse the polarity and gradually increase the reverse bias voltage',
-        'Record the current at each voltage step in reverse bias',
+        'Select a forward voltage greater than 0 V, calculate the corresponding forward current, and record the value in the observation table',
+        'Repeat the measurement for different forward voltage values and tabulate the corresponding current values',
+        'Select a reverse voltage less than 0 V, calculate the corresponding reverse current, and record the value in the observation table',
+        'Repeat the measurement for different reverse voltage values and tabulate the corresponding current values',
+        'Repeat Steps 1 to 5 for any two additional temperature values, such as 350 K, 375 K, or 400 K',
         'Plot the complete I-V characteristic curve',
-        'Observe the depletion region visualization at different bias conditions',
-        'Repeat the measurements at different temperatures to study temperature effects',
+        'Plot the current-voltage characteristic graph for each selected temperature',
+        'Compare the characteristics at different temperatures and observe the effect of temperature on the diode current',
       ],
       selfEvaluation: [
         {
@@ -1188,15 +1187,31 @@ Where:<br>
 </p>
 </div>`,
       procedure: [
-        'Select the fiber type (single-mode or multi-mode)',
-        'Set the wavelength of light using the slider',
-        'Adjust the fiber parameters (core diameter, NA, etc.)',
-        'Visualize the light propagation in the fiber',
-        'Measure the input and output power for different fiber lengths',
-        'Calculate the attenuation coefficient using the formula: α = (10/L) × log₁₀(Pin/Pout)',
-        'Plot the attenuation vs. wavelength curve',
-        'Study the effect of bending on attenuation by adjusting the bend radius',
-      ],
+  'Exp 1: Attenuation Measurement of Optical Fiber',
+
+  '1. Select the type of optical fiber, for example, single-mode fiber.',
+  '2. Select the reference optical fiber length as 1 m.',
+  '3. Turn on the laser light source.',
+  '4. Set the laser power level to 5% and record the corresponding output power for the 1 m fiber.',
+  '5. Select the 5 m optical fiber cable and record the output power for the same laser power level.',
+  '6. Calculate the attenuation by comparing the output power of the 5 m fiber with the 1 m reference fiber.',
+  '7. Repeat Steps 4 to 6 for different laser power levels, such as 10%, 70%, 85%, and other available values.',
+  '8. Tabulate the laser power level, output power, and attenuation values.',
+  '9. Plot a graph with laser power level on the X-axis and attenuation on the Y-axis.',
+  '10. Repeat the procedure for different optical fiber cable lengths, keeping the 1 m fiber as the reference, and calculate the attenuation for each length (optional).',
+
+  'Exp 2: Numerical Aperture and Acceptance Angle of Optical Fiber',
+
+  '1. Select the optical fiber mode as single-mode.',
+  '2. Select the optical fiber length, starting with 1 m.',
+  '3. Set the distance between the fiber source and the screen. Increase the distance in steps of 10 mm up to 102 mm.',
+  '4. Turn on the laser light source.',
+  '5. Record the numerical aperture and acceptance angle for the selected fiber length.',
+  '6. Repeat Steps 2 to 5 for different fiber lengths, such as 5 m, 10 m, 20 m, 50 m, and 100 m.',
+  '7. Repeat Steps 1 to 6 by selecting multimode optical fiber.',
+  '8. Plot a graph with fiber length on the X-axis and numerical aperture on the Y-axis for both single-mode and multimode optical fibers.',
+  '9. Compare the numerical aperture values for the two fiber modes and observe the variation with fiber length.',
+],
       selfEvaluation: [
         {
           question:
