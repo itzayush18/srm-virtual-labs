@@ -1200,7 +1200,7 @@ Where:<br>
   'Plot a graph with laser power level on the X-axis and attenuation on the Y-axis.',
   'Repeat the procedure for different optical fiber cable lengths, keeping the 1 m fiber as the reference, and calculate the attenuation for each length (optional).',
 
-  Exp 2: Numerical Aperture and Acceptance Angle of Optical Fiber'
+  'Exp 2: Numerical Aperture and Acceptance Angle of Optical Fiber',
 
   'Select the optical fiber mode as single-mode.',
   'Select the optical fiber length, starting with 1 m.',
