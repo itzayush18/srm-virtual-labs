@@ -57,7 +57,7 @@ const Footer = () => {
             <p className="text-gray-300">
               For support or queries, please email us at:
               <a
-                href="mailto:support@semiconducovlab.edu"
+                href="mailto:hod.phynano.ktr.et@srmist.edu.in"
                 className="block text-white hover:underline mt-1"
               >
                 support@semiconducovlab.edu
@@ -68,7 +68,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
           <p>
-            © {new Date().getFullYear()} Semiconductor Physics Virtual Laboratory. All rights
+            © {new Date().getFullYear()} Physics Virtual Laboratory. All rights
             reserved.
           </p>
         </div>
