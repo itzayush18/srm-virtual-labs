@@ -75,11 +75,7 @@ const About = () => {
             <CardContent className="pt-6">
               <h2 className="section-title">Development Team:</h2>
               <p className="mb-4">
-                Our virtual laboratory platform was developed by a dedicated team of CSE-Core
-                students as part of an open education initiative, integrating student-led coding and
-                design efforts to create an engaging and accessible learning environment. The
-                virtual lab was conceptualized and guided by Dr Rajaboopathi Mani, Research
-                Assistant Professor from SRMIST, Kattankulathur 603203.
+                This virtual laboratory was developed as a mini project under an open education initiative. The CSE-Core students contributed to the webpage development and design, helping create an engaging and accessible webpage. Dr. Rajaboopathi Mani, Research Assistant Professor, Department of Physics and Nanotechnology, SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed the simulation using an AI coding agent, along with the theory and procedures..
               </p>
               <p>
                 Meet the team:
