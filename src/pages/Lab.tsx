@@ -56,7 +56,7 @@ const Lab = () => {
               transition={{ duration: 0.5 }}
               className="text-3xl md:text-4xl font-bold mb-4 text-[#2563eb] bg-clip-text text-transparent bg-gradient-to-r from-[#2563eb] to-[#123c95]"
             >
-              Semiconductor Physics Laboratory
+              Physics Virtual Laboratory
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -64,7 +64,7 @@ const Lab = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg text-gray-600"
             >
-              Explore our collection of interactive semiconductor physics experiments
+              Explore our collection of interactive physics experiments
             </motion.p>
           </div>
 
