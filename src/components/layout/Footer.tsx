@@ -3,13 +3,28 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const [visitorCount, setVisitorCount] = useState(null);
+  const [showVisitorCount, setShowVisitorCount] = useState(true);
 
   useEffect(() => {
-    // Fetch and increment page views for your site domain
-    fetch('https://api.counterapi.dev/v1/srm-virtual-labs/visits/up')
-      .then((res) => res.json())
-      .then((data) => setVisitorCount(data.count))
-      .catch((err) => console.error('Error fetching visitor count:', err));
+    fetch('/api/visits', {
+      method: 'POST',
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Counter failed');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (typeof data.count === 'number') {
+          setVisitorCount(data.count);
+        } else {
+          setShowVisitorCount(false);
+        }
+      })
+      .catch(() => {
+        setShowVisitorCount(false);
+      });
   }, []);
 
   return (
@@ -17,10 +32,12 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-lg font-bold mb-4"> Physics Virtual Lab</h3>
+            <h3 className="text-lg font-bold mb-4">Physics Virtual Lab</h3>
+
             <p className="text-gray-300 mb-2">
               An interactive virtual laboratory for physics experiments.
             </p>
+
             <div className="flex items-start space-x-4 mt-2">
               <div className="text-gray-300 text-sm">
                 Department of Physics and Nanotechnology,
@@ -33,6 +50,7 @@ const Footer = () => {
                 <br />
                 Tamil Nadu, India.
               </div>
+
               <img
                 src="/logo3.png"
                 alt="SRM Logo"
@@ -43,17 +61,20 @@ const Footer = () => {
 
           <div>
             <h3 className="text-lg font-bold mb-4">Quick Links</h3>
+
             <ul className="space-y-2">
               <li>
                 <Link to="/" className="text-gray-300 hover:text-white transition-colors">
                   Home
                 </Link>
               </li>
+
               <li>
                 <Link to="/lab" className="text-gray-300 hover:text-white transition-colors">
                   All Experiments
                 </Link>
               </li>
+
               <li>
                 <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
                   About VLab
@@ -64,6 +85,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-lg font-bold mb-4">Contact</h3>
+
             <p className="text-gray-300">
               For support or queries, please email us at:
               <a
@@ -76,18 +98,19 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* --- COPYRIGHT AND VISITOR COUNTER SECTION --- */}
         <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-gray-400 gap-2">
           <p>
             © {new Date().getFullYear()} Physics Virtual Laboratory. All rights reserved.
           </p>
 
-          <p className="text-gray-300 font-medium">
-            Total Visits:{' '}
-            <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-700">
-              {visitorCount !== null ? visitorCount.toLocaleString() : 'Loading...'}
-            </span>
-          </p>
+          {showVisitorCount && (
+            <p className="text-gray-300 font-medium">
+              Total Visits:{' '}
+              <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-700">
+                {visitorCount !== null ? visitorCount.toLocaleString() : 'Loading...'}
+              </span>
+            </p>
+          )}
         </div>
       </div>
     </footer>
