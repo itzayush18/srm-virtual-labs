@@ -258,7 +258,10 @@ function ExerciseNote() {
 }
 
 function TableCellValue({ row, isPType, studentValue, onStudentChange, revealed, onReveal }) {
-  if (isPType) {
+  // All p-type answers are revealed by click. For n-type, only magnetic field B is revealed by click.
+  const isClickToReveal = isPType || row.key === 'bField';
+
+  if (isClickToReveal) {
     if (revealed) {
       return (
         <span
@@ -387,7 +390,7 @@ function MeasurementTable({ mat, data, answerState, setAnswerState, studentValue
         <div>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-secondary)' }}>Measurement Table</div>
           <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 3 }}>
-            n-type uses blank entry boxes. p-type uses click-to-reveal answers.
+            p-type uses click-to-reveal answers. For n-type, only magnetic field B is revealed by click; calculate the other values manually.
           </div>
         </div>
       </div>
