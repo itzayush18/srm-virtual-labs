@@ -34,7 +34,7 @@ const Index = () => {
               <span className="block text-2xl md:text-3xl mt-3">Virtual Laboratory</span>
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
-              Experience physics laboratory experiments through interactive virtual simulations â€” anytime, anywhere.
+              Experience physics laboratory experiments through interactive virtual simulations anytime, anywhere.
             </p>
             <p className="text-lg italic text-lab-lightBlue mb-2 animate-fade-in">
               No lab coats. No limits. Just clicks.
