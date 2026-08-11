@@ -30,13 +30,14 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-extrabold mb-6 animate-fade-in">
-              Department of Physics & Nanotechnology-Virtual Lab
+              Department of Physics and Nanotechnology
+              <span className="block text-2xl md:text-3xl mt-3">Virtual Laboratory</span>
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
-              Experience physics laboratory experiments through interactive virtual simulations — anytime, anywhere.
+              Experience physics laboratory experiments through interactive virtual simulations â€” anytime, anywhere.
             </p>
             <p className="text-lg italic text-lab-lightBlue mb-2 animate-fade-in">
-              “No lab coats. No limits. Just clicks.”
+              â€œNo lab coats. No limits. Just clicks.â€
             </p>
           </div>
         </div>
@@ -100,7 +101,7 @@ const Index = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* ✅ Intended Audience Card - Left Side */}
+            {/* âœ… Intended Audience Card - Left Side */}
             <Card className="text-center">
               <CardContent className="p-6">
                 <div className="flex items-center justify-center mb-4">
@@ -138,7 +139,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* ✅ Key Features - Right Side */}
+            {/* âœ… Key Features - Right Side */}
             <div>
               <h2 className="text-3xl font-bold mb-6 text-lab-blue text-center">Key Features</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
