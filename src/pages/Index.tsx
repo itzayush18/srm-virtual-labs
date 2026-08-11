@@ -30,14 +30,14 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-extrabold mb-6 animate-fade-in">
-              Department of Physics and Nanotechnology
+              Department of Physics & Nanotechnology
               <span className="block text-2xl md:text-3xl mt-3">Virtual Laboratory</span>
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
               Experience physics laboratory experiments through interactive virtual simulations â€” anytime, anywhere.
             </p>
             <p className="text-lg italic text-lab-lightBlue mb-2 animate-fade-in">
-              â€œNo lab coats. No limits. Just clicks.â€
+              No lab coats. No limits. Just clicks.
             </p>
           </div>
         </div>
