@@ -29,8 +29,8 @@ const Index = () => {
       <section className="bg-lab-blue text-white py-28">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-6 animate-fade-in">
-              Department of Physics & Nanotechnology
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-6 animate-fade-in">
+              <span className="whitespace-nowrap">Department of Physics & Nanotechnology</span>
               <span className="block text-2xl md:text-3xl mt-3">Virtual Laboratory</span>
             </h1>
             <p className="text-xl md:text-2xl mb-6 opacity-90 animate-fade-in">
