@@ -39,9 +39,7 @@ const About = () => {
                 >
                   Dr. Rajaboopathi Mani
                 </a>
-                , Research Assistant Professor, Department of Physics and Nanotechnology,
-                SRMIST, Kattankulathur 603203, conceptualized the virtual lab and developed
-                the simulation using an AI coding agent, along with the theory and procedures.
+                , Research Assistant Professor from our Department conceptualized the virtual lab and developed the simulation using an AI coding agent, along with the theory and procedures.
               </p>
 
               <p>
