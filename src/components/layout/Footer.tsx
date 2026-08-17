@@ -89,6 +89,16 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <span>Website Visitors:</span>
+            <img
+              src="https://hits.sh/srm-virtual-labs.vercel.app.svg?label=Visitors&color=0d6efd&labelColor=555&style=flat"
+              alt="Website visitor count"
+              loading="lazy"
+              className="inline-block align-middle"
+            />
+          </div>
+
           <p>
             © {new Date().getFullYear()} Physics Virtual Laboratory. All
             rights reserved.
